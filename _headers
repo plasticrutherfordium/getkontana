@@ -1,8 +1,0 @@
-# Cloudflare Pages Build Configuration
-# Build command for Astro projects
-
-/*
-  X-Content-Type-Options: nosniff
-  Referrer-Policy: strict-origin-when-cross-origin
-
- */
