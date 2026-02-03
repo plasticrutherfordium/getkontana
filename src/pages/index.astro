@@ -298,11 +298,20 @@ import Layout from '../layouts/Layout.astro';
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ email, turnstileToken }),
 			});
-			const result = await res.json();
+			const result = await res.json().catch(() => ({ ok: false, code: 'invalid_json_response' }));
 			if (result.ok) {
 				e.target.innerHTML = '<p style="color: var(--accent);">Thanks! You’re on the waitlist.</p>';
 			} else {
-				alert('Something went wrong. Please try again.');
+				let message = 'Something went wrong. Please try again.';
+				if (res.status === 400) {
+					if (result.code === 'invalid_email') message = 'Please enter a valid email.';
+					if (result.code === 'turnstile_missing_token') message = 'Please complete the captcha.';
+					if (result.code === 'turnstile_missing_secret') message = 'Server misconfiguration. Please try again later.';
+				}
+				if (res.status === 403) {
+					message = 'Captcha verification failed. Please try again.';
+				}
+				alert(message);
 			}
 		});
 	</script>

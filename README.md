@@ -28,3 +28,35 @@ All commands are run from the root of the project, from a terminal:
 | `npm run preview`         | Preview your build locally, before deploying     |
 | `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
 | `npm run astro -- --help` | Get help using the Astro CLI                     |
+
+## ✅ Waitlist API smoke tests
+
+Replace `BASE_URL` with your deployed site (for example `https://getkontana.com`).
+
+Missing token (expect 400):
+
+```bash
+BASE_URL="https://getkontana.com"
+curl -i -X POST "$BASE_URL/api/waitlist" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","turnstileToken":""}'
+```
+
+Invalid token (expect 403):
+
+```bash
+BASE_URL="https://getkontana.com"
+curl -i -X POST "$BASE_URL/api/waitlist" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","turnstileToken":"invalid-token"}'
+```
+
+Valid token (expect 200):
+
+```bash
+BASE_URL="https://getkontana.com"
+TURNSTILE_TOKEN="paste-a-real-token-from-a-browser-session"
+curl -i -X POST "$BASE_URL/api/waitlist" \
+  -H "Content-Type: application/json" \
+  -d "{\"email\":\"test@example.com\",\"turnstileToken\":\"$TURNSTILE_TOKEN\"}"
+```
