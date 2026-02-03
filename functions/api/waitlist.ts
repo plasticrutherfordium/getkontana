@@ -1,23 +1,45 @@
-export async function POST({ request }: { request: Request }) {
-  try {
-    const { email } = await request.json();
-    if (!email || typeof email !== 'string') {
-      return new Response(JSON.stringify({ error: 'Invalid email' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+function normaliseEmail(email: string) {
+  return email.trim().toLowerCase();
+}
 
-    // Insert into D1 database (you'll need to bind the DB in wrangler.toml)
-    // For now, just return success
-    return new Response(JSON.stringify({ success: true, email }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  } catch (err) {
-    return new Response(JSON.stringify({ error: 'Failed to subscribe' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
+export async function onRequest(context: any) {
+  const { request, env } = context;
+
+  // Only allow POST
+  if (request.method !== "POST") {
+    return new Response(null, { status: 405 });
+  }
+
+  let body: any;
+  try {
+    body = await request.json();
+  } catch {
+    return new Response(JSON.stringify({ ok: false, error: "invalid_json" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
     });
   }
+
+  const emailRaw = typeof body.email === "string" ? body.email : "";
+  const email = normaliseEmail(emailRaw);
+
+  if (!email || !email.includes("@") || email.length > 254) {
+    return new Response(JSON.stringify({ ok: false, error: "invalid_email" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const createdAt = new Date().toISOString();
+
+  await env.DB.prepare(
+    "INSERT OR IGNORE INTO waitlist (email, created_at) VALUES (?, ?)"
+  )
+    .bind(email, createdAt)
+    .run();
+
+  return new Response(JSON.stringify({ ok: true }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
 }
