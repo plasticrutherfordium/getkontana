@@ -6,7 +6,9 @@ import Layout from '../layouts/Layout.astro';
 	<nav class="navbar">
 		<div class="nav-container">
 			<div class="nav-logo">
-				<a href="/">Kontana</a>
+				<a href="/" aria-label="Kontana">
+					<img class="nav-logo-img" src="/kontana-logo.svg" alt="Kontana" decoding="async" />
+				</a>
 			</div>
 			<ul class="nav-menu">
 				<li><a href="#features">Features</a></li>
@@ -405,12 +407,16 @@ import Layout from '../layouts/Layout.astro';
 	}
 
 	.nav-logo a {
-		font-size: 1.05rem;
-		font-weight: 800;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
+		display: flex;
+		align-items: center;
 		text-decoration: none;
 		color: #a7f3d0;
+	}
+
+	.nav-logo-img {
+		height: 26px;
+		width: auto;
+		display: block;
 	}
 
 	.nav-menu {
