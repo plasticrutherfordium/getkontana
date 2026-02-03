@@ -300,11 +300,19 @@ import Layout from '../layouts/Layout.astro';
 			line-height: 1.5;
 			-webkit-font-smoothing: antialiased;
 			-moz-osx-font-smoothing: grayscale;
-			color: #eaf6ef;
-			background:
-				radial-gradient(1000px 600px at 25% -10%, rgba(16, 185, 129, 0.28), transparent 55%),
-				radial-gradient(900px 500px at 80% 10%, rgba(34, 197, 94, 0.18), transparent 55%),
-				#060b08;
+			--text: #0b1220;
+			--muted: rgba(11, 18, 32, 0.72);
+			--muted-2: rgba(11, 18, 32, 0.58);
+			--border: rgba(11, 18, 32, 0.12);
+			--surface: rgba(255, 255, 255, 0.9);
+			--surface-2: rgba(248, 250, 252, 0.9);
+			--shadow: 0 14px 45px rgba(2, 6, 23, 0.08);
+			--accent: #16a34a;
+			--accent-2: #22c55e;
+			--accent-3: #34d399;
+			--accent-text: #052e16;
+			color: var(--text);
+			background: #ffffff;
 		}
 
 		.container {
@@ -329,37 +337,36 @@ import Layout from '../layouts/Layout.astro';
 			letter-spacing: 0.2px;
 			transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease;
 			cursor: pointer;
-			border: 1px solid rgba(234, 246, 239, 0.12);
-			background: rgba(234, 246, 239, 0.04);
-			backdrop-filter: blur(10px);
+			border: 1px solid var(--border);
+			background: #ffffff;
 		}
 
 		.btn:hover {
 			transform: translateY(-1px);
-			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+			box-shadow: var(--shadow);
 		}
 
 		.btn-primary {
-			border-color: rgba(16, 185, 129, 0.5);
-			background: linear-gradient(135deg, #10b981 0%, #22c55e 45%, #34d399 100%);
-			color: #04100a;
-			box-shadow: 0 18px 40px rgba(16, 185, 129, 0.18);
+			border-color: rgba(22, 163, 74, 0.35);
+			background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 45%, var(--accent-3) 100%);
+			color: var(--accent-text);
+			box-shadow: 0 18px 50px rgba(22, 163, 74, 0.18);
 		}
 
 		.btn-primary:hover {
-			box-shadow: 0 24px 70px rgba(16, 185, 129, 0.26);
+			box-shadow: 0 24px 70px rgba(22, 163, 74, 0.22);
 		}
 
 		.btn-secondary {
-			background: rgba(234, 246, 239, 0.04);
-			border-color: rgba(234, 246, 239, 0.16);
-			color: #eaf6ef;
+			background: #ffffff;
+			border-color: var(--border);
+			color: var(--text);
 		}
 
 		.btn-outline {
 			background: transparent;
-			border-color: rgba(16, 185, 129, 0.45);
-			color: #a7f3d0;
+			border-color: rgba(22, 163, 74, 0.35);
+			color: var(--accent);
 		}
 
 		.btn-large {
@@ -381,7 +388,7 @@ import Layout from '../layouts/Layout.astro';
 
 		.section-header p {
 			font-size: 1.05rem;
-			color: rgba(234, 246, 239, 0.75);
+			color: var(--muted);
 			max-width: 720px;
 			margin: 0 auto;
 		}
@@ -391,8 +398,8 @@ import Layout from '../layouts/Layout.astro';
 		position: sticky;
 		top: 0;
 		z-index: 1000;
-		background: rgba(6, 11, 8, 0.7);
-		border-bottom: 1px solid rgba(234, 246, 239, 0.08);
+		background: rgba(255, 255, 255, 0.82);
+		border-bottom: 1px solid var(--border);
 		backdrop-filter: blur(16px);
 	}
 
@@ -410,7 +417,7 @@ import Layout from '../layouts/Layout.astro';
 		display: flex;
 		align-items: center;
 		text-decoration: none;
-		color: #a7f3d0;
+		color: var(--accent);
 	}
 
 	.nav-logo-img {
@@ -428,7 +435,7 @@ import Layout from '../layouts/Layout.astro';
 
 	.nav-menu a {
 		text-decoration: none;
-		color: rgba(234, 246, 239, 0.78);
+		color: var(--muted);
 		font-weight: 600;
 		padding: 10px 10px;
 		border-radius: 10px;
@@ -436,14 +443,14 @@ import Layout from '../layouts/Layout.astro';
 	}
 
 	.nav-menu a:hover {
-		color: #eaf6ef;
-		background: rgba(234, 246, 239, 0.06);
+		color: var(--text);
+		background: rgba(22, 163, 74, 0.08);
 	}
 
 	.nav-menu .btn-primary {
 		padding: 10px 14px;
 		border-radius: 12px;
-		color: #04100a;
+		color: var(--accent-text);
 	}
 
 	.nav-toggle {
@@ -455,13 +462,18 @@ import Layout from '../layouts/Layout.astro';
 	.nav-toggle span {
 		width: 25px;
 		height: 3px;
-		background: rgba(234, 246, 239, 0.75);
+		background: rgba(11, 18, 32, 0.55);
 		margin: 3px 0;
 		transition: 0.3s;
 	}
 
 	.hero {
 		padding: 84px 0 36px;
+		background:
+			radial-gradient(900px 420px at 20% 10%, rgba(34, 197, 94, 0.18), transparent 55%),
+			radial-gradient(900px 420px at 85% 0%, rgba(16, 185, 129, 0.14), transparent 55%),
+			linear-gradient(180deg, #ffffff 0%, #f6fff9 100%);
+		border-bottom: 1px solid rgba(11, 18, 32, 0.06);
 	}
 
 	.hero-container {
@@ -475,7 +487,7 @@ import Layout from '../layouts/Layout.astro';
 	}
 
 	.hero-kicker {
-		color: rgba(167, 243, 208, 0.9);
+		color: rgba(22, 163, 74, 0.95);
 		font-weight: 700;
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
@@ -492,7 +504,7 @@ import Layout from '../layouts/Layout.astro';
 
 	.hero-subtitle {
 		font-size: 1.12rem;
-		color: rgba(234, 246, 239, 0.78);
+		color: var(--muted);
 		margin-bottom: 28px;
 		max-width: 44ch;
 	}
@@ -513,21 +525,20 @@ import Layout from '../layouts/Layout.astro';
 	.stat {
 		padding: 14px 14px;
 		border-radius: 14px;
-		border: 1px solid rgba(234, 246, 239, 0.1);
-		background: rgba(234, 246, 239, 0.04);
-		backdrop-filter: blur(10px);
+		border: 1px solid rgba(11, 18, 32, 0.1);
+		background: rgba(255, 255, 255, 0.9);
 	}
 
 	.stat-number {
 		display: block;
 		font-size: 1rem;
 		font-weight: 750;
-		color: #eaf6ef;
+		color: var(--text);
 		margin-bottom: 4px;
 	}
 
 	.stat-label {
-		color: rgba(234, 246, 239, 0.65);
+		color: var(--muted-2);
 		font-size: 0.9rem;
 	}
 
@@ -539,9 +550,9 @@ import Layout from '../layouts/Layout.astro';
 
 	.dashboard-preview {
 		border-radius: 18px;
-		border: 1px solid rgba(234, 246, 239, 0.12);
-		background: rgba(234, 246, 239, 0.05);
-		box-shadow: 0 30px 90px rgba(0, 0, 0, 0.45);
+		border: 1px solid rgba(11, 18, 32, 0.12);
+		background: rgba(255, 255, 255, 0.85);
+		box-shadow: 0 30px 90px rgba(2, 6, 23, 0.12);
 		width: 420px;
 		height: 310px;
 		padding: 18px;
@@ -554,35 +565,35 @@ import Layout from '../layouts/Layout.astro';
 		position: absolute;
 		inset: -40% -30% auto -30%;
 		height: 220px;
-		background: radial-gradient(circle at 30% 40%, rgba(16, 185, 129, 0.35), transparent 55%);
+		background: radial-gradient(circle at 30% 40%, rgba(16, 185, 129, 0.22), transparent 55%);
 		pointer-events: none;
 	}
 
 	.dashboard-header {
-		background: rgba(234, 246, 239, 0.08);
+		background: rgba(11, 18, 32, 0.04);
 		height: 42px;
 		border-radius: 12px;
 		margin-bottom: 16px;
-		border: 1px solid rgba(234, 246, 239, 0.1);
+		border: 1px solid rgba(11, 18, 32, 0.08);
 	}
 
 	.dashboard-content {
-		background: rgba(234, 246, 239, 0.06);
+		background: rgba(11, 18, 32, 0.03);
 		height: 190px;
 		border-radius: 12px;
 		margin-bottom: 14px;
-		border: 1px solid rgba(234, 246, 239, 0.1);
+		border: 1px solid rgba(11, 18, 32, 0.08);
 	}
 
 	.dashboard-sidebar {
-		background: rgba(16, 185, 129, 0.16);
+		background: rgba(16, 185, 129, 0.12);
 		width: 90px;
 		height: 210px;
 		border-radius: 12px;
 		position: absolute;
 		right: 18px;
 		top: 70px;
-		border: 1px solid rgba(16, 185, 129, 0.3);
+		border: 1px solid rgba(16, 185, 129, 0.22);
 	}
 
 	.features,
@@ -591,6 +602,14 @@ import Layout from '../layouts/Layout.astro';
 	.pricing,
 	.faq {
 		padding: 72px 0;
+	}
+
+	.features,
+	.pricing,
+	.faq {
+		background: rgba(248, 250, 252, 0.85);
+		border-top: 1px solid rgba(11, 18, 32, 0.06);
+		border-bottom: 1px solid rgba(11, 18, 32, 0.06);
 	}
 
 	.features-grid {
@@ -603,9 +622,9 @@ import Layout from '../layouts/Layout.astro';
 		grid-column: span 6;
 		padding: 22px 20px;
 		border-radius: 18px;
-		border: 1px solid rgba(234, 246, 239, 0.1);
-		background: rgba(234, 246, 239, 0.04);
-		box-shadow: 0 20px 70px rgba(0, 0, 0, 0.35);
+		border: 1px solid rgba(11, 18, 32, 0.1);
+		background: #ffffff;
+		box-shadow: 0 18px 60px rgba(2, 6, 23, 0.08);
 	}
 
 	.feature-icon {
@@ -614,8 +633,8 @@ import Layout from '../layouts/Layout.astro';
 		display: grid;
 		place-items: center;
 		border-radius: 14px;
-		background: rgba(16, 185, 129, 0.16);
-		border: 1px solid rgba(16, 185, 129, 0.35);
+		background: rgba(16, 185, 129, 0.12);
+		border: 1px solid rgba(16, 185, 129, 0.22);
 		margin-bottom: 14px;
 		font-size: 1.2rem;
 	}
@@ -627,7 +646,7 @@ import Layout from '../layouts/Layout.astro';
 	}
 
 	.feature-card p {
-		color: rgba(234, 246, 239, 0.72);
+		color: var(--muted);
 		line-height: 1.6;
 	}
 
@@ -644,8 +663,8 @@ import Layout from '../layouts/Layout.astro';
 		grid-column: span 4;
 		padding: 22px 20px;
 		border-radius: 18px;
-		border: 1px solid rgba(234, 246, 239, 0.1);
-		background: rgba(234, 246, 239, 0.04);
+		border: 1px solid rgba(11, 18, 32, 0.1);
+		background: #ffffff;
 	}
 
 	.solution-card h3,
@@ -656,7 +675,7 @@ import Layout from '../layouts/Layout.astro';
 
 	.solution-card p,
 	.security-card p {
-		color: rgba(234, 246, 239, 0.72);
+		color: var(--muted);
 		line-height: 1.6;
 	}
 
@@ -664,23 +683,23 @@ import Layout from '../layouts/Layout.astro';
 		grid-column: span 4;
 		padding: 26px 22px;
 		border-radius: 20px;
-		border: 1px solid rgba(234, 246, 239, 0.1);
-		background: rgba(234, 246, 239, 0.04);
+		border: 1px solid rgba(11, 18, 32, 0.1);
+		background: #ffffff;
 		position: relative;
 	}
 
 	.pricing-card.featured {
-		border-color: rgba(16, 185, 129, 0.5);
-		background: linear-gradient(180deg, rgba(16, 185, 129, 0.14), rgba(234, 246, 239, 0.04));
+		border-color: rgba(22, 163, 74, 0.28);
+		background: linear-gradient(180deg, rgba(16, 185, 129, 0.14), #ffffff);
 	}
 
 	.pricing-badge {
 		position: absolute;
 		top: 14px;
 		right: 14px;
-		background: rgba(16, 185, 129, 0.18);
-		border: 1px solid rgba(16, 185, 129, 0.35);
-		color: #a7f3d0;
+		background: rgba(16, 185, 129, 0.12);
+		border: 1px solid rgba(16, 185, 129, 0.22);
+		color: rgba(22, 163, 74, 0.95);
 		padding: 6px 10px;
 		border-radius: 999px;
 		font-size: 0.75rem;
@@ -696,13 +715,13 @@ import Layout from '../layouts/Layout.astro';
 		font-size: 2.4rem;
 		font-weight: 850;
 		letter-spacing: -0.04em;
-		color: #eaf6ef;
+		color: var(--text);
 		margin-bottom: 18px;
 	}
 
 	.price span {
 		font-size: 0.95rem;
-		color: rgba(234, 246, 239, 0.65);
+		color: var(--muted-2);
 		font-weight: 600;
 		letter-spacing: 0;
 	}
@@ -715,8 +734,8 @@ import Layout from '../layouts/Layout.astro';
 
 	.pricing-features li {
 		padding: 10px 0;
-		color: rgba(234, 246, 239, 0.75);
-		border-bottom: 1px solid rgba(234, 246, 239, 0.08);
+		color: var(--muted);
+		border-bottom: 1px solid rgba(11, 18, 32, 0.08);
 	}
 
 	.faq-grid {
@@ -728,15 +747,15 @@ import Layout from '../layouts/Layout.astro';
 
 	.faq-item {
 		border-radius: 16px;
-		border: 1px solid rgba(234, 246, 239, 0.1);
-		background: rgba(234, 246, 239, 0.04);
+		border: 1px solid rgba(11, 18, 32, 0.1);
+		background: #ffffff;
 		padding: 14px 14px;
 	}
 
 	.faq-item summary {
 		cursor: pointer;
 		font-weight: 700;
-		color: rgba(234, 246, 239, 0.92);
+		color: rgba(11, 18, 32, 0.92);
 		list-style: none;
 	}
 
@@ -746,7 +765,7 @@ import Layout from '../layouts/Layout.astro';
 
 	.faq-body {
 		margin-top: 10px;
-		color: rgba(234, 246, 239, 0.72);
+		color: var(--muted);
 		line-height: 1.6;
 	}
 
@@ -758,9 +777,9 @@ import Layout from '../layouts/Layout.astro';
 	.cta-content {
 		padding: 34px 24px;
 		border-radius: 22px;
-		border: 1px solid rgba(16, 185, 129, 0.22);
-		background: radial-gradient(900px 300px at 30% 0%, rgba(16, 185, 129, 0.22), transparent 60%), rgba(234, 246, 239, 0.04);
-		box-shadow: 0 28px 90px rgba(0, 0, 0, 0.5);
+		border: 1px solid rgba(16, 185, 129, 0.18);
+		background: radial-gradient(900px 300px at 30% 0%, rgba(16, 185, 129, 0.18), transparent 60%), #ffffff;
+		box-shadow: 0 28px 90px rgba(2, 6, 23, 0.08);
 	}
 
 	.cta-content h2 {
@@ -771,7 +790,7 @@ import Layout from '../layouts/Layout.astro';
 
 	.cta-content p {
 		font-size: 1.05rem;
-		color: rgba(234, 246, 239, 0.75);
+		color: var(--muted);
 		margin-bottom: 18px;
 		max-width: 760px;
 		margin-left: auto;
@@ -779,7 +798,8 @@ import Layout from '../layouts/Layout.astro';
 	}
 
 	.footer {
-		border-top: 1px solid rgba(234, 246, 239, 0.08);
+		border-top: 1px solid rgba(11, 18, 32, 0.08);
+		background: #ffffff;
 		padding: 48px 0 22px;
 	}
 
@@ -792,11 +812,11 @@ import Layout from '../layouts/Layout.astro';
 
 	.footer-section h4 {
 		margin-bottom: 12px;
-		color: #eaf6ef;
+		color: var(--text);
 	}
 
 	.footer-section p {
-		color: rgba(234, 246, 239, 0.68);
+		color: var(--muted);
 		margin-bottom: 14px;
 		max-width: 34ch;
 	}
@@ -810,13 +830,13 @@ import Layout from '../layouts/Layout.astro';
 	}
 
 	.footer-section a {
-		color: rgba(234, 246, 239, 0.7);
+		color: var(--muted);
 		text-decoration: none;
 		transition: color 0.15s ease;
 	}
 
 	.footer-section a:hover {
-		color: #eaf6ef;
+		color: var(--text);
 	}
 
 	.social-links {
@@ -827,24 +847,24 @@ import Layout from '../layouts/Layout.astro';
 	.social-links a {
 		width: 40px;
 		height: 40px;
-		background: rgba(234, 246, 239, 0.05);
-		border: 1px solid rgba(234, 246, 239, 0.12);
+		background: rgba(2, 6, 23, 0.03);
+		border: 1px solid rgba(11, 18, 32, 0.08);
 		border-radius: 12px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		text-decoration: none;
-		color: rgba(234, 246, 239, 0.9);
+		color: rgba(11, 18, 32, 0.85);
 		transition: background 0.15s ease, border-color 0.15s ease;
 	}
 
 	.social-links a:hover {
-		background: rgba(16, 185, 129, 0.14);
-		border-color: rgba(16, 185, 129, 0.35);
+		background: rgba(16, 185, 129, 0.12);
+		border-color: rgba(16, 185, 129, 0.22);
 	}
 
 	.footer-bottom {
-		border-top: 1px solid rgba(234, 246, 239, 0.08);
+		border-top: 1px solid rgba(11, 18, 32, 0.08);
 		padding-top: 16px;
 		display: flex;
 		justify-content: space-between;
@@ -854,7 +874,7 @@ import Layout from '../layouts/Layout.astro';
 	}
 
 	.footer-bottom p {
-		color: rgba(234, 246, 239, 0.62);
+		color: var(--muted-2);
 	}
 
 	.footer-legal {
