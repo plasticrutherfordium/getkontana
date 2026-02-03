@@ -1,0 +1,11 @@
+{
+  "name": "getkontana",
+  "compatibility_date": "2026-02-03",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "kontana_waitlist",
+      "database_id": "5dc516af-fba3-4e28-b9b1-156b2cfa84b2"
+    }
+  ]
+}
