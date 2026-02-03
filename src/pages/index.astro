@@ -225,8 +225,12 @@ import Layout from '../layouts/Layout.astro';
 			<div class="container">
 				<div class="cta-content">
 					<h2>Get notified when Kontana launches</h2>
-					<p>Want a free, on-device cash tracker that helps you rely less on banks? Join the waitlist and we’ll email you when it’s ready.</p>
-					<a href="mailto:hello@getkontana.com?subject=Kontana%20Waitlist" class="btn btn-primary btn-large">Join via email</a>
+					<p>Want a free, on-device cash tracker that helps you rely less on banks? Join the waitlist and we'll email you when it's ready.</p>
+					<form id="waitlist-form">
+						<input type="email" name="email" placeholder="your@email.com" required />
+						<div class="cf-turnstile" data-sitekey="0x4AAAAAACXPTpqdso7QmAhX"></div>
+						<button type="submit" class="btn btn-primary btn-large">Join waitlist</button>
+					</form>
 				</div>
 			</div>
 		</section>
@@ -281,6 +285,27 @@ import Layout from '../layouts/Layout.astro';
 			</div>
 		</div>
 	</footer>
+	<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+	<script>
+		document.getElementById('waitlist-form').addEventListener('submit', async (e) => {
+			e.preventDefault();
+			const formData = new FormData(e.target);
+			const email = formData.get('email');
+			const tokenInput = document.querySelector('input[name="cf-turnstile-response"]');
+			const turnstileToken = tokenInput ? tokenInput.value : '';
+			const res = await fetch('/api/waitlist', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ email, turnstileToken }),
+			});
+			const result = await res.json();
+			if (result.ok) {
+				e.target.innerHTML = '<p style="color: var(--accent);">Thanks! You’re on the waitlist.</p>';
+			} else {
+				alert('Something went wrong. Please try again.');
+			}
+		});
+	</script>
 </Layout>
 
 <style>
