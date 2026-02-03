@@ -1,0 +1,115 @@
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+html {
+	scroll-behavior: smooth;
+}
+
+body {
+	font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+	line-height: 1.5;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	--page: #ffffff;
+	--text: #0b1220;
+	--muted: rgba(11, 18, 32, 0.72);
+	--muted-2: rgba(11, 18, 32, 0.58);
+	--border: rgba(11, 18, 32, 0.12);
+	--surface: rgba(255, 255, 255, 0.9);
+	--surface-2: rgba(248, 250, 252, 0.9);
+	--nav: rgba(255, 255, 255, 0.82);
+	--hero-base: #ffffff;
+	--hero-end: #f6fff9;
+	--shadow: 0 14px 45px rgba(2, 6, 23, 0.08);
+	--accent: #16a34a;
+	--accent-2: #22c55e;
+	--accent-3: #34d399;
+	--accent-text: #052e16;
+	color: var(--text);
+	background: var(--page);
+}
+
+ .container {
+	max-width: 1000px;
+	margin: 0 auto;
+	padding: 0 24px;
+}
+
+.container--legal {
+	max-width: 900px;
+}
+
+a {
+	color: inherit;
+}
+
+.btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	padding: 12px 18px;
+	text-decoration: none;
+	border-radius: 12px;
+	font-weight: 650;
+	letter-spacing: 0.2px;
+	transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+	cursor: pointer;
+	border: 1px solid var(--border);
+	background: var(--surface);
+}
+
+.btn:hover {
+	transform: translateY(-1px);
+	box-shadow: var(--shadow);
+}
+
+.btn-primary {
+	border-color: rgba(22, 163, 74, 0.35);
+	background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 45%, var(--accent-3) 100%);
+	color: var(--accent-text);
+	box-shadow: 0 18px 50px rgba(22, 163, 74, 0.18);
+}
+
+.btn-primary:hover {
+	box-shadow: 0 24px 70px rgba(22, 163, 74, 0.22);
+}
+
+.btn-secondary {
+	background: var(--surface);
+	border-color: var(--border);
+	color: var(--text);
+}
+
+.btn-outline {
+	background: transparent;
+	border-color: rgba(22, 163, 74, 0.35);
+	color: var(--accent);
+}
+
+.btn-large {
+	padding: 14px 22px;
+	font-size: 16px;
+}
+
+html[data-theme='dark'] {
+	color-scheme: dark;
+}
+
+html[data-theme='dark'] body {
+	--page: #0b111a;
+	--text: #eef2f8;
+	--muted: rgba(238, 242, 248, 0.68);
+	--muted-2: rgba(238, 242, 248, 0.5);
+	--border: rgba(148, 163, 184, 0.25);
+	--surface: rgba(15, 23, 42, 0.92);
+	--surface-2: rgba(8, 12, 22, 0.95);
+	--nav: rgba(8, 12, 22, 0.8);
+	--hero-base: #0b111a;
+	--hero-end: #0f1726;
+	--shadow: 0 16px 60px rgba(3, 7, 18, 0.6);
+	--accent-text: #052e16;
+}

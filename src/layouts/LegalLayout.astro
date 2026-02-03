@@ -1,0 +1,285 @@
+---
+import Layout from './Layout.astro';
+
+export interface Props {
+	title: string;
+	eyebrow: string;
+	heading: string;
+	lede: string;
+	updated: string;
+	secondaryLinkHref: string;
+	secondaryLinkLabel: string;
+}
+
+const {
+	title,
+	eyebrow,
+	heading,
+	lede,
+	updated,
+	secondaryLinkHref,
+	secondaryLinkLabel,
+} = Astro.props;
+---
+
+<Layout title={title}>
+	<nav class="navbar">
+		<div class="container container--legal nav-container">
+			<div class="nav-logo">
+				<a href="/" aria-label="Kontana home">
+					<img class="nav-logo-img" src="/kontana-logo.svg" alt="Kontana" decoding="async" />
+				</a>
+			</div>
+			<div class="nav-links">
+				<a href={secondaryLinkHref}>{secondaryLinkLabel}</a>
+				<a href="/" class="btn btn-outline">Back to home</a>
+			</div>
+			<button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark theme">
+				<span class="theme-toggle-label">🌙</span>
+			</button>
+		</div>
+	</nav>
+
+	<main class="legal">
+		<header class="legal-hero">
+			<div class="container container--legal">
+				<p class="eyebrow">{eyebrow}</p>
+				<h1>{heading}</h1>
+				<p class="lede">{lede}</p>
+				<p class="updated">Last updated: {updated}</p>
+			</div>
+		</header>
+
+		<section class="legal-body">
+			<div class="container container--legal">
+				<slot />
+			</div>
+		</section>
+	</main>
+
+	<footer class="footer">
+		<div class="container container--legal footer-content">
+			<p>&copy; 2026 Kontana. All rights reserved.</p>
+			<div class="footer-legal">
+				<a href="/privacy">Privacy Notice</a>
+				<a href="/terms">Terms of Service</a>
+			</div>
+		</div>
+	</footer>
+</Layout>
+
+<script>
+	const themeToggle = document.getElementById('theme-toggle');
+	const themeLabel = themeToggle?.querySelector('.theme-toggle-label');
+	const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)')?.matches ?? false;
+	const storedTheme = localStorage.getItem('theme');
+	const initialTheme = storedTheme === 'light' || storedTheme === 'dark'
+		? storedTheme
+		: prefersDark
+			? 'dark'
+			: 'light';
+
+	const setTheme = (theme) => {
+		document.documentElement.dataset.theme = theme;
+		localStorage.setItem('theme', theme);
+		if (themeLabel) themeLabel.textContent = theme === 'dark' ? '☀️' : '🌙';
+		if (themeToggle) {
+			themeToggle.setAttribute(
+				'aria-label',
+				theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'
+			);
+		}
+	};
+
+	setTheme(initialTheme);
+
+	themeToggle?.addEventListener('click', () => {
+		const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+		setTheme(nextTheme);
+	});
+</script>
+
+<style>
+	.legal {
+		line-height: 1.8;
+	}
+
+	a {
+		text-decoration: none;
+	}
+
+	.navbar {
+		position: sticky;
+		top: 0;
+		z-index: 10;
+		background: var(--nav);
+		border-bottom: 1px solid var(--border);
+		backdrop-filter: blur(14px);
+	}
+
+	.nav-container {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		height: 70px;
+	}
+
+	.nav-logo-img {
+		height: 26px;
+		width: auto;
+		display: block;
+	}
+
+	.nav-links {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+		color: var(--muted);
+	}
+
+	.btn {
+		padding: 10px 16px;
+	}
+
+	.theme-toggle {
+		border-radius: 999px;
+		padding: 6px 12px;
+		border: 1px solid var(--border);
+		background: var(--surface);
+		color: var(--text);
+		font-size: 0.85rem;
+		font-weight: 650;
+		cursor: pointer;
+		transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+	}
+
+	.theme-toggle:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 14px 40px rgba(2, 6, 23, 0.18);
+	}
+
+	.legal-hero {
+		padding: 84px 0 32px;
+		background: radial-gradient(800px 300px at 10% 0%, rgba(22, 163, 74, 0.12), transparent 60%),
+			linear-gradient(180deg, var(--surface-2) 0%, var(--page) 100%);
+		border-bottom: 1px solid rgba(11, 18, 32, 0.06);
+	}
+
+	.eyebrow {
+		text-transform: uppercase;
+		font-size: 0.8rem;
+		letter-spacing: 0.18em;
+		color: var(--accent);
+		font-weight: 700;
+	}
+
+	.legal-hero h1 {
+		font-size: 3rem;
+		letter-spacing: -0.03em;
+		margin: 10px 0 12px;
+	}
+
+	.lede {
+		font-size: 1.15rem;
+		color: var(--muted);
+		max-width: 62ch;
+	}
+
+	.updated {
+		margin-top: 10px;
+		color: var(--muted);
+		font-size: 0.95rem;
+	}
+
+	.legal-body {
+		padding: 32px 0 84px;
+		color: var(--text);
+	}
+
+	.legal-body .container--legal {
+		background: var(--surface-2);
+		border: 1px solid var(--border);
+		border-radius: 20px;
+		box-shadow: var(--shadow);
+		padding: 36px 44px;
+	}
+
+	.legal-body h2 {
+		font-size: 1.6rem;
+		margin: 44px 0 14px;
+		letter-spacing: -0.02em;
+		color: var(--text);
+	}
+
+	.legal-body h2:first-child {
+		margin-top: 0;
+	}
+
+	.legal-body p {
+		margin-bottom: 18px;
+		color: var(--text);
+		font-size: 1.05rem;
+	}
+
+	:global(.legal-body ul) {
+		list-style: disc outside !important;
+		padding-left: 1.6rem !important;
+		margin: 12px 0 30px 0 !important;
+		color: var(--text);
+		font-size: 1.05rem;
+	}
+
+	:global(.legal-body li + li) {
+		margin-top: 10px;
+	}
+
+	.contact {
+		font-weight: 600;
+		color: var(--text);
+	}
+
+	:global(.legal-body strong) {
+		color: var(--text);
+		font-weight: 650;
+	}
+
+	.footer {
+		border-top: 1px solid var(--border);
+		background: var(--surface);
+		padding: 24px 0 32px;
+	}
+
+	.footer-content {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 16px;
+		color: var(--muted);
+		font-size: 0.95rem;
+	}
+
+	.footer-legal {
+		display: flex;
+		gap: 16px;
+	}
+
+	@media (max-width: 720px) {
+		.nav-links {
+			flex-direction: column;
+			align-items: flex-end;
+		}
+
+		.legal-hero h1 {
+			font-size: 2.3rem;
+		}
+
+		.footer-content {
+			flex-direction: column;
+			align-items: flex-start;
+		}
+
+		.legal-body .container--legal {
+			padding: 26px;
+		}
+	}
+</style>
