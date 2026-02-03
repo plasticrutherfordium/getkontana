@@ -14,10 +14,13 @@ import Layout from '../layouts/Layout.astro';
 				<li><a href="#features">Features</a></li>
 				<li><a href="#how">How it works</a></li>
 				<li><a href="#privacy">Privacy</a></li>
-				<li><a href="#faq">FAQ</a></li>
 				<li><a href="#free">Free</a></li>
+				<li><a href="#faq">FAQ</a></li>
 				<li><a href="#waitlist" class="btn-primary">Join waitlist</a></li>
 			</ul>
+			<button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark theme">
+				<span class="theme-toggle-label">🌙</span>
+			</button>
 			<div class="nav-toggle">
 				<span></span>
 				<span></span>
@@ -248,45 +251,47 @@ import Layout from '../layouts/Layout.astro';
 						<a href="#" aria-label="GitHub">⚡</a>
 					</div>
 				</div>
-				<div class="footer-section">
-					<h4>Product</h4>
-					<ul>
-						<li><a href="#features">Features</a></li>
-						<li><a href="#free">Free</a></li>
-						<li><a href="#how">How it works</a></li>
-						<li><a href="#">API</a></li>
-					</ul>
-				</div>
-				<div class="footer-section">
-					<h4>Company</h4>
-					<ul>
-						<li><a href="#privacy">Privacy</a></li>
-						<li><a href="#">Blog</a></li>
-						<li><a href="#">Careers</a></li>
-						<li><a href="#">Press</a></li>
-					</ul>
-				</div>
-				<div class="footer-section">
-					<h4>Support</h4>
-					<ul>
-						<li><a href="#">Help Center</a></li>
-						<li><a href="#">Documentation</a></li>
-						<li><a href="#">Community</a></li>
-						<li><a href="#waitlist">Waitlist</a></li>
-					</ul>
-				</div>
-			</div>
-			<div class="footer-bottom">
-				<p>&copy; 2026 Kontana. All rights reserved.</p>
 				<div class="footer-legal">
 					<a href="#">Privacy Policy</a>
 					<a href="#">Terms of Service</a>
 				</div>
 			</div>
+			<div class="footer-bottom">
+				<p>&copy; 2026 Kontana. All rights reserved.</p>
+			</div>
 		</div>
 	</footer>
 	<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 	<script>
+		const themeToggle = document.getElementById('theme-toggle');
+		const themeLabel = themeToggle?.querySelector('.theme-toggle-label');
+		const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)')?.matches ?? false;
+		const storedTheme = localStorage.getItem('theme');
+		const initialTheme = storedTheme === 'light' || storedTheme === 'dark'
+			? storedTheme
+			: prefersDark
+				? 'dark'
+				: 'light';
+
+		const setTheme = (theme) => {
+			document.documentElement.dataset.theme = theme;
+			localStorage.setItem('theme', theme);
+			if (themeLabel) themeLabel.textContent = theme === 'dark' ? '☀️' : '🌙';
+			if (themeToggle) {
+				themeToggle.setAttribute(
+					'aria-label',
+					theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'
+				);
+			}
+		};
+
+		setTheme(initialTheme);
+
+		themeToggle?.addEventListener('click', () => {
+			const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+			setTheme(nextTheme);
+		});
+
 		document.getElementById('waitlist-form').addEventListener('submit', async (e) => {
 			e.preventDefault();
 			const formData = new FormData(e.target);
@@ -333,19 +338,42 @@ import Layout from '../layouts/Layout.astro';
 		line-height: 1.5;
 		-webkit-font-smoothing: antialiased;
 		-moz-osx-font-smoothing: grayscale;
+		--page: #ffffff;
 		--text: #0b1220;
 		--muted: rgba(11, 18, 32, 0.72);
 		--muted-2: rgba(11, 18, 32, 0.58);
 		--border: rgba(11, 18, 32, 0.12);
 		--surface: rgba(255, 255, 255, 0.9);
 		--surface-2: rgba(248, 250, 252, 0.9);
+		--nav: rgba(255, 255, 255, 0.82);
+		--hero-base: #ffffff;
+		--hero-end: #f6fff9;
 		--shadow: 0 14px 45px rgba(2, 6, 23, 0.08);
 		--accent: #16a34a;
 		--accent-2: #22c55e;
 		--accent-3: #34d399;
 		--accent-text: #052e16;
 		color: var(--text);
-		background: #ffffff;
+		background: var(--page);
+	}
+
+	:global(html[data-theme='dark']) {
+		color-scheme: dark;
+	}
+
+	:global(html[data-theme='dark'] body) {
+		--page: #0b111a;
+		--text: #eef2f8;
+		--muted: rgba(238, 242, 248, 0.68);
+		--muted-2: rgba(238, 242, 248, 0.5);
+		--border: rgba(148, 163, 184, 0.25);
+		--surface: rgba(15, 23, 42, 0.92);
+		--surface-2: rgba(8, 12, 22, 0.95);
+		--nav: rgba(8, 12, 22, 0.8);
+		--hero-base: #0b111a;
+		--hero-end: #0f1726;
+		--shadow: 0 16px 60px rgba(3, 7, 18, 0.6);
+		--accent-text: #052e16;
 	}
 
 	.container {
@@ -371,7 +399,7 @@ import Layout from '../layouts/Layout.astro';
 		transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease;
 		cursor: pointer;
 		border: 1px solid var(--border);
-		background: #ffffff;
+		background: var(--surface);
 	}
 
 	.btn:hover {
@@ -391,7 +419,7 @@ import Layout from '../layouts/Layout.astro';
 	}
 
 	.btn-secondary {
-		background: #ffffff;
+		background: var(--surface);
 		border-color: var(--border);
 		color: var(--text);
 	}
@@ -433,7 +461,7 @@ import Layout from '../layouts/Layout.astro';
 		position: sticky;
 		top: 0;
 		z-index: 1000;
-		background: rgba(255, 255, 255, 0.82);
+		background: var(--nav);
 		border-bottom: 1px solid var(--border);
 		backdrop-filter: blur(16px);
 	}
@@ -487,6 +515,24 @@ import Layout from '../layouts/Layout.astro';
 		color: var(--accent-text);
 	}
 
+	.theme-toggle {
+		margin-left: 10px;
+		border-radius: 999px;
+		padding: 6px 12px;
+		border: 1px solid var(--border);
+		background: var(--surface);
+		color: var(--text);
+		font-size: 0.85rem;
+		font-weight: 650;
+		cursor: pointer;
+		transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+	}
+
+	.theme-toggle:hover {
+		transform: translateY(-1px);
+		box-shadow: var(--shadow);
+	}
+
 	.nav-toggle {
 		display: none;
 		flex-direction: column;
@@ -506,7 +552,7 @@ import Layout from '../layouts/Layout.astro';
 		background:
 			radial-gradient(900px 420px at 20% 10%, rgba(34, 197, 94, 0.18), transparent 55%),
 			radial-gradient(900px 420px at 85% 0%, rgba(16, 185, 129, 0.14), transparent 55%),
-			linear-gradient(180deg, #ffffff 0%, #f6fff9 100%);
+			linear-gradient(180deg, var(--hero-base) 0%, var(--hero-end) 100%);
 		border-bottom: 1px solid rgba(11, 18, 32, 0.06);
 	}
 
@@ -559,7 +605,7 @@ import Layout from '../layouts/Layout.astro';
 		padding: 14px 14px;
 		border-radius: 14px;
 		border: 1px solid rgba(11, 18, 32, 0.1);
-		background: rgba(255, 255, 255, 0.9);
+		background: var(--surface);
 	}
 
 	.stat-number {
@@ -584,7 +630,7 @@ import Layout from '../layouts/Layout.astro';
 	.dashboard-preview {
 		border-radius: 18px;
 		border: 1px solid rgba(11, 18, 32, 0.12);
-		background: rgba(255, 255, 255, 0.85);
+		background: var(--surface);
 		box-shadow: 0 30px 90px rgba(2, 6, 23, 0.12);
 		width: 420px;
 		height: 310px;
@@ -640,7 +686,7 @@ import Layout from '../layouts/Layout.astro';
 	.features,
 	.pricing,
 	.faq {
-		background: rgba(248, 250, 252, 0.85);
+		background: var(--surface-2);
 		border-top: 1px solid rgba(11, 18, 32, 0.06);
 		border-bottom: 1px solid rgba(11, 18, 32, 0.06);
 	}
@@ -658,7 +704,7 @@ import Layout from '../layouts/Layout.astro';
 		padding: 22px 20px;
 		border-radius: 18px;
 		border: 1px solid rgba(11, 18, 32, 0.1);
-		background: #ffffff;
+		background: var(--surface);
 		box-shadow: 0 18px 60px rgba(2, 6, 23, 0.08);
 	}
 
@@ -701,7 +747,7 @@ import Layout from '../layouts/Layout.astro';
 		padding: 22px 20px;
 		border-radius: 18px;
 		border: 1px solid rgba(11, 18, 32, 0.1);
-		background: #ffffff;
+		background: var(--surface);
 	}
 
 	.solution-card h3,
@@ -721,13 +767,13 @@ import Layout from '../layouts/Layout.astro';
 		padding: 26px 22px;
 		border-radius: 20px;
 		border: 1px solid rgba(11, 18, 32, 0.1);
-		background: #ffffff;
+		background: var(--surface);
 		position: relative;
 	}
 
 	.pricing-card.featured {
 		border-color: rgba(22, 163, 74, 0.28);
-		background: linear-gradient(180deg, rgba(16, 185, 129, 0.14), #ffffff);
+		background: linear-gradient(180deg, rgba(16, 185, 129, 0.14), var(--surface));
 	}
 
 	.pricing-badge {
@@ -785,14 +831,14 @@ import Layout from '../layouts/Layout.astro';
 	.faq-item {
 		border-radius: 16px;
 		border: 1px solid rgba(11, 18, 32, 0.1);
-		background: #ffffff;
+		background: var(--surface);
 		padding: 14px 14px;
 	}
 
 	.faq-item summary {
 		cursor: pointer;
 		font-weight: 700;
-		color: rgba(11, 18, 32, 0.92);
+		color: var(--text);
 		list-style: none;
 	}
 
@@ -815,7 +861,7 @@ import Layout from '../layouts/Layout.astro';
 		padding: 34px 24px;
 		border-radius: 22px;
 		border: 1px solid rgba(16, 185, 129, 0.18);
-		background: radial-gradient(900px 300px at 30% 0%, rgba(16, 185, 129, 0.18), transparent 60%), #ffffff;
+		background: radial-gradient(900px 300px at 30% 0%, rgba(16, 185, 129, 0.18), transparent 60%), var(--surface);
 		box-shadow: 0 28px 90px rgba(2, 6, 23, 0.08);
 		max-width: 1000px;
 		margin: 0 auto;
@@ -836,17 +882,50 @@ import Layout from '../layouts/Layout.astro';
 		margin-right: auto;
 	}
 
+	#waitlist-form {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 14px;
+	}
+
+	#waitlist-form input[type='email'] {
+		width: min(560px, 100%);
+		padding: 16px 18px;
+		font-size: 1.05rem;
+		border-radius: 14px;
+		border: 1px solid rgba(11, 18, 32, 0.16);
+		background: var(--surface-2);
+		box-shadow: 0 10px 30px rgba(2, 6, 23, 0.06);
+		transition: border-color 0.15s ease, box-shadow 0.15s ease;
+	}
+
+	#waitlist-form input[type='email']::placeholder {
+		color: var(--muted-2);
+	}
+
+	#waitlist-form input[type='email']:focus {
+		outline: none;
+		border-color: rgba(22, 163, 74, 0.5);
+		box-shadow: 0 14px 40px rgba(22, 163, 74, 0.14);
+	}
+
+	#waitlist-form .btn {
+		width: min(320px, 100%);
+	}
+
+
 	.footer {
 		border-top: 1px solid rgba(11, 18, 32, 0.08);
-		background: #ffffff;
-		padding: 48px 0 22px;
+		background: var(--surface);
+		padding: 42px 0 52px;
 	}
 
 	.footer-content {
-		display: grid;
-		grid-template-columns: 2fr 1fr 1fr 1fr;
-		gap: 28px;
-		margin-bottom: 22px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 24px;
 		max-width: 1000px;
 		margin-left: auto;
 		margin-right: auto;
@@ -859,26 +938,7 @@ import Layout from '../layouts/Layout.astro';
 
 	.footer-section p {
 		color: var(--muted);
-		margin-bottom: 14px;
-		max-width: 34ch;
-	}
-
-	.footer-section ul {
-		list-style: none;
-	}
-
-	.footer-section ul li {
-		margin-bottom: 10px;
-	}
-
-	.footer-section a {
-		color: var(--muted);
-		text-decoration: none;
-		transition: color 0.15s ease;
-	}
-
-	.footer-section a:hover {
-		color: var(--text);
+		max-width: 44ch;
 	}
 
 	.social-links {
@@ -889,14 +949,14 @@ import Layout from '../layouts/Layout.astro';
 	.social-links a {
 		width: 40px;
 		height: 40px;
-		background: rgba(2, 6, 23, 0.03);
-		border: 1px solid rgba(11, 18, 32, 0.08);
+		background: var(--surface);
+		border: 1px solid var(--border);
 		border-radius: 12px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		text-decoration: none;
-		color: rgba(11, 18, 32, 0.85);
+		color: var(--text);
 		transition: background 0.15s ease, border-color 0.15s ease;
 	}
 
@@ -906,16 +966,10 @@ import Layout from '../layouts/Layout.astro';
 	}
 
 	.footer-bottom {
-		border-top: 1px solid rgba(11, 18, 32, 0.08);
-		padding-top: 16px;
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		gap: 12px;
-		flex-wrap: wrap;
-		max-width: 1000px;
-		margin-left: auto;
-		margin-right: auto;
+		margin-top: 22px;
+		border-top: 1px solid var(--border);
+		padding-top: 14px;
+		color: var(--muted-2);
 	}
 
 	.footer-bottom p {
@@ -924,11 +978,32 @@ import Layout from '../layouts/Layout.astro';
 
 	.footer-legal {
 		display: flex;
-		gap: 16px;
+		gap: 18px;
 		flex-wrap: wrap;
+		align-items: center;
+	}
+
+	.footer-legal a {
+		color: var(--muted);
+		text-decoration: none;
+		font-size: 0.95rem;
+		transition: color 0.15s ease;
+	}
+
+	.footer-legal a:hover {
+		color: var(--text);
 	}
 
 	@media (max-width: 900px) {
+		.footer-content {
+			flex-direction: column;
+			align-items: flex-start;
+		}
+
+		.footer-legal {
+			width: 100%;
+		}
+
 		.hero-container {
 			grid-template-columns: 1fr;
 			gap: 26px;
@@ -953,9 +1028,6 @@ import Layout from '../layouts/Layout.astro';
 			grid-column: span 12;
 		}
 
-		.footer-content {
-			grid-template-columns: 1fr 1fr;
-		}
 	}
 
 	@media (max-width: 768px) {
@@ -975,8 +1047,5 @@ import Layout from '../layouts/Layout.astro';
 			grid-template-columns: 1fr;
 		}
 
-		.footer-content {
-			grid-template-columns: 1fr;
-		}
 	}
 </style>
