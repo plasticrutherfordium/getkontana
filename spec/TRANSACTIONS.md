@@ -53,6 +53,9 @@ Row styling:
   - a different wallet is selected
   - a transaction is added/edited/deleted for that wallet
 
+## Wallet Row Behaviour
+- Wallet cards row scrolls horizontally and never shrinks the rest of the page.
+
 ## Running Balance
 - Running balance is computed per wallet and shown in the right-most `Balance` column.
 - Balance is neutral (not green/red).

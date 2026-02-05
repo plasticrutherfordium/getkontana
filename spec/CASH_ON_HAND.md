@@ -17,6 +17,7 @@ If there are no wallets:
 - Selector lists existing wallets.
 - Wallet cards can be dragged to reorder. The order persists and is shared with Transactions.
 - On mobile, the wallet cards row scrolls horizontally; cards do not shrink and the rest of the page remains full-width.
+- Wallet row should never cause the page content to shrink; only the wallet row scrolls horizontally.
 
 ## Cash Layout and Actions
 - Remove Cash header top-right wallet CTA button.

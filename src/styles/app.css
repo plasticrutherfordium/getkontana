@@ -56,12 +56,15 @@ html[data-theme='dark'] .app-sidebar {
 
 .page-title-wrap {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  width: 100%;
+  text-align: center;
 }
 
 .app-page-logo {
-  height: 26px;
+  height: 30px;
   width: auto;
   display: block;
 }
@@ -500,10 +503,12 @@ html[data-theme='dark'] .allocation-summary {
   gap: 10px;
   overflow-x: auto;
   padding-bottom: 4px;
+  flex-wrap: nowrap;
 }
 
 .wallet-card {
   min-width: 190px;
+  flex: 0 0 auto;
   min-height: 108px;
   border: 1px solid var(--border);
   border-radius: 14px;
