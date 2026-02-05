@@ -100,16 +100,16 @@ html[data-theme='dark'] {
 }
 
 html[data-theme='dark'] body {
-	--page: #0b111a;
-	--text: #eef2f8;
-	--muted: rgba(238, 242, 248, 0.68);
-	--muted-2: rgba(238, 242, 248, 0.5);
-	--border: rgba(148, 163, 184, 0.25);
-	--surface: rgba(15, 23, 42, 0.92);
-	--surface-2: rgba(8, 12, 22, 0.95);
-	--nav: rgba(8, 12, 22, 0.8);
-	--hero-base: #0b111a;
-	--hero-end: #0f1726;
+	--page: #0f1519;
+	--text: #e8eef2;
+	--muted: rgba(232, 238, 242, 0.72);
+	--muted-2: rgba(232, 238, 242, 0.52);
+	--border: rgba(148, 163, 184, 0.2);
+	--surface: rgba(18, 26, 33, 0.92);
+	--surface-2: rgba(12, 19, 26, 0.94);
+	--nav: rgba(12, 19, 26, 0.84);
+	--hero-base: #0f1519;
+	--hero-end: #111c1d;
 	--shadow: 0 16px 60px rgba(3, 7, 18, 0.6);
 	--accent-text: #052e16;
 }

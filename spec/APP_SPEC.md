@@ -1,36 +1,47 @@
 # Kontana App Specification (MVP)
 
+## Table of Contents
+- [Scope](#scope)
+- [Global Rules](#global-rules)
+- [Screens](#screens)
+- [Supporting Specs](#supporting-specs)
+- [Non-goals](#non-goals)
+
 ## Scope
-The MVP is a local-first cash-on-hand tracker that manages denominations and suggests exact-payment breakdowns.
+Kontana is a local-first cash wallet tracker for physical cash, denomination counts, and transactions.
+
+## Global Rules
+- Maximum wallets: 4 total across the whole app.
+- Wallet shape: `{ id, name, currency, denominations, transactions }`.
+- Currency catalogue is fixed to: `EUR USD GBP CLP SEK CHF HUF DKK NOK PLN CAD ARS PEN BRL MXN CZK RON CNY JPY INR SGD KRW EGP ZAR NGN XOF AUD NZD`.
+- Denominations come from one canonical mapping keyed by currency.
+- Wallet expected balance is transaction-derived.
+- Denominations total must always reconcile to expected balance.
+- All cash movement must be represented by transactions (`incoming`, `outgoing`, `transfer`, `loss`, `adjustment`, `denominations_edited`).
+- Direct denomination editing is allowed only in controlled Edit Mode.
+- Edit Mode and payment allocation enforce exact reconciliation; no partial save.
+- Edit Mode and allocation enforce exact reconciliation; no partial save.
+- All confirmations use in-app modals (no browser `confirm`/`prompt`/`alert`).
+- Transactions older than 30 days are auto-deleted.
+- Transactions are viewed per wallet (no "all wallets" view).
+- Retention banner is dismissible for 5 days (persisted locally).
+- Revert is allowed only for the latest transaction per wallet.
+- App sidebar brand uses logo only (no surrounding pill/callout copy).
 
 ## Screens
-A) Cash On Hand
-- Shows a denomination table with value, label, and count.
-- Shows subtotal per denomination and a grand total.
-- Allows editing counts in-place.
+- Cash (includes payment modal): `spec/CASH_ON_HAND.md`, `spec/NEW_PAYMENT.md`
+- Transactions: `spec/TRANSACTIONS.md`
+- Settings: `spec/SETTINGS.md`
 
-B) New Payment
-- Input: amount.
-- Strategy selector: `greedy` or `lex`.
-- Shows suggested breakdown (value × count) if exact payment is possible.
-- “Apply payment” deducts counts and records a transaction.
-
-C) Transactions
-- Shows transactions from the last 30 days only.
-- Each row shows date/time, amount, strategy, and breakdown summary.
-
-D) Settings
-- Currency (default `EUR`).
-- Denomination set (select from presets or custom values).
-- Export/Import JSON (user-initiated).
-- Delete all data.
+## Supporting Specs
+- Data model: `spec/DATA_MODEL.md`
+- Algorithms: `spec/ALGORITHMS.md`
+- Privacy and security: `spec/PRIVACY_SECURITY.md`
+- Technical decisions: `spec/TECH_DECISIONS.md`
+- Acceptance tests: `spec/ACCEPTANCE_TESTS.md`
 
 ## Non-goals
 - User accounts or multi-user support.
-- Syncing between devices.
-- Bank connections or open banking.
-- “Make change” or exchange calculation.
-- Analytics by default.
-
-## Retention
-- Transactions are auto-deleted if older than 30 days.
+- Device sync in MVP.
+- Bank/open-banking connections.
+- Import in MVP.
