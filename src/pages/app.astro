@@ -1329,6 +1329,9 @@ const STORAGE_KEY = 'kontana_state_v1';
         const blocked = gated && btn.dataset.tab !== 'settings';
         btn.disabled = Boolean(blocked);
       });
+      document.querySelectorAll('.bottom-nav-link').forEach((link) => {
+        link.classList.toggle('active', link.dataset.tab === app.activeTab);
+      });
       document.querySelectorAll('.tab-panel').forEach((panel) => {
         panel.classList.toggle('active', panel.id === `tab-${app.activeTab}`);
       });
@@ -3193,6 +3196,17 @@ const STORAGE_KEY = 'kontana_state_v1';
           return;
         }
         app.activeTab = btn.dataset.tab;
+        setupTabs();
+      });
+    });
+
+    document.querySelectorAll('.bottom-nav-link').forEach((link) => {
+      link.addEventListener('click', (event) => {
+        event.preventDefault();
+        if (isAppGated() && link.dataset.tab !== 'settings') {
+          return;
+        }
+        app.activeTab = link.dataset.tab;
         setupTabs();
       });
     });

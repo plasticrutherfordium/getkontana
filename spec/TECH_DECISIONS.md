@@ -13,6 +13,9 @@
 
 ## UI Decisions
 - Wallet selection uses horizontal cards.
+- Mobile UI:
+  - Bottom nav replaces sidebar.
+  - Wallet row is horizontally scrollable; no global scaling or shrinking of content.
 - Cash prioritizes wallet cards, in-context create wallet, bills/coins summaries, and explicit denomination math rows.
 - Edit denomination actions are isolated behind explicit Edit Mode with reconciliation gating.
 - Cash denomination rows are read-only by default and become editable only inside Edit Mode.

@@ -22,5 +22,16 @@ const { title } = Astro.props;
     <main class="app-main">
       <slot />
     </main>
+    <nav class="app-bottom-nav" aria-label="Primary">
+      <a href="/app" class="bottom-nav-link" data-tab="cash">
+        <span>Cash</span>
+      </a>
+      <a href="/app" class="bottom-nav-link" data-tab="transactions">
+        <span>Transactions</span>
+      </a>
+      <a href="/app" class="bottom-nav-link" data-tab="settings">
+        <span>Settings</span>
+      </a>
+    </nav>
   </div>
 </Layout>

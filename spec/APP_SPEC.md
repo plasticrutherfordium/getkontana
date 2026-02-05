@@ -27,6 +27,11 @@ Kontana is a local-first cash wallet tracker for physical cash, denomination cou
 - Retention banner is dismissible for 5 days (persisted locally).
 - Revert is allowed only for the latest transaction per wallet.
 - App sidebar brand uses logo only (no surrounding pill/callout copy).
+- Mobile layout (<= 768px):
+  - Sidebar is hidden.
+  - Bottom navigation bar is fixed to the bottom with tabs: Cash | Transactions | Settings (Transactions centered).
+  - Content has bottom padding to avoid overlap with the bottom nav.
+  - Wallet cards row scrolls horizontally; page content does not shrink or scale.
 
 ## Screens
 - Cash (includes payment modal): `spec/CASH_ON_HAND.md`, `spec/NEW_PAYMENT.md`
