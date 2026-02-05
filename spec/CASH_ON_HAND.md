@@ -42,6 +42,7 @@ If there are no wallets:
 - Split by Bills/Coins toggle; only one category shown at a time.
 - If currency only has one category, hide the toggle.
 - Row semantics must be explicit: `Denomination × Count = Subtotal`.
+- Denomination rows use equal column widths for Denomination, Count, and Subtotal to avoid cramped labels.
 - Row presentation must clearly distinguish denominations the user has vs missing denominations.
 - Zero-count denominations are always visually de-emphasized by default.
 - Default (not in Edit Mode): denomination rows are static/read-only.

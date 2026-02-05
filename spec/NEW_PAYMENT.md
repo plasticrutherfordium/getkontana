@@ -108,4 +108,5 @@
 - Denomination rows keep explicit `Denomination × Count = Subtotal` semantics.
 - Row control structure mirrors Cash: stable count controls with `- input +` and matching spacing/alignment.
 - Manual allocation count inputs must be visually prominent and easy to read.
+- Denomination rows use equal column widths for Denomination, Count, and Subtotal.
 - Payments does not show last outgoing/incoming summaries.

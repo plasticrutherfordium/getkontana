@@ -54,6 +54,18 @@ html[data-theme='dark'] .app-sidebar {
   margin-bottom: 20px;
 }
 
+.page-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-page-logo {
+  height: 26px;
+  width: auto;
+  display: block;
+}
+
 .page-header h1 {
   margin: 0;
   font-size: clamp(2rem, 3vw, 2.45rem);
@@ -688,13 +700,13 @@ html[data-theme='dark'] .wallet-card-add {
 }
 
 :root {
-  --denom-count-col-width: 188px;
-  --denom-subtotal-col-width: 224px;
+  --denom-count-col-width: 1fr;
+  --denom-subtotal-col-width: 1fr;
 }
 
 .denom-header-row {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) var(--denom-count-col-width) var(--denom-subtotal-col-width);
+  grid-template-columns: 1fr var(--denom-count-col-width) var(--denom-subtotal-col-width);
   gap: 14px;
   align-items: baseline;
   margin-bottom: 8px;
@@ -722,7 +734,7 @@ html[data-theme='dark'] .wallet-card-add {
 
 .denom-row {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) var(--denom-count-col-width) var(--denom-subtotal-col-width);
+  grid-template-columns: 1fr var(--denom-count-col-width) var(--denom-subtotal-col-width);
   gap: 14px;
   align-items: baseline;
   border-radius: 12px;
@@ -793,7 +805,7 @@ html[data-theme='dark'] .denom-presence.missing {
 }
 
 .denom-count-wrap {
-  width: var(--denom-count-col-width);
+  width: 100%;
   justify-self: center;
   display: grid;
   grid-template-columns: 32px minmax(0, 1fr) 32px;
@@ -802,7 +814,7 @@ html[data-theme='dark'] .denom-presence.missing {
 }
 
 .denom-count-readonly {
-  width: var(--denom-count-col-width);
+  width: 100%;
   justify-self: center;
   margin: 0;
   min-height: 40px;
@@ -838,7 +850,7 @@ html[data-theme='dark'] .denom-presence.missing {
   padding-top: 12px;
   border-top: 1px solid var(--border);
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) var(--denom-count-col-width) var(--denom-subtotal-col-width);
+  grid-template-columns: 1fr var(--denom-count-col-width) var(--denom-subtotal-col-width);
   gap: 14px;
   align-items: center;
 }
@@ -1362,14 +1374,14 @@ html[data-theme='dark'] tbody tr:nth-child(even):not(.tx-details) {
   padding-right: 2px;
 }
 
-.modal-card .denom-header-row,
-.modal-card .denom-row {
-  grid-template-columns: minmax(0, 1fr) 160px 140px;
-}
+  .modal-card .denom-header-row,
+  .modal-card .denom-row {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
 
-.modal-card .denom-count-wrap {
-  width: 160px;
-}
+  .modal-card .denom-count-wrap {
+    width: 100%;
+  }
 
 .last-payment-row {
   display: flex;
@@ -1576,8 +1588,8 @@ html[data-theme='dark'] tbody tr:nth-child(even):not(.tx-details) {
   }
 
   :root {
-    --denom-count-col-width: 172px;
-    --denom-subtotal-col-width: 180px;
+    --denom-count-col-width: 1fr;
+    --denom-subtotal-col-width: 1fr;
   }
 
   .denom-header-row,

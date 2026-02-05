@@ -32,6 +32,11 @@ Kontana is a local-first cash wallet tracker for physical cash, denomination cou
   - Bottom navigation bar is fixed to the bottom with tabs: Cash | Transactions | Settings (Transactions centered).
   - Content has bottom padding to avoid overlap with the bottom nav.
   - Wallet cards row scrolls horizontally; page content does not shrink or scale.
+- PWA support:
+  - Provide `manifest.webmanifest` with app name, icons, theme color, and `display: standalone`.
+  - Register a service worker for basic offline caching of app shell/assets.
+  - Use the site favicon as the app icon.
+  - App should show the logo within the app UI (not just in the sidebar).
 
 ## Screens
 - Cash (includes payment modal): `spec/CASH_ON_HAND.md`, `spec/NEW_PAYMENT.md`

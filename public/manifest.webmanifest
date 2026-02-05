@@ -1,0 +1,16 @@
+{
+  "name": "Kontana",
+  "short_name": "Kontana",
+  "description": "Privacy-first cash tracker that runs on your device.",
+  "start_url": "/app",
+  "display": "standalone",
+  "background_color": "#0b1618",
+  "theme_color": "#0b1618",
+  "icons": [
+    {
+      "src": "/kontana-favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
