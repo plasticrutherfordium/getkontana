@@ -1424,9 +1424,52 @@ html[data-theme='dark'] tbody tr:nth-child(even):not(.tx-details) {
     grid-template-columns: 1fr;
   }
 
-  .tx-table th:nth-child(2),
-  .tx-table td:nth-child(2) {
+  .tx-table {
+    border: 0;
+    box-shadow: none;
+  }
+
+  .tx-table thead {
     display: none;
+  }
+
+  .tx-table,
+  .tx-table tbody,
+  .tx-table tr,
+  .tx-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .tx-row {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+
+  .tx-row td {
+    padding: 0;
+    border: 0;
+  }
+
+  .tx-description {
+    margin-bottom: 8px;
+  }
+
+  .tx-amount,
+  .tx-balance {
+    text-align: left;
+    margin-top: 6px;
+  }
+
+  .tx-details-row td {
+    padding: 0;
+    border: 0;
+  }
+
+  .tx-group td {
+    border: 0;
   }
 
   .create-wallet-grid,
@@ -1445,6 +1488,28 @@ html[data-theme='dark'] tbody tr:nth-child(even):not(.tx-details) {
   .denom-header-row,
   .denom-row {
     grid-template-columns: minmax(180px, 1fr) var(--denom-count-col-width) var(--denom-subtotal-col-width);
+  }
+
+  .modal-card.modal-payment {
+    width: 100%;
+  }
+
+  .payment-context-pill .segmented-control {
+    width: 100%;
+  }
+
+  .payment-entry-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-payment .denom-header-row,
+  .modal-payment .denom-row {
+    grid-template-columns: minmax(0, 1fr) 120px 120px;
+  }
+
+  .modal-payment .denom-count-wrap {
+    width: 120px;
+    grid-template-columns: 28px minmax(0, 1fr) 28px;
   }
 }
 
@@ -1468,5 +1533,33 @@ html[data-theme='dark'] tbody tr:nth-child(even):not(.tx-details) {
   .denom-row,
   .denom-total-row {
     grid-template-columns: minmax(0, 1fr) var(--denom-count-col-width) var(--denom-subtotal-col-width);
+  }
+
+  .wallet-cards {
+    padding-bottom: 0;
+  }
+
+  .wallet-card {
+    min-width: 150px;
+  }
+
+  .summary-actions,
+  .inline-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .payment-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tx-wallet-header-main {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .tx-wallet-header-balance {
+    text-align: left;
   }
 }
