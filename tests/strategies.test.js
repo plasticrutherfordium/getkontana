@@ -30,12 +30,12 @@ test('Greedy uses largest denominations first', () => {
   assert.deepEqual(mapBreakdown(greedy.breakdown), new Map([[10, 1], [5, 1], [1, 1]]));
 });
 
-test('Lex prefers smaller denominations when item count ties', () => {
+test('Lex prefers higher denominations when item count ties', () => {
   const denoms = makeDenoms([4, 3, 2], [1, 2, 1]);
   const target = 6;
   const lex = computeOutgoingPlan(denoms, target, 'lex', ORDER_LARGEST_FIRST, false);
   assert.equal(lex.status, 'exact');
-  assert.deepEqual(mapBreakdown(lex.breakdown), new Map([[3, 2]]));
+  assert.deepEqual(mapBreakdown(lex.breakdown), new Map([[4, 1], [2, 1]]));
 });
 
 test('Equalisation chooses the most balanced remaining counts', () => {
@@ -74,6 +74,13 @@ test('Avoid coins allows coins when notes cannot pay exactly', () => {
   const plan = computeOutgoingPlan(denoms, 12, 'lex', ORDER_LARGEST_FIRST, true, 'prefer');
   assert.equal(plan.status, 'exact');
   assert.deepEqual(mapBreakdown(plan.breakdown), new Map([[10, 1], [2, 1]]));
+});
+
+test('Avoid coins overpay minimizes coin usage before overpay', () => {
+  const denoms = makeTypedDenoms([10, 4], [1, 2], ['note', 'coin']);
+  const plan = computeOutgoingPlan(denoms, 6, 'lex', ORDER_LARGEST_FIRST, true, 'prefer');
+  assert.equal(plan.status, 'sufficient_not_exact');
+  assert.deepEqual(mapBreakdown(plan.breakdown), new Map([[10, 1]]));
 });
 
 test('Avoid coins entirely refuses coin usage', () => {

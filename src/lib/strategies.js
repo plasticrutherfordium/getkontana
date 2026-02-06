@@ -10,10 +10,10 @@ function orderDenoms(denoms, order) {
   return sorted;
 }
 
-function lexPrefers(aCounts, bCounts, preferSmaller = false) {
+function lexPrefers(aCounts, bCounts) {
   for (let i = 0; i < aCounts.length; i += 1) {
     if (aCounts[i] !== bCounts[i]) {
-      return preferSmaller ? aCounts[i] < bCounts[i] : aCounts[i] > bCounts[i];
+      return aCounts[i] > bCounts[i];
     }
   }
   return false;
@@ -35,7 +35,6 @@ function remainingCounts(originalCounts, planCounts, direction) {
 }
 
 function betterPlanSameSum(a, b, strategy, originalCounts, direction, coinMask = null) {
-  const preferSmaller = strategy === 'lex' || strategy === 'equalisation';
   if (coinMask) {
     if (a.coins !== b.coins) return a.coins < b.coins;
   }
@@ -45,7 +44,7 @@ function betterPlanSameSum(a, b, strategy, originalCounts, direction, coinMask =
     const costB = varianceCost(remainingCounts(originalCounts, b.counts, direction));
     if (costA !== costB) return costA < costB;
   }
-  return lexPrefers(a.counts, b.counts, preferSmaller);
+  return lexPrefers(a.counts, b.counts);
 }
 
 function buildBestPlansBySum(denomsOrdered, strategy, originalCounts, direction, coinMask = null) {
@@ -73,7 +72,6 @@ function buildBestPlansBySum(denomsOrdered, strategy, originalCounts, direction,
 }
 
 function selectBestOverpayPlan(map, target, strategy, orderCounts, originalCounts, direction, allowOverpay, coinMask = null, coinFirstOverpay = false) {
-  const preferSmaller = strategy === 'lex' || strategy === 'equalisation';
   let best = null;
   for (const [sum, plan] of map.entries()) {
     if (sum < target) continue;
@@ -106,7 +104,7 @@ function selectBestOverpayPlan(map, target, strategy, orderCounts, originalCount
         continue;
       }
     }
-    if (lexPrefers(plan.counts, best.plan.counts, preferSmaller)) best = { sum, plan };
+    if (lexPrefers(plan.counts, best.plan.counts)) best = { sum, plan };
   }
   return best;
 }

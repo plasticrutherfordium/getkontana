@@ -13,6 +13,7 @@ import {
     const STORAGE_KEY = 'kontana_state_v1';
     const MAX_WALLETS = 4;
     const RETENTION_DAYS = 30;
+    const APP_VERSION = '0.0.1';
 
     const SUPPORTED_CURRENCIES = [
       'EUR', 'USD', 'GBP', 'CLP',
@@ -35,6 +36,9 @@ import {
     const PAGE_META = {
       cash: {
         title: 'Cash',
+      },
+      pay: {
+        title: 'Pay',
       },
       transactions: {
         title: 'Transactions',
@@ -114,6 +118,14 @@ import {
       }).format(new Date(isoString));
     }
 
+    function formatDateEU(isoString) {
+      return new Intl.DateTimeFormat('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      }).format(new Date(isoString));
+    }
+
     function formatTimeEU(isoString) {
       return new Intl.DateTimeFormat('en-GB', {
         hour: '2-digit',
@@ -122,20 +134,26 @@ import {
       }).format(new Date(isoString));
     }
 
-    function getDayLabel(isoString) {
+    function dayKey(isoString) {
       const date = new Date(isoString);
-      const today = new Date();
-      const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      const dayDiff = Math.round((startOfToday - startOfDay) / (24 * 60 * 60 * 1000));
-      if (dayDiff === 0) return 'Today';
-      if (dayDiff === 1) return 'Yesterday';
-      return new Intl.DateTimeFormat('en-GB', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      }).format(date);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     }
+
+    function formatDayGroupLabel(isoString) {
+      const today = new Date();
+      const target = new Date(isoString);
+      const todayKey = dayKey(today.toISOString());
+      const targetKey = dayKey(target.toISOString());
+      if (targetKey === todayKey) return 'Today';
+      const yesterday = new Date(today);
+      yesterday.setDate(today.getDate() - 1);
+      if (targetKey === dayKey(yesterday.toISOString())) return 'Yesterday';
+      return formatDateEU(isoString);
+    }
+
 
     function truncateNote(note, maxLen = 30) {
       if (!note) return '';
@@ -527,14 +545,14 @@ import {
         allocation: {},
         manualEntry: false,
         startedAllocation: false,
+        showAllDenoms: false,
       },
       paymentSuccessMessage: '',
       paymentSuccessSummary: null,
       launchSignupMessage: '',
-      paymentModalOpen: false,
-      txExpandedIds: new Set(),
       modal: null,
       modalResolver: null,
+      settingsOpen: false,
     };
 
     function saveState() {
@@ -641,13 +659,14 @@ import {
       saveState();
       setAppearance(app.state.settings.appearance);
       renderCashOnHand();
+      renderPay();
       renderTransactions();
       renderSettings();
       setupTabs();
       renderModal();
     }
 
-    function showModal({ title, message, actions, input, fields, changeEditor }) {
+    function showModal({ title, message, actions, input, fields, changeEditor, showClose = false }) {
       const values = {};
       (fields || []).forEach((field) => {
         values[field.id] = field.defaultValue ?? '';
@@ -668,6 +687,7 @@ import {
           changeTab: changeEditor?.defaultTab || 'bills',
           value: input?.defaultValue || '',
           values,
+          showClose,
         };
         app.modalResolver = resolve;
         renderModal();
@@ -688,7 +708,7 @@ import {
         message,
         actions: [
           { id: 'confirm', label: 'Confirm', style: 'primary' },
-          { id: 'cancel', label: 'Cancel', style: 'danger' },
+          { id: 'cancel', label: 'Cancel', style: 'secondary' },
         ],
       });
       return result === 'confirm';
@@ -701,7 +721,7 @@ import {
         input: { defaultValue, placeholder, maxLength },
         actions: [
           { id: 'submit', label: 'Submit', style: 'primary' },
-          { id: 'cancel', label: 'Cancel', style: 'danger' },
+          { id: 'cancel', label: 'Cancel', style: 'secondary' },
         ],
       });
       if (!result || result.id !== 'submit') return null;
@@ -719,33 +739,11 @@ import {
     function renderModal() {
       const root = document.getElementById('app-modal-root');
       if (!root) return;
-      if (!app.modal && !app.paymentModalOpen) {
+      if (!app.modal) {
         root.innerHTML = '';
         return;
       }
       let html = '';
-      if (app.paymentModalOpen) {
-        html += `
-          <div class="modal-backdrop">
-            <section class="modal-card modal-payment" role="dialog" aria-modal="true" aria-label="Add or spend money">
-              <div class="modal-header">
-                <h3>Add/Spend money</h3>
-                <button type="button" class="btn-secondary-soft" id="close-payment-modal">Close</button>
-              </div>
-              <div id="payment-modal-body"></div>
-            </section>
-          </div>
-        `;
-      }
-      if (!app.modal) {
-        root.innerHTML = html;
-        if (app.paymentModalOpen) {
-          renderNewPayment('payment-modal-body');
-          const closeBtn = document.getElementById('close-payment-modal');
-          if (closeBtn) closeBtn.addEventListener('click', () => closePaymentModal());
-        }
-        return;
-      }
       const modal = app.modal;
       if (modal.changeEditor) {
         const ed = modal.changeEditor;
@@ -770,9 +768,12 @@ import {
         const canConfirm = receivedTotal === ed.expectedChangeMinor;
 
         html += `
-          <div class="modal-backdrop">
+          <div class="modal-backdrop" id="modal-backdrop">
             <section class="modal-card" role="dialog" aria-modal="true" aria-label="${modal.title}">
-              <h3>${modal.title}</h3>
+              <div class="modal-header">
+                <h3>${modal.title}</h3>
+                ${modal.showClose ? '<button type="button" class="modal-close-btn" data-modal-close aria-label="Close">×</button>' : ''}
+              </div>
               <p>${modal.message}</p>
               ${showToggle ? `<div class="segmented-control" role="tablist" aria-label="Change denomination type">
                 <button type="button" class="segment ${app.modal.changeTab === 'bills' ? 'active' : ''}" data-modal-change-tab="bills">Bills</button>
@@ -782,13 +783,26 @@ import {
               <p class="muted">Received: ${formatMoney(receivedTotal, ed.currency)} / ${formatMoney(ed.expectedChangeMinor, ed.currency)}</p>
               <div class="inline-actions">
                 <button type="button" data-modal-change-action="submit" class="btn-primary-soft" ${canConfirm ? '' : 'disabled'}>Confirm</button>
-                <button type="button" data-modal-change-action="cancel" class="btn-danger-soft">Cancel</button>
+                <button type="button" data-modal-change-action="cancel" class="btn-secondary-soft">Cancel</button>
               </div>
             </section>
           </div>
         `;
         root.innerHTML = html;
+        const backdrop = document.getElementById('modal-backdrop');
+        if (backdrop) {
+          backdrop.addEventListener('click', (event) => {
+            if (event.target !== backdrop) return;
+            closeModal({ id: 'cancel' });
+          });
+        }
+        document.addEventListener('keydown', (event) => {
+          if (event.key === 'Escape') closeModal({ id: 'cancel' });
+        }, { once: true });
 
+        root.querySelectorAll('[data-modal-close]').forEach((btn) => {
+          btn.addEventListener('click', () => closeModal({ id: 'cancel' }));
+        });
         root.querySelectorAll('[data-modal-change-tab]').forEach((btn) => {
           btn.addEventListener('click', () => {
             if (!app.modal) return;
@@ -823,18 +837,16 @@ import {
             closeModal({ id: 'cancel' });
           });
         });
-        if (app.paymentModalOpen) {
-          renderNewPayment('payment-modal-body');
-          const closeBtn = document.getElementById('close-payment-modal');
-          if (closeBtn) closeBtn.addEventListener('click', () => closePaymentModal());
-        }
         return;
       }
 
       html += `
-        <div class="modal-backdrop">
+        <div class="modal-backdrop" id="modal-backdrop">
           <section class="modal-card" role="dialog" aria-modal="true" aria-label="${modal.title}">
-            <h3>${modal.title}</h3>
+            <div class="modal-header">
+              <h3>${modal.title}</h3>
+              ${modal.showClose ? '<button type="button" class="modal-close-btn" data-modal-close aria-label="Close">×</button>' : ''}
+            </div>
             <p>${modal.message}</p>
             ${modal.input ? `<label>Value<input id="modal-input" type="text" value="${modal.value || ''}" placeholder="${modal.input.placeholder || ''}" ${modal.input.maxLength ? `maxlength="${modal.input.maxLength}"` : ''} /></label>${modal.input.maxLength ? `<p class="muted modal-field-hint" data-modal-hint="__input">Maximum ${modal.input.maxLength} characters.</p>` : ''}` : ''}
             ${(modal.fields || []).map((field) => {
@@ -854,10 +866,12 @@ import {
         </div>
       `;
       root.innerHTML = html;
-      if (app.paymentModalOpen) {
-        renderNewPayment('payment-modal-body');
-        const closeBtn = document.getElementById('close-payment-modal');
-        if (closeBtn) closeBtn.addEventListener('click', () => closePaymentModal());
+      const backdrop = document.getElementById('modal-backdrop');
+      if (backdrop) {
+        backdrop.addEventListener('click', (event) => {
+          if (event.target !== backdrop) return;
+          closeModal('cancel');
+        });
       }
       const input = document.getElementById('modal-input');
       if (input) {
@@ -895,6 +909,9 @@ import {
         el.addEventListener('input', handler);
         el.addEventListener('change', handler);
       });
+      root.querySelectorAll('[data-modal-close]').forEach((btn) => {
+        btn.addEventListener('click', () => closeModal('cancel'));
+      });
       root.querySelectorAll('[data-modal-action]').forEach((btn) => {
         btn.addEventListener('click', () => {
           if (modal.input) {
@@ -906,10 +923,13 @@ import {
           }
         });
       });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeModal('cancel');
+      }, { once: true });
     }
 
     function setupTabs() {
-      if (app.activeTab === 'payment') app.activeTab = 'cash';
+      if (app.activeTab === 'payment') app.activeTab = 'pay';
       const gated = isAppGated();
       document.querySelectorAll('.tab-btn').forEach((btn) => {
         btn.classList.toggle('active', btn.dataset.tab === app.activeTab);
@@ -928,6 +948,7 @@ import {
     function renderWalletCards(wallets, activeWalletId, selectorId, compact = false, options = {}) {
       const cls = compact ? 'wallet-card compact' : 'wallet-card';
       const showCreate = Boolean(options.showCreateCard);
+      const showActions = Boolean(options.showActions);
       const createCard = showCreate
         ? `
           <button
@@ -943,22 +964,34 @@ import {
         : '';
       return `
         <div class="wallet-cards" role="radiogroup" aria-label="Wallet selector">
-          ${wallets.map((wallet) => `
-            <button
-              type="button"
-              class="${cls} ${wallet.id === activeWalletId ? 'active' : ''}"
-              data-wallet-selector="${selectorId}"
-              data-wallet-id="${wallet.id}"
-              data-wallet-draggable="true"
-              draggable="true"
-              role="radio"
-              aria-checked="${wallet.id === activeWalletId ? 'true' : 'false'}"
-            >
-              <p class="wallet-card-head">${CURRENCY_FLAGS[wallet.currency] || '🏳️'} ${wallet.currency}</p>
-              <p class="wallet-card-name">${wallet.name}</p>
-              <p class="wallet-card-total">${formatMoney(getWalletTotal(wallet), wallet.currency)}</p>
-            </button>
-          `).join('')}
+          ${wallets.map((wallet) => {
+            const active = wallet.id === activeWalletId;
+            return `
+              <div class="wallet-card-wrap ${active ? 'active' : ''}">
+                <button
+                  type="button"
+                  class="${cls} ${active ? 'active' : ''}"
+                  data-wallet-selector="${selectorId}"
+                  data-wallet-id="${wallet.id}"
+                  data-wallet-draggable="true"
+                  draggable="true"
+                  role="radio"
+                  aria-checked="${active ? 'true' : 'false'}"
+                >
+                  <p class="wallet-card-head">${CURRENCY_FLAGS[wallet.currency] || '🏳️'} ${wallet.currency}</p>
+                  <p class="wallet-card-name">${wallet.name}</p>
+                  <p class="wallet-card-total">${formatMoney(getWalletTotal(wallet), wallet.currency)}</p>
+                </button>
+                ${showActions && active ? `
+                  <button type="button" class="wallet-card-action" data-wallet-action="1" aria-label="Wallet actions">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M15.7 3.3 20.7 8.3 9.3 19.7l-5.5 1.1 1.1-5.5L15.7 3.3Zm-1.4 2.1-8.2 8.2-.5 2.6 2.6-.5 8.2-8.2-2.1-2.1ZM18 5.6l-2.1-2.1 1.1-1.1 2.1 2.1L18 5.6Z" fill="currentColor"/>
+                    </svg>
+                  </button>
+                ` : ''}
+              </div>
+            `;
+          }).join('')}
           ${createCard}
         </div>
       `;
@@ -1159,7 +1192,7 @@ import {
             ],
         actions: [
           { id: 'create', label: 'Create wallet', style: 'primary' },
-          { id: 'cancel', label: 'Cancel', style: 'danger' },
+          { id: 'cancel', label: 'Cancel', style: 'secondary' },
         ],
       });
       if (!result || result.id !== 'create') return;
@@ -1184,37 +1217,9 @@ import {
       }
     }
 
-    function openPaymentModal(walletId = null, mode = null) {
-      if (isAppGated()) return;
-      if (walletId) {
-        app.paymentDraft.walletId = walletId;
-      }
-      if (!app.paymentDraft.walletId) {
-        app.paymentDraft.walletId = app.activeWalletId || getWalletList()[0]?.id || null;
-      }
-      const resolvedWalletId = app.paymentDraft.walletId;
-      const resolvedWallet = resolvedWalletId ? app.state.wallets[resolvedWalletId] : null;
-      const walletTotalMinor = resolvedWallet ? getWalletTotal(resolvedWallet) : 0;
-      const nextMode = mode ? (mode === 'outgoing' ? 'outgoing' : 'incoming') : (walletTotalMinor === 0 ? 'incoming' : 'outgoing');
-      app.paymentDraft.mode = nextMode;
-      app.paymentDraft.amountInput = '';
-      app.paymentDraft.note = '';
-      app.paymentDraft.allocation = {};
-      app.paymentDraft.manualEntry = false;
-      app.paymentDraft.startedAllocation = false;
-      app.pendingOutgoingChange = null;
-      app.paymentSuccessMessage = '';
-      app.paymentSuccessSummary = null;
-      app.paymentSuccessSummary = null;
-      app.paymentModalOpen = true;
-      renderModal();
-      renderNewPayment('payment-modal-body');
-    }
+    function openPaymentModal() {}
 
-    function closePaymentModal() {
-      app.paymentModalOpen = false;
-      renderModal();
-    }
+    function closePaymentModal() {}
 
     function renderCashOnHand() {
       const el = document.getElementById('tab-cash');
@@ -1264,7 +1269,7 @@ import {
           const countCell = isEditMode
             ? `<div class="denom-count-wrap">
                 <button type="button" class="denom-step" data-denom-step="-1" data-denom="${row.value_minor}" aria-label="Decrease count">-</button>
-                <input type="number" min="0" step="1" data-denom="${row.value_minor}" value="${count}" class="denom-input" />
+                <input type="text" inputmode="numeric" pattern="[0-9]*" data-denom="${row.value_minor}" value="${count}" class="denom-input" />
                 <button type="button" class="denom-step" data-denom-step="1" data-denom="${row.value_minor}" aria-label="Increase count">+</button>
               </div>`
             : `<p class="denom-count-readonly">${count}</p>`;
@@ -1280,15 +1285,10 @@ import {
         <section class="panel">
           <section class="card summary-card">
             <div class="summary-main">
-              ${renderWalletCards(wallets, wallet.id, 'cash-wallet', false, { showCreateCard: true })}
-            </div>
-            <div class="summary-actions">
-              <button type="button" id="go-payments" class="btn-primary-soft" ${isAppGated() ? 'disabled' : ''}>Add/Spend money</button>
-              <button type="button" id="edit-wallet" class="btn-secondary-soft" ${isEditMode ? 'disabled' : ''}>Edit wallet</button>
-              <button type="button" id="delete-wallet" class="btn-danger-soft" ${isEditMode ? 'disabled' : ''}>Delete wallet</button>
+              ${renderWalletCards(wallets, wallet.id, 'cash-wallet', false, { showCreateCard: true, showActions: !isEditMode })}
             </div>
             ${!isEditMode && currentTotal === 0 ? `
-              <p class="status warn">Wallet is empty. Add money by creating an incoming payment in the payment modal.</p>
+              <p class="status warn">Wallet is empty. Add money by creating an incoming payment in Pay.</p>
             ` : ''}
             ${isEditMode ? `
               <section class="edit-status">
@@ -1301,7 +1301,7 @@ import {
                 </label>
                 <div class="inline-actions edit-actions">
                   <button type="button" id="finish-edit-mode" class="btn-primary-soft" ${difference !== 0 ? 'disabled' : ''}>Finish edit</button>
-                  <button type="button" id="cancel-edit-mode" class="btn-danger-soft">Cancel edit</button>
+                  <button type="button" id="cancel-edit-mode" class="btn-secondary-soft">Cancel edit</button>
                 </div>
               </section>
             ` : ''}
@@ -1338,7 +1338,7 @@ import {
           return;
         }
         app.activeWalletId = walletId;
-        if (!app.paymentDraft.walletId) app.paymentDraft.walletId = app.activeWalletId;
+        app.paymentDraft.walletId = app.activeWalletId;
         render();
       });
       bindWalletReorder('cash-wallet');
@@ -1359,11 +1359,6 @@ import {
         });
       }
 
-      document.getElementById('go-payments').addEventListener('click', () => {
-        if (isAppGated()) return;
-        openPaymentModal(wallet.id);
-      });
-
       const startEditMode = () => {
         app.editMode = {
           walletId: wallet.id,
@@ -1377,16 +1372,17 @@ import {
         render();
       };
 
-      const editWalletBtn = document.getElementById('edit-wallet');
-      if (editWalletBtn) {
-        editWalletBtn.addEventListener('click', async () => {
+      const walletActionsBtn = document.querySelector('[data-wallet-action="1"]');
+      if (walletActionsBtn) {
+        walletActionsBtn.addEventListener('click', async () => {
           const choice = await showModal({
-            title: 'Edit wallet',
-            message: `What would you like to edit for ${wallet.name}?`,
+            title: 'Wallet actions',
+            message: `Manage ${wallet.name}.`,
+            showClose: true,
             actions: [
               { id: 'name', label: 'Edit name', style: 'secondary' },
               { id: 'denoms', label: 'Edit denominations', style: 'primary' },
-              { id: 'cancel', label: 'Cancel', style: 'danger' },
+              { id: 'delete', label: 'Delete wallet', style: 'danger' },
             ],
           });
           if (choice === 'name') {
@@ -1402,12 +1398,32 @@ import {
             render();
             return;
           }
+          if (choice === 'delete') {
+            const ok = await modalConfirm(`Delete wallet ${wallet.name}? This removes its cash and transactions.`, 'Delete Wallet');
+            if (!ok) return;
+            const id = wallet.id;
+            delete app.state.wallets[id];
+            if (Array.isArray(app.state.wallet_order)) {
+              app.state.wallet_order = app.state.wallet_order.filter((walletId) => walletId !== id);
+            }
+            app.state.transactions = app.state.transactions.filter((tx) => tx.wallet_id !== id);
+            if (app.activeWalletId === id) {
+              app.activeWalletId = getWalletList()[0]?.id || null;
+            }
+            if (app.paymentDraft.walletId === id) {
+              app.paymentDraft.walletId = getWalletList()[0]?.id || null;
+            }
+            if (app.editMode && app.editMode.walletId === id) app.editMode = null;
+            saveState();
+            render();
+            return;
+          }
           if (choice !== 'denoms') return;
           const ok = await showModal({
             title: 'Edit denominations?',
             message: 'Edit denominations instead of entering a transaction?',
             actions: [
-              { id: 'cancel', label: 'Cancel', style: 'danger' },
+              { id: 'cancel', label: 'Cancel', style: 'secondary' },
               { id: 'edit', label: 'Enter edit mode', style: 'primary' },
             ],
           });
@@ -1486,14 +1502,15 @@ import {
         if (!app.editMode || app.editMode.walletId !== wallet.id) return;
         app.editMode.draft[valueMinor] = Math.max(0, next);
         renderCashOnHand();
-        if (app.paymentModalOpen) renderNewPayment('payment-modal-body');
       };
 
       if (isEditMode) {
         el.querySelectorAll('input[data-denom]').forEach((input) => {
           input.addEventListener('input', (e) => {
             const valueMinor = Number(e.target.dataset.denom);
-            const next = Math.max(0, Number.parseInt(e.target.value || '0', 10) || 0);
+            const cleaned = String(e.target.value || '').replace(/[^\d]/g, '');
+            if (cleaned !== e.target.value) e.target.value = cleaned;
+            const next = Math.max(0, Number.parseInt(cleaned || '0', 10) || 0);
             updateDraftDenom(valueMinor, next);
           });
         });
@@ -1508,32 +1525,39 @@ import {
         });
       }
 
-      document.getElementById('delete-wallet').addEventListener('click', async () => {
-        const ok = await modalConfirm(`Delete wallet ${wallet.name}? This removes its cash and transactions.`, 'Delete Wallet');
-        if (!ok) return;
-        const id = wallet.id;
-        delete app.state.wallets[id];
-        if (Array.isArray(app.state.wallet_order)) {
-          app.state.wallet_order = app.state.wallet_order.filter((walletId) => walletId !== id);
-        }
-        app.state.transactions = app.state.transactions.filter((tx) => tx.wallet_id !== id);
-        if (app.activeWalletId === id) {
-          app.activeWalletId = getWalletList()[0]?.id || null;
-        }
-        if (app.paymentDraft.walletId === id) {
-          app.paymentDraft.walletId = getWalletList()[0]?.id || null;
-        }
-        if (app.editMode && app.editMode.walletId === id) app.editMode = null;
-        saveState();
-        render();
-      });
-
     }
 
-    function renderNewPayment(target = 'tab-payment') {
+    function renderPay() {
+      const el = document.getElementById('tab-pay');
+      if (!el) return;
+      const wallets = getWalletList();
+      if (!wallets.length) {
+        el.innerHTML = '<section class="panel"><p class="empty-notice">No wallets yet. Create a wallet in Cash to enter payments.</p></section>';
+        return;
+      }
+      const hasEntry = Boolean(
+        app.paymentDraft.amountInput.trim()
+        || app.paymentDraft.note.trim()
+        || Object.keys(app.paymentDraft.allocation || {}).length > 0
+        || app.paymentDraft.manualEntry
+        || app.paymentDraft.startedAllocation
+      );
+      if (!hasEntry) {
+        app.paymentDraft.walletId = app.activeWalletId || wallets[0]?.id || null;
+      }
+      const wallet = app.state.wallets[app.paymentDraft.walletId || ''] || null;
+      if (wallet && !hasEntry) {
+        const walletTotal = getWalletTotal(wallet);
+        app.paymentDraft.mode = walletTotal === 0 ? 'incoming' : 'outgoing';
+      }
+      renderNewPayment('tab-pay', { showWalletSelector: false });
+    }
+
+    function renderNewPayment(target = 'tab-payment', options = {}) {
       const el = typeof target === 'string' ? document.getElementById(target) : target;
       if (!el) return;
-      const rerenderPayment = () => renderNewPayment(target);
+      const rerenderPayment = () => renderNewPayment(target, options);
+      const showWalletSelector = Boolean(options.showWalletSelector);
       const wallets = getWalletList();
       if (wallets.length === 0) {
         el.innerHTML = '<section class="panel"><p>Create a wallet first.</p></section>';
@@ -1562,6 +1586,7 @@ import {
         app.paymentDraft.allocation = {};
       }
       if (typeof app.paymentDraft.manualEntry !== 'boolean') app.paymentDraft.manualEntry = false;
+      if (typeof app.paymentDraft.showAllDenoms !== 'boolean') app.paymentDraft.showAllDenoms = false;
 
       if (app.pendingOutgoingChange && !app.state.wallets[app.pendingOutgoingChange.walletId]) {
         app.pendingOutgoingChange = null;
@@ -1584,7 +1609,7 @@ import {
             <p class="denom-value">${formatDenomValue(row.value_minor, pendingWallet.currency)}</p>
             <div class="denom-count-wrap">
               <button type="button" class="denom-step" data-change-step="-1" data-denom="${row.value_minor}">-</button>
-              <input type="number" min="0" step="1" class="denom-input" data-change-denom="${row.value_minor}" value="${count}" />
+              <input type="text" inputmode="numeric" pattern="[0-9]*" class="denom-input" data-change-denom="${row.value_minor}" value="${count}" />
               <button type="button" class="denom-step" data-change-step="1" data-denom="${row.value_minor}">+</button>
             </div>
             <p class="denom-subtotal">${formatMoney(row.value_minor * count, pendingWallet.currency)}</p>
@@ -1612,7 +1637,7 @@ import {
               </div>
               <div class="inline-actions edit-actions">
                 <button type="button" id="confirm-outgoing-finalize" class="btn-primary-soft" ${canFinalize ? '' : 'disabled'}>Confirm and finalize</button>
-                <button type="button" id="cancel-change-confirm" class="btn-danger-soft">Cancel</button>
+                <button type="button" id="cancel-change-confirm" class="btn-secondary-soft">Cancel</button>
               </div>
             </section>
           </section>
@@ -1621,7 +1646,9 @@ import {
         el.querySelectorAll('input[data-change-denom]').forEach((input) => {
           input.addEventListener('input', (evt) => {
             const denom = Number(evt.target.dataset.changeDenom);
-            pending.receivedAllocation[denom] = Math.max(0, Number.parseInt(evt.target.value || '0', 10) || 0);
+            const cleaned = String(evt.target.value || '').replace(/[^\d]/g, '');
+            if (cleaned !== evt.target.value) evt.target.value = cleaned;
+            pending.receivedAllocation[denom] = Math.max(0, Number.parseInt(cleaned || '0', 10) || 0);
             rerenderPayment();
           });
         });
@@ -1682,6 +1709,8 @@ import {
 
       const mode = app.paymentDraft.mode;
       const wallet = app.state.wallets[app.paymentDraft.walletId];
+      const walletTotalForHint = getWalletTotal(wallet);
+      const zeroWalletHint = walletTotalForHint === 0 ? 'Wallet is empty. Start with an incoming payment.' : '';
       const amountMinor = parseAmountToMinor(app.paymentDraft.amountInput, wallet.currency);
       const noteText = app.paymentDraft.note.trim().slice(0, 30);
       const draftAllocated = getDraftAllocationTotal();
@@ -1751,19 +1780,20 @@ import {
         }
       }
 
-      const allocatableRows = validAmount
-        ? getSortedDenoms(wallet, 'largest_first')
-          .filter((row) => (activeTab === 'bills' ? row.type === 'note' : row.type === 'coin'))
-          .filter((row) => {
-            if (mode === 'outgoing') {
-              if (!strategiesEnabled) return row.count > 0;
-              return row.count > 0 && row.value_minor <= amountMinor;
-            }
-            return row.value_minor <= amountMinor;
-          })
+      const allRowsForTab = getSortedDenoms(wallet, 'largest_first')
+        .filter((row) => (activeTab === 'bills' ? row.type === 'note' : row.type === 'coin'));
+      const showAllDenoms = app.paymentDraft.showAllDenoms || !strategiesEnabled;
+      const filteredRows = validAmount
+        ? allRowsForTab.filter((row) => {
+          if (mode === 'outgoing') {
+            return row.count > 0 && row.value_minor <= amountMinor;
+          }
+          return row.value_minor <= amountMinor;
+        })
         : [];
       const showManualEditor = app.paymentDraft.manualEntry || !suggestionAvailable;
-      const rowsForTab = allocatableRows;
+      const rowsForTab = showAllDenoms ? allRowsForTab : filteredRows;
+      const showAllLink = strategiesEnabled && !showAllDenoms && validAmount && filteredRows.length < allRowsForTab.length;
 
       const allocationRows = rowsForTab
         .map((row) => {
@@ -1773,12 +1803,12 @@ import {
           const maxAvailable = mode === 'outgoing' ? row.count : Infinity;
           const atMaxAvailable = mode === 'outgoing' && count >= maxAvailable;
           const disableAdd = willExceed || atMaxAvailable;
-          const remainingAvailable = mode === 'outgoing' ? Math.max(0, row.count - count) : 0;
+          const remainingAvailable = mode === 'outgoing' ? Math.max(0, row.count - count) : row.count;
           return `<article class="denom-row ${willExceed ? 'denom-row-deemphasis' : ''}">
-            <p class="denom-value">${formatDenomValue(row.value_minor, wallet.currency)}${mode === 'outgoing' ? ` <span class="muted">(available ${remainingAvailable})</span>` : ''}</p>
+            <p class="denom-value">${formatDenomValue(row.value_minor, wallet.currency)} <span class="muted">(available ${remainingAvailable})</span></p>
             <div class="denom-count-wrap">
               <button type="button" class="denom-step" data-alloc-step="-1" data-denom="${row.value_minor}">-</button>
-              <input type="number" min="0" step="1" class="denom-input" data-alloc-denom="${row.value_minor}" value="${count}" ${Number.isFinite(maxAvailable) ? `max="${maxAvailable}"` : ''} />
+              <input type="text" inputmode="numeric" pattern="[0-9]*" class="denom-input" data-alloc-denom="${row.value_minor}" value="${count}" />
               <button type="button" class="denom-step ${disableAdd ? 'disabled' : ''}" data-alloc-step="1" data-denom="${row.value_minor}" ${disableAdd ? 'disabled' : ''}>+</button>
             </div>
             <p class="denom-subtotal">${formatMoney(row.value_minor * count, wallet.currency)}</p>
@@ -1804,6 +1834,30 @@ import {
       const successAmountLabel = successSummary
         ? `${successSummary.type === 'incoming' ? '+' : '-'}${formatMoney(successSummary.amount_minor, successSummary.currency)}`
         : '';
+      const headerHtml = showWalletSelector ? `
+        <section class="card payment-context-pill">
+          <div class="payment-wallet-selector">
+            ${renderWalletCards(wallets, wallet.id, 'pay-wallet', false)}
+          </div>
+          ${zeroWalletHint ? `<p class="muted">${zeroWalletHint}</p>` : ''}
+          <div class="segmented-control" role="tablist" aria-label="Payment mode">
+            <button type="button" id="mode-outgoing" class="segment ${mode === 'outgoing' ? 'active' : ''}">↑ Outgoing</button>
+            <button type="button" id="mode-incoming" class="segment ${mode === 'incoming' ? 'active' : ''}">↓ Incoming</button>
+          </div>
+        </section>
+      ` : `
+        <section class="card payment-context-pill">
+          <div class="payment-wallet-summary">
+            <p class="muted">Selected wallet</p>
+            <p><strong>${CURRENCY_FLAGS[wallet.currency] || ''} ${wallet.name}</strong> · ${wallet.currency} · ${formatMoney(getWalletTotal(wallet), wallet.currency)}</p>
+          </div>
+          ${zeroWalletHint ? `<p class="muted">${zeroWalletHint}</p>` : ''}
+          <div class="segmented-control" role="tablist" aria-label="Payment mode">
+            <button type="button" id="mode-outgoing" class="segment ${mode === 'outgoing' ? 'active' : ''}">↑ Outgoing</button>
+            <button type="button" id="mode-incoming" class="segment ${mode === 'incoming' ? 'active' : ''}">↓ Incoming</button>
+          </div>
+        </section>
+      `;
 
       el.innerHTML = `
         <section class="panel">
@@ -1829,22 +1883,13 @@ import {
               </div>
             </section>
           ` : `
-            <section class="card payment-context-pill">
-              <div class="payment-wallet-summary">
-                <p class="muted">Selected wallet</p>
-                <p><strong>${CURRENCY_FLAGS[wallet.currency] || ''} ${wallet.name}</strong> · ${wallet.currency} · ${formatMoney(getWalletTotal(wallet), wallet.currency)}</p>
-              </div>
-              <div class="segmented-control" role="tablist" aria-label="Payment mode">
-                <button type="button" id="mode-outgoing" class="segment ${mode === 'outgoing' ? 'active' : ''}">↑ Outgoing</button>
-                <button type="button" id="mode-incoming" class="segment ${mode === 'incoming' ? 'active' : ''}">↓ Incoming</button>
-              </div>
-            </section>
+            ${headerHtml}
 
             <form id="payment-form" class="panel">
             <section class="card payment-entry-pill">
               <div class="payment-entry-grid">
                 <label class="payment-amount-field">Amount
-                  <input id="payment-amount" class="payment-amount-input" type="text" inputmode="decimal" value="${app.paymentDraft.amountInput}" />
+                  <input id="payment-amount" class="payment-amount-input" type="number" inputmode="decimal" step="any" value="${app.paymentDraft.amountInput}" />
                 </label>
                 <label>Note/Reference (optional)
                   <input id="payment-note" type="text" maxlength="30" value="${app.paymentDraft.note}" />
@@ -1875,7 +1920,10 @@ import {
                           <button type="button" class="segment ${activeTab === 'coins' ? 'active' : ''}" id="payment-coins">Coins</button>
                         </div>
                       ` : ''}
-                      <p class="muted">Your entry</p>
+                      <div class="denom-entry-header">
+                        <p class="muted">Your entry</p>
+                        ${showAllLink ? '<button type="button" id="show-all-denoms" class="link-button">Show all denominations</button>' : ''}
+                      </div>
                       <div class="denom-header-row">
                         <p>Denomination</p><p>Count</p><p>Subtotal</p>
                       </div>
@@ -1883,7 +1931,7 @@ import {
                     ` : ''}
                     ${strategiesEnabled ? allocationPreviewHtml : ''}
                   `}
-                ` : (strategiesEnabled ? '<p class="muted">Enter an amount to see the breakdown.</p>' : '')}
+                ` : '<p class="muted">Enter an amount to allocate denominations.</p>'}
               </section>
               <div class="payment-actions">
                 ${mode === 'incoming' && (app.paymentDraft.manualEntry || !suggestionAvailable) && !applyDisabled && validAmount
@@ -1892,13 +1940,35 @@ import {
                 ${mode === 'outgoing' && (app.paymentDraft.manualEntry || !suggestionAvailable) && !applyDisabled && validAmount
                   ? '<button type="submit" class="btn-primary-soft">Finalize outgoing</button>'
                   : ''}
-                ${hasDraftEntry ? '<button type="button" id="payment-cancel-entry" class="btn-danger-soft">Cancel</button>' : ''}
+                ${hasDraftEntry ? '<button type="button" id="payment-cancel-entry" class="btn-secondary-soft">Cancel</button>' : ''}
               </div>
             </section>
           </form>
           `}
         </section>
       `;
+
+      if (showWalletSelector) {
+        bindWalletCards('pay-wallet', (walletId) => {
+          if (walletId === app.paymentDraft.walletId) return;
+          app.activeWalletId = walletId;
+          app.paymentDraft.walletId = walletId;
+          app.paymentDraft.amountInput = '';
+          app.paymentDraft.note = '';
+          app.paymentDraft.allocation = {};
+          app.paymentDraft.manualEntry = false;
+          app.paymentDraft.startedAllocation = false;
+          app.paymentDraft.showAllDenoms = false;
+          app.pendingOutgoingChange = null;
+          app.paymentSuccessMessage = '';
+          app.paymentSuccessSummary = null;
+          const wallet = app.state.wallets[walletId];
+          if (wallet) {
+            app.paymentDraft.mode = getWalletTotal(wallet) === 0 ? 'incoming' : 'outgoing';
+          }
+          render();
+        });
+      }
 
       const goTransactions = document.getElementById('go-transactions');
       if (goTransactions) {
@@ -1920,6 +1990,7 @@ import {
           app.paymentDraft.allocation = {};
           app.paymentDraft.manualEntry = false;
           app.paymentDraft.startedAllocation = false;
+          app.paymentDraft.showAllDenoms = false;
           app.pendingOutgoingChange = null;
           app.paymentSuccessMessage = '';
           app.paymentSuccessSummary = null;
@@ -1938,6 +2009,7 @@ import {
         app.paymentDraft.allocation = {};
         app.paymentDraft.manualEntry = false;
         app.paymentDraft.startedAllocation = false;
+        app.paymentDraft.showAllDenoms = false;
         app.pendingOutgoingChange = null;
         rerenderPayment();
       };
@@ -1958,6 +2030,7 @@ import {
         app.paymentDraft.allocation = {};
         app.paymentDraft.manualEntry = false;
         app.paymentDraft.startedAllocation = false;
+        app.paymentDraft.showAllDenoms = false;
         rerenderPayment();
         const amountInput = document.getElementById('payment-amount');
         if (amountInput) {
@@ -2056,6 +2129,13 @@ import {
           rerenderPayment();
         });
       }
+      const showAllDenomsBtn = document.getElementById('show-all-denoms');
+      if (showAllDenomsBtn) {
+        showAllDenomsBtn.addEventListener('click', () => {
+          app.paymentDraft.showAllDenoms = true;
+          rerenderPayment();
+        });
+      }
       const paymentCancelEntry = document.getElementById('payment-cancel-entry');
       if (paymentCancelEntry) {
         paymentCancelEntry.addEventListener('click', () => {
@@ -2064,6 +2144,7 @@ import {
           app.paymentDraft.allocation = {};
           app.paymentDraft.manualEntry = false;
           app.paymentDraft.startedAllocation = false;
+          app.paymentDraft.showAllDenoms = false;
           app.pendingOutgoingChange = null;
           app.paymentSuccessMessage = '';
           app.paymentSuccessSummary = null;
@@ -2127,7 +2208,7 @@ import {
             actions: [
               { id: 'confirm_suggested', label: 'Confirm suggested', style: 'primary' },
               { id: 'manual_change', label: 'Enter manually', style: 'secondary' },
-              { id: 'cancel', label: 'Cancel', style: 'danger' },
+              { id: 'cancel', label: 'Cancel', style: 'secondary' },
             ],
           });
           if (changeAction === 'confirm_suggested') {
@@ -2264,10 +2345,12 @@ import {
         el.querySelectorAll('input[data-alloc-denom]').forEach((input) => {
           input.addEventListener('input', (evt) => {
             const denom = Number(evt.target.dataset.allocDenom);
+            const cleaned = String(evt.target.value || '').replace(/[^\d]/g, '');
+            if (cleaned !== evt.target.value) evt.target.value = cleaned;
             const maxAvail = mode === 'outgoing'
               ? (wallet.denominations.find((d) => d.value_minor === denom)?.count || 0)
               : Infinity;
-            const next = Math.max(0, Number.parseInt(evt.target.value || '0', 10) || 0);
+            const next = Math.max(0, Number.parseInt(cleaned || '0', 10) || 0);
             let capped = Math.min(next, maxAvail);
             if (mode === 'incoming' && amountMinor !== null) {
               const current = app.paymentDraft.allocation[denom] || 0;
@@ -2319,12 +2402,16 @@ import {
         }
       });
 
-      const defaultWalletId = wallets[0]?.id || null;
+      const defaultWalletId = app.activeWalletId || wallets[0]?.id || null;
       const filters = app.txFilters || { wallet: defaultWalletId, currency: 'all' };
       app.txFilters = filters;
+      if (app.activeWalletId && filters.wallet !== app.activeWalletId) {
+        filters.wallet = app.activeWalletId;
+      }
       if (!filters.wallet || !wallets.some((w) => w.id === filters.wallet)) {
         filters.wallet = defaultWalletId;
       }
+      if (filters.wallet) app.activeWalletId = filters.wallet;
 
       const filtered = [...app.state.transactions]
         .filter((tx) => !filters.wallet || tx.wallet_id === filters.wallet)
@@ -2334,39 +2421,28 @@ import {
           return String(b.id || '').localeCompare(String(a.id || ''));
         });
 
-      const runningBalanceById = new Map();
-      const walletTxAsc = [...app.state.transactions]
-        .filter((tx) => !filters.wallet || tx.wallet_id === filters.wallet)
-        .sort((a, b) => {
-          const timeDiff = new Date(a.created_at) - new Date(b.created_at);
-          if (timeDiff !== 0) return timeDiff;
-          return String(a.id || '').localeCompare(String(b.id || ''));
-        });
+      const chronological = [...filtered].sort((a, b) => {
+        const timeDiff = new Date(a.created_at) - new Date(b.created_at);
+        if (timeDiff !== 0) return timeDiff;
+        return String(a.id || '').localeCompare(String(b.id || ''));
+      });
+      const balanceById = new Map();
       let runningBalance = 0;
-      walletTxAsc.forEach((tx) => {
-        const delta = Number.isFinite(tx.delta_minor)
+      chronological.forEach((tx) => {
+        const deltaMinor = Number.isFinite(tx.delta_minor)
           ? tx.delta_minor
-          : (tx.type === 'incoming' ? (tx.amount_minor || 0) : tx.type === 'outgoing' ? -(tx.amount_minor || 0) : 0);
-        runningBalance += delta;
-        runningBalanceById.set(tx.id, runningBalance);
+          : (tx.type === 'incoming' ? (tx.amount_minor || 0) : tx.type === 'outgoing' ? -(tx.amount_minor || 0) : (tx.amount_minor || 0));
+        runningBalance += deltaMinor;
+        balanceById.set(tx.id, runningBalance);
       });
 
-      const groups = [];
-      let currentLabel = null;
-      filtered.forEach((tx) => {
-        const label = getDayLabel(tx.created_at);
-        if (label !== currentLabel) {
-          groups.push({ type: 'group', label });
-          currentLabel = label;
-        }
-        groups.push({ type: 'tx', tx });
-      });
-
-      const rows = groups.map((entry) => {
-        if (entry.type === 'group') {
-          return `<tr class="tx-group"><td colspan="3">${entry.label}</td></tr>`;
-        }
-        const tx = entry.tx;
+      let lastGroupKey = null;
+      const rows = filtered.map((tx) => {
+        const groupKey = dayKey(tx.created_at);
+        const groupHeader = groupKey !== lastGroupKey
+          ? `<tr class="tx-group-row"><td colspan="3">${formatDayGroupLabel(tx.created_at)}</td></tr>`
+          : '';
+        lastGroupKey = groupKey;
         const detailPaid = formatBreakdownLine(tx.paid_breakdown || tx.breakdown || [], tx.currency);
         const detailChange = formatBreakdownLine(tx.change_breakdown || [], tx.currency);
         const amountMinor = Number.isFinite(tx.requested_amount_minor) ? tx.requested_amount_minor : (tx.amount_minor || 0);
@@ -2374,34 +2450,27 @@ import {
         const amountClass = tx.type === 'incoming' ? 'incoming' : tx.type === 'outgoing' ? 'outgoing' : '';
         const isLatestForWallet = latestByWallet.get(tx.wallet_id)?.id === tx.id;
         const noteText = String(tx.note || '').trim();
-        const notePreview = truncateNote(noteText, 30);
-        const noteShort = notePreview && notePreview.length <= 20;
-        const baseTitle = tx.type === 'incoming'
-          ? 'Cash in'
-          : tx.type === 'outgoing'
-            ? 'Payment'
-            : (tx.type ? tx.type.replace(/_/g, ' ') : 'Transaction');
-        const title = noteShort ? notePreview : baseTitle;
-        const secondaryNote = noteShort ? '' : notePreview;
-        const showNoteInDetails = !secondaryNote && noteText;
+        const shortNote = truncateNote(noteText, 30);
+        const useNoteAsTitle = noteText && noteText.length <= 24;
+        const titleText = useNoteAsTitle
+          ? noteText
+          : (tx.type === 'incoming' ? 'Cash in' : tx.type === 'outgoing' ? 'Payment' : 'Adjustment');
+        const secondaryText = `${formatTimeEU(tx.created_at)}${(!useNoteAsTitle && shortNote) ? ` · ${shortNote}` : ''}`;
         const changeSummary = tx.change_expected_minor
           ? `${formatMoney(tx.change_expected_minor, tx.currency)} / ${formatMoney(tx.change_received_minor || 0, tx.currency)}${detailChange !== '-' ? ` (${detailChange})` : ''}`
           : '-';
-        const balanceAfter = runningBalanceById.has(tx.id) ? runningBalanceById.get(tx.id) : 0;
-        const expanded = app.txExpandedIds?.has(tx.id);
+        const balanceLabel = formatMoney(balanceById.get(tx.id) || 0, tx.currency);
         return `
-          <tr class="tx-row ${amountClass} ${expanded ? 'is-expanded' : ''}" data-tx-id="${tx.id}">
-            <td class="tx-description">
-              <div class="tx-desc-primary">
-                <span class="tx-title">${title || '-'}</span>
-                <span class="tx-time">${formatTimeEU(tx.created_at)}</span>
-              </div>
-              ${secondaryNote ? `<div class="tx-note-secondary">${secondaryNote}</div>` : ''}
+          ${groupHeader}
+          <tr class="tx-row ${amountClass}" data-tx-id="${tx.id}" role="button" tabindex="0">
+            <td class="tx-desc">
+              <div class="tx-desc-main">${titleText}</div>
+              <div class="tx-desc-sub">${secondaryText}</div>
             </td>
             <td class="tx-amount ${amountClass}">${amountLabel}${formatMoney(amountMinor, tx.currency)}</td>
-            <td class="tx-balance">${formatMoney(balanceAfter, tx.currency)}</td>
+            <td class="tx-balance">${balanceLabel}</td>
           </tr>
-          <tr class="tx-details-row ${expanded ? 'open' : ''}">
+          <tr class="tx-details-row" data-tx-details="${tx.id}">
             <td colspan="3">
               <div class="tx-details-body">
                 <div class="tx-detail"><span>Timestamp</span><span>${formatDateTimeEU(tx.created_at)}</span></div>
@@ -2409,7 +2478,7 @@ import {
                 <div class="tx-detail"><span>Strategy</span><span>${tx.strategy || '-'}</span></div>
                 <div class="tx-detail"><span>Breakdown</span><span>${detailPaid}</span></div>
                 <div class="tx-detail"><span>Change</span><span>${changeSummary}</span></div>
-                ${showNoteInDetails ? `<div class="tx-detail"><span>Note</span><span>${noteText}</span></div>` : ''}
+                <div class="tx-detail"><span>Note</span><span>${noteText || '-'}</span></div>
                 ${isLatestForWallet ? `<button type="button" class="btn-danger-soft tx-revert-btn" data-revert-tx-id="${tx.id}">Revert transaction</button>` : ''}
               </div>
             </td>
@@ -2425,7 +2494,7 @@ import {
         <section class="panel">
           ${!bannerHidden ? `
             <div class="banner tx-banner">
-              <button type="button" class="banner-close-pill" id="tx-banner-close" aria-label="Close">Close</button>
+              <button type="button" class="banner-close-pill" id="tx-banner-close" aria-label="Don't show again for 5 days">Don't show again for 5 days</button>
               <p>Transactions older than 30 days are deleted automatically.</p>
               <p><strong>${scheduledNextDeletionCount} transactions will be deleted next.</strong></p>
               <p><strong>${nextCleanupDays} days remaining until the next deletion window.</strong></p>
@@ -2449,7 +2518,6 @@ import {
                   <p><strong>${formatMoney(getWalletTotal(app.state.wallets[filters.wallet]), app.state.wallets[filters.wallet].currency)}</strong></p>
                 </div>
               </div>
-              <p class="muted">Based on ${filtered.length} transactions.</p>
             </section>
           ` : ''}
           ${filtered.length === 0
@@ -2477,23 +2545,24 @@ import {
       }
 
       document.querySelectorAll('.tx-row').forEach((row) => {
-        row.addEventListener('click', (event) => {
-          if (event.target.closest('button')) return;
-          const txId = row.dataset.txId;
-          if (!txId) return;
-          if (!app.txExpandedIds) app.txExpandedIds = new Set();
-          if (app.txExpandedIds.has(txId)) {
-            app.txExpandedIds.delete(txId);
-          } else {
-            app.txExpandedIds.add(txId);
+        const toggle = () => {
+          const detailsRow = row.nextElementSibling;
+          if (!detailsRow || !detailsRow.classList.contains('tx-details-row')) return;
+          const willOpen = !detailsRow.classList.contains('open');
+          detailsRow.classList.toggle('open', willOpen);
+          row.classList.toggle('is-expanded', willOpen);
+        };
+        row.addEventListener('click', toggle);
+        row.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            toggle();
           }
-          renderTransactions();
         });
       });
 
       document.querySelectorAll('[data-revert-tx-id]').forEach((btn) => {
-        btn.addEventListener('click', async (event) => {
-          event.stopPropagation();
+        btn.addEventListener('click', async () => {
           const txId = btn.dataset.revertTxId;
           const tx = app.state.transactions.find((row) => row.id === txId);
           if (!tx) return;
@@ -2532,6 +2601,8 @@ import {
       });
       bindWalletCards('tx-wallet', (walletId) => {
         app.txFilters.wallet = walletId;
+        app.activeWalletId = walletId;
+        app.paymentDraft.walletId = walletId;
         renderTransactions();
       });
       bindWalletReorder('tx-wallet');
@@ -2539,7 +2610,12 @@ import {
     }
 
     function renderSettings() {
-      const el = document.getElementById('tab-settings');
+      const el = document.getElementById('settings-overlay-root');
+      if (!el) return;
+      if (!app.settingsOpen) {
+        el.innerHTML = '';
+        return;
+      }
       const coinsRule = app.state.settings.coins_rule || 'off';
       const coinsEnabled = coinsRule !== 'off';
       const coinsMode = coinsRule === 'avoid' ? 'avoid' : 'prefer';
@@ -2547,98 +2623,108 @@ import {
       const changeSuggestionsEnabled = app.state.settings.change_suggestions;
 
       el.innerHTML = `
-        <section class="panel">
-          <section class="subpanel">
-            <h3>Suggestions</h3>
-            <p class="muted">Suggestions show recommended denominations; you still confirm or edit manually.</p>
-            <div class="segmented-control" role="group" aria-label="Payment strategies">
-              <button type="button" class="segment ${!strategiesEnabled ? 'active' : ''}" data-strategy-toggle="off">Off</button>
-              <button type="button" class="segment ${strategiesEnabled ? 'active' : ''}" data-strategy-toggle="on">On</button>
+        <div class="modal-backdrop" id="settings-backdrop">
+          <section class="modal-card settings-modal" role="dialog" aria-modal="true" aria-label="Settings">
+            <div class="modal-header">
+              <div>
+                <h3>Settings</h3>
+                <p class="muted">Adjust preferences for suggestions, coins, and appearance.</p>
+              </div>
+              <button type="button" class="modal-close-btn" id="settings-close" aria-label="Close">×</button>
             </div>
-            ${strategiesEnabled ? `
-              <p class="muted"><strong>Payment strategies</strong></p>
-              <p class="muted">How suggestions are calculated.</p>
-              <div class="strategy-grid" role="group" aria-label="Default strategy">
-                <button type="button" class="strategy-card ${app.state.settings.default_strategy === 'greedy' ? 'active' : ''}" data-strategy="greedy">
-                  <h4>Greedy</h4>
-                  <p>Uses larger denominations first to reduce item count.</p>
-                </button>
-                <button type="button" class="strategy-card ${app.state.settings.default_strategy === 'lex' ? 'active' : ''}" data-strategy="lex">
-                  <h4>Lex</h4>
-                  <p>Uses smaller denominations first when possible.</p>
-                </button>
-                <button type="button" class="strategy-card ${app.state.settings.default_strategy === 'equalisation' ? 'active' : ''}" data-strategy="equalisation">
-                  <h4>Equalisation</h4>
-                  <p>Prefers surplus denominations to keep wallet mix balanced.</p>
-                </button>
+            <section class="subpanel">
+              <h3>Suggestions</h3>
+              <p class="muted">Suggestions show recommended denominations; you still confirm or edit manually.</p>
+              <div class="segmented-control" role="group" aria-label="Payment strategies">
+                <button type="button" class="segment ${!strategiesEnabled ? 'active' : ''}" data-strategy-toggle="off">Off</button>
+                <button type="button" class="segment ${strategiesEnabled ? 'active' : ''}" data-strategy-toggle="on">On</button>
               </div>
-              <div class="subpanel-divider"></div>
-              <div class="stack-form">
-                <p class="muted"><strong>Change suggestions</strong> (for overpay)</p>
-                <p class="muted">Show a suggested change breakdown, or go manual-only when Off.</p>
-                <div class="segmented-control" role="group" aria-label="Change suggestions">
-                  <button type="button" class="segment ${!changeSuggestionsEnabled ? 'active' : ''}" data-change-suggest="off">Off</button>
-                  <button type="button" class="segment ${changeSuggestionsEnabled ? 'active' : ''}" data-change-suggest="on">On</button>
+              ${strategiesEnabled ? `
+                <p class="muted"><strong>Payment strategies</strong></p>
+                <p class="muted">How suggestions are calculated.</p>
+                <div class="strategy-grid" role="group" aria-label="Default strategy">
+                  <button type="button" class="strategy-card ${app.state.settings.default_strategy === 'greedy' ? 'active' : ''}" data-strategy="greedy">
+                    <h4>Greedy</h4>
+                    <p>Uses larger denominations first to reduce item count.</p>
+                  </button>
+                  <button type="button" class="strategy-card ${app.state.settings.default_strategy === 'lex' ? 'active' : ''}" data-strategy="lex">
+                    <h4>Lex</h4>
+                    <p>Prefers higher denominations first when multiple exact options exist.</p>
+                  </button>
+                  <button type="button" class="strategy-card ${app.state.settings.default_strategy === 'equalisation' ? 'active' : ''}" data-strategy="equalisation">
+                    <h4>Equalisation</h4>
+                    <p>Prefers surplus denominations to keep wallet mix balanced.</p>
+                  </button>
                 </div>
-              </div>
-              <div class="subpanel-divider"></div>
-              <div class="stack-form">
-                <p class="muted"><strong>Coins rules</strong></p>
-                <p class="muted">Control whether coins are used in suggested breakdowns.</p>
-                <div class="segmented-control" role="group" aria-label="Coins rules">
-                  <button type="button" class="segment ${coinsEnabled ? '' : 'active'}" data-coins-toggle="off">Off</button>
-                  <button type="button" class="segment ${coinsEnabled ? 'active' : ''}" data-coins-toggle="on">On</button>
-                </div>
-                ${coinsEnabled ? `
-                  <div class="strategy-grid" role="group" aria-label="Coins mode">
-                    <button type="button" class="strategy-card ${coinsMode === 'avoid' ? 'active' : ''}" data-coins-mode="avoid">
-                      <h4>Avoid coins entirely</h4>
-                      <p>Notes only. If notes cannot pay the amount, the payment is insufficient.</p>
-                    </button>
-                    <button type="button" class="strategy-card ${coinsMode === 'prefer' ? 'active' : ''}" data-coins-mode="prefer">
-                      <h4>Prefer notes</h4>
-                      <p>Coins used only if needed to pay exactly (or to make change).</p>
-                    </button>
+                <div class="subpanel-divider"></div>
+                <div class="stack-form">
+                  <p class="muted"><strong>Change suggestions</strong> (for overpay)</p>
+                  <p class="muted">Show a suggested change breakdown, or go manual-only when Off.</p>
+                  <div class="segmented-control" role="group" aria-label="Change suggestions">
+                    <button type="button" class="segment ${!changeSuggestionsEnabled ? 'active' : ''}" data-change-suggest="off">Off</button>
+                    <button type="button" class="segment ${changeSuggestionsEnabled ? 'active' : ''}" data-change-suggest="on">On</button>
                   </div>
-                ` : ''}
+                </div>
+                <div class="subpanel-divider"></div>
+                <div class="stack-form">
+                  <p class="muted"><strong>Coins rules</strong></p>
+                  <p class="muted">Control whether coins are used in suggested breakdowns.</p>
+                  <div class="segmented-control" role="group" aria-label="Coins rules">
+                    <button type="button" class="segment ${coinsEnabled ? '' : 'active'}" data-coins-toggle="off">Off</button>
+                    <button type="button" class="segment ${coinsEnabled ? 'active' : ''}" data-coins-toggle="on">On</button>
+                  </div>
+                  ${coinsEnabled ? `
+                    <div class="strategy-grid" role="group" aria-label="Coins mode">
+                      <button type="button" class="strategy-card ${coinsMode === 'avoid' ? 'active' : ''}" data-coins-mode="avoid">
+                        <h4>Avoid coins entirely</h4>
+                        <p>Notes only. If notes cannot pay the amount, the payment is insufficient.</p>
+                      </button>
+                      <button type="button" class="strategy-card ${coinsMode === 'prefer' ? 'active' : ''}" data-coins-mode="prefer">
+                        <h4>Prefer notes</h4>
+                        <p>Coins used only if needed to pay exactly (or to make change).</p>
+                      </button>
+                    </div>
+                  ` : ''}
+                </div>
+              ` : ''}
+            </section>
+
+            <section class="subpanel">
+              <h3>Appearance</h3>
+              <p class="muted">Match the app theme to the website.</p>
+              <div class="segmented-control appearance-control" role="group" aria-label="Theme">
+                <button type="button" class="segment ${app.state.settings.appearance === 'light' ? 'active' : ''}" data-appearance="light">Light</button>
+                <button type="button" class="segment ${app.state.settings.appearance === 'dark' ? 'active' : ''}" data-appearance="dark">Dark</button>
               </div>
-            ` : ''}
-          </section>
+            </section>
 
-          <section class="subpanel">
-            <h3>Appearance</h3>
-            <p class="muted">Match the app theme to the website.</p>
-            <div class="segmented-control appearance-control" role="group" aria-label="Theme">
-              <button type="button" class="segment ${app.state.settings.appearance === 'light' ? 'active' : ''}" data-appearance="light">Light</button>
-              <button type="button" class="segment ${app.state.settings.appearance === 'dark' ? 'active' : ''}" data-appearance="dark">Dark</button>
-            </div>
-          </section>
+            <section class="subpanel">
+              <h3>Export</h3>
+              <div class="inline-actions">
+                <button type="button" id="export-json" class="btn-secondary-soft">Export JSON</button>
+                <button type="button" id="export-pdf" class="btn-secondary-soft">Export PDF</button>
+              </div>
+            </section>
 
-          <section class="subpanel">
-            <h3>Export</h3>
-            <div class="inline-actions">
-              <button type="button" id="export-json" class="btn-secondary-soft">Export JSON</button>
-              <button type="button" id="export-pdf" class="btn-secondary-soft">Export PDF</button>
-            </div>
-          </section>
+            <section class="subpanel">
+              <h3>Delete all data</h3>
+              <p>This removes wallets, denominations, transactions, and settings.</p>
+              <button class="btn-danger-soft" type="button" id="delete-all-data">Delete all data</button>
+            </section>
 
-          <section class="subpanel">
-            <h3>Delete all data</h3>
-            <p>This removes wallets, denominations, transactions, and settings.</p>
-            <button class="btn-danger-soft" type="button" id="delete-all-data">Delete all data</button>
+            <section class="subpanel">
+              <h3>Launch updates</h3>
+              <p>Optional. Email only. Stored locally now; server sync can be added later.</p>
+              <form id="launch-updates-form" class="stack-form">
+                <label>Email <input type="email" id="launch-email" required /></label>
+                <label class="check-row"><input type="checkbox" id="launch-consent" /> Email me launch updates</label>
+                <button type="submit" class="btn-secondary-soft">Notify me</button>
+              </form>
+              ${app.launchSignupMessage ? `<p>${app.launchSignupMessage}</p>` : ''}
+            </section>
+            <p class="muted app-version">Version ${APP_VERSION}</p>
           </section>
-
-          <section class="subpanel">
-            <h3>Launch updates</h3>
-            <p>Optional. Email only. Stored locally now; server sync can be added later.</p>
-            <form id="launch-updates-form" class="stack-form">
-              <label>Email <input type="email" id="launch-email" required /></label>
-              <label class="check-row"><input type="checkbox" id="launch-consent" /> Email me launch updates</label>
-              <button type="submit" class="btn-secondary-soft">Notify me</button>
-            </form>
-            ${app.launchSignupMessage ? `<p>${app.launchSignupMessage}</p>` : ''}
-          </section>
-        </section>
+        </div>
       `;
 
       el.querySelectorAll('button[data-strategy]').forEach((btn) => {
@@ -2676,6 +2762,25 @@ import {
           renderSettings();
         });
       });
+
+      const closeSettings = () => {
+        app.settingsOpen = false;
+        renderSettings();
+      };
+      const closeBtn = document.getElementById('settings-close');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', closeSettings);
+      }
+      const backdrop = document.getElementById('settings-backdrop');
+      if (backdrop) {
+        backdrop.addEventListener('click', (event) => {
+          if (event.target !== backdrop) return;
+          closeSettings();
+        });
+      }
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeSettings();
+      }, { once: true });
 
 
       if (app.state.settings.payment_strategies) {
@@ -2775,15 +2880,28 @@ import {
       });
     }
 
+    let previousTab = app.activeTab;
     document.querySelectorAll('.tab-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         if (isAppGated() && btn.dataset.tab !== 'settings') {
           return;
         }
+        previousTab = app.activeTab;
         app.activeTab = btn.dataset.tab;
         setupTabs();
+        if (app.activeTab === 'cash') renderCashOnHand();
+        if (app.activeTab === 'pay') renderPay();
+        if (app.activeTab === 'transactions') renderTransactions();
       });
     });
+
+    const settingsBtn = document.getElementById('open-settings');
+    if (settingsBtn) {
+      settingsBtn.addEventListener('click', () => {
+        app.settingsOpen = true;
+        renderSettings();
+      });
+    }
 
     if (Object.keys(app.state.wallets).length === 0) {
       app.activeTab = 'cash';

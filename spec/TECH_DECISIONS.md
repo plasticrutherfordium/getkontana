@@ -19,7 +19,7 @@
 - PWA:
   - Use a web manifest and service worker for installability.
   - Reuse the site favicon as the PWA icon.
-- Cash prioritizes wallet cards, in-context create wallet, bills/coins summaries, and explicit denomination math rows.
+- Cash prioritizes wallet cards, in-context create wallet, a Bills/Coins totals row, and explicit denomination math rows.
 - Edit denomination actions are isolated behind explicit Edit Mode with reconciliation gating.
 - Cash denomination rows are read-only by default and become editable only inside Edit Mode.
 - Cash exposes one money-movement CTA to enter Payments (instead of separate New payment/Add money buttons).
@@ -35,7 +35,7 @@
 - Outgoing suggestion is the default interaction; manual denomination editing is revealed only after explicit "Edit manually".
 - Outgoing tender-above-amount uses an explicit popup confirmation for suggested change, with optional manual fallback before finalizing transaction.
 - Suggested tender/change breakdowns are accelerators; user can accept or override before final confirmation.
-- Revert safety rule: only the single most recent transaction is reversible to avoid non-linear ledger edits.
+- Revert safety rule: only the most recent transaction per wallet is reversible to avoid non-linear ledger edits.
 - Final payment completion requires user allocation confirmation:
   - incoming must be exact
   - outgoing can be exact or tender-above-amount with change

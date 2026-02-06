@@ -1,4 +1,4 @@
-# Payments (Cash Modal)
+# Payments (Pay Tab)
 
 ## Role
 - Single entry point for both outgoing and incoming cash transactions.
@@ -12,10 +12,9 @@
 - Outgoing strategy options: `greedy`, `lex`, `equalisation`.
 
 ## Entry Points
-- Cash has one money-movement CTA (`Add/Spend money`) that opens an in-app modal.
-- The modal contains the full Payments flow (no separate Payments tab).
-- Entry from Cash preselects the active wallet and shows a wallet summary (no wallet selector in the modal).
-- Mode is selected in the modal via `Outgoing | Incoming` toggle.
+- Payments is a first-class `Pay` tab.
+- Entry from Cash/Trx preserves the active wallet and shows a wallet summary (no wallet selector in Pay).
+- Mode is selected in the Pay tab via `Outgoing | Incoming` toggle.
 - Switching between Incoming and Outgoing preserves the entered Amount and Note/Reference, but clears any denomination allocation or suggestion state.
 
 ## Inputs
@@ -40,15 +39,19 @@
   3) note/reference
   4) denomination allocation/breakdown
 - After amount + note are entered, user allocates denominations.
+- Before amount is valid, show placeholder text: `Enter an amount to allocate denominations.`
 - Denominations are shown only after amount is entered.
-- Suggestions ON: show only denominations `<= amount` and available (count > 0).
-- Suggestions OFF (manual mode): show all available denominations (count > 0), even if `> amount`.
+- Suggestions ON: may filter to denominations `<= amount` and available (count > 0) by default.
+  - Provide `Show all denominations` to reveal the full list for manual allocation.
+- Suggestions OFF (manual mode): show all denominations for the currency, including zero-count rows.
 - Manual allocation shows `Allocated` vs `Expected` (expected = entered amount).
 - The `Allocated / Expected` summary must be prominent and clearly communicate the need to reconcile.
 - In manual allocation, denomination availability labels must reflect remaining availability (available minus allocated count).
 - When Suggestions are OFF, show the `Allocated / Expected` summary in the breakdown area (no “Suggestions disabled” banner).
 - Suggestions ON: denominations that exceed the remaining amount are visually de-emphasized and disabled.
 - Suggestions OFF: denominations are never disabled by amount (overpay is allowed; change flow handles it).
+  - Outgoing: count cannot exceed available.
+  - Incoming: count is unrestricted.
 - When allocated > expected, show a warning message stating that change will be received.
 - If outgoing amount exceeds total wallet cash, show a danger notice and hide denomination allocation (regardless of Suggestions setting).
 - Incoming allocation must sum exactly to entered amount.

@@ -26,6 +26,13 @@
   - Match the app theme to the website (`light` / `dark`).
   - Persist to local theme preference so website/app stay visually aligned.
 
+## Access
+- On mobile, Settings is accessed via a top-right gear icon in the header (not via bottom nav).
+- Gear icon is a large tap target for mobile usability and uses a proper gear/cog icon.
+- Settings opens as an in-app overlay (modal/popup), not as a separate navigated tab.
+- Settings overlay closes on outside click and on Escape (desktop).
+- Settings overlay includes a Close (X) control in the top-right.
+
 ## Data and Recovery
 - Export JSON.
 - Export PDF.
@@ -40,3 +47,6 @@
 ## Cross-page Effects
 - Strategy initializes Payments suggestions globally.
 - Zero-count denominations are always de-emphasized on Cash by default (no Settings toggle).
+
+## Footer
+- Show app version at the bottom of Settings (e.g., `Version 0.0.1`).

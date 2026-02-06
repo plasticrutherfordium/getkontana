@@ -29,7 +29,7 @@ Scenario: Cash wallet selector includes add-wallet card
   Given I am on Cash
   Then I see a `+` wallet card at the end of the wallet row
   When I click the `+` wallet card and I have fewer than 4 wallets
-  Then create-wallet UI opens inline on Cash
+  Then a create-wallet modal opens
 
 Scenario: Add-wallet card at max wallets shows limit modal
   Given I already have 4 wallets total
@@ -39,12 +39,12 @@ Scenario: Add-wallet card at max wallets shows limit modal
 
 Feature: Cash denomination presentation
 
-Scenario: Bills and coins are separated with summaries
+Scenario: Bills and coins are separated with totals
   Given the active wallet has both bill and coin denominations
   When I open Cash
   Then I see a Bills/Coins toggle
-  And I see a Bills total summary card
-  And I see a Coins total summary card
+  And I see a Bills total row in the denominations section
+  And I see a Coins total row when I switch to Coins
 
 Scenario: Denomination rows are static outside Edit Mode
   Given I view denomination rows in Cash
@@ -74,7 +74,7 @@ Feature: Edit mode reconciliation and gating
 
 Scenario: Enter edit mode requires in-app modal
   Given I am on Cash
-  When I click Edit wallet
+  When I click the wallet actions icon
   And I choose Edit denominations
   Then I see an in-app modal saying "Edit denominations instead of entering a transaction?"
   And I can choose Cancel or Enter edit mode
@@ -118,11 +118,11 @@ Scenario: Edit mode gates navigation
 Feature: Payments modes and allocation gating
 
 Scenario: Payments defaults to outgoing mode
-  Given I open Payments
+  Given I open Pay
   Then Outgoing mode is selected by default
 
 Scenario: Payments entry controls match Cash visual language
-  Given I open Payments in desktop layout
+  Given I open Pay in desktop layout
   Then Amount is rendered in the entry card as a standard-sized input (not oversized hero typography)
   And Amount has constrained width and does not stretch awkwardly full-width
   And Amount and Note/Reference use consistent spacing/alignment
@@ -136,9 +136,23 @@ Scenario: Note length limit is enforced
   Given I enter a note longer than 30 characters
   Then the note input accepts only 30 characters
 
-Scenario: Denominations are filtered by amount
-  Given I enter a payment amount
+Scenario: Denominations are filtered by amount when Suggestions are on
+  Given Suggestions are ON in Settings
+  And I enter a payment amount
   Then denominations greater than the amount are not shown
+
+Scenario: Suggestions off shows all currency denominations
+  Given Suggestions are OFF in Settings
+  And I enter a payment amount
+  Then I see all denominations for that wallet currency
+  And denominations with 0 count are visible with available 0
+
+Scenario: Show all denominations reveals full list
+  Given Suggestions are ON in Settings
+  And I enter a payment amount
+  And the payment list is filtered by amount
+  When I click Show all denominations
+  Then I see all denominations for that currency
 
 Feature: Transactions view and retention
 
@@ -150,8 +164,9 @@ Scenario: Retention banner dismisses for 5 days
 Scenario: Transactions default vs details view
   Given I am on Transactions
   Then each row shows Description, Amount, and Balance in a table
-  When I click a transaction row
-  Then I see a label → value list with full timestamp, direction, strategy, breakdown, change, and note (if not already shown)
+  And each row is clickable to expand
+  When I click a row
+  Then I see a label → value list with full timestamp, direction, strategy, breakdown, change, and full note
 
 Scenario: Transactions header updates with wallet selection
   Given I am on Transactions with wallet A selected
@@ -159,16 +174,53 @@ Scenario: Transactions header updates with wallet selection
   When I select wallet B
   Then the header updates immediately to wallet B name/currency and balance
 
-Scenario: Running balance is shown per row
-  Given I have multiple transactions in the selected wallet
-  When I open Transactions
-  Then each row shows a Balance value
-  And Balance reflects the wallet balance after each transaction
+ 
+Feature: Mobile navigation
 
-Scenario: Transactions are grouped by day
-  Given I have transactions across multiple days
-  When I open Transactions
-  Then I see day group headers like Today, Yesterday, or a long date
+Scenario: Bottom nav shows Cash Pay Trx
+  Given I am on a mobile viewport
+  When I view the app
+  Then the bottom nav shows exactly: Cash, Pay, Trx
+  And Pay is in the middle
+  And Pay is visually emphasized on mobile
+
+Scenario: Wallet row is the only horizontal scroll region
+  Given I am on a mobile viewport
+  When I open Cash
+  Then the wallet cards row can scroll horizontally
+  And the rest of the page does not scroll horizontally
+
+Scenario: Wallet actions are accessed via icon
+  Given I am on Cash
+  Then I see a wallet actions icon on the selected wallet
+  When I click the icon
+  Then I see Edit name, Edit denominations, and Delete wallet actions
+  And I see a Close control in the top-right
+  And there is no in-list Cancel action
+
+Scenario: Settings is accessible via gear icon
+  Given I am on a mobile viewport
+  When I open Cash, Pay, or Trx
+  Then I see a top-right settings icon
+  When I click the settings icon
+  Then a Settings overlay opens
+  And I can close it via Close or outside click
+
+Scenario: Cash does not show Add/Spend CTA
+  Given I am on Cash
+  Then I do not see an Add/Spend money button
+
+Scenario: Pay is first-class
+  Given I am on the app
+  When I select Pay from the bottom nav
+  Then the payment flow is shown as a full screen tab
+
+Scenario: Pay uses active wallet context
+  Given I have selected wallet A in Cash
+  When I open Pay
+  Then I see a selected wallet summary for wallet A
+  And I do not see a wallet selector row in Pay
+
 
 Scenario: Revert is per wallet latest only
   Given I have multiple transactions in a wallet
@@ -202,6 +254,20 @@ Scenario: Prefer notes overpay minimises coins before overpay
   When I enter a payment amount
   Then the suggested tender uses the fewest coins even if it increases overpay
 
+Feature: Strategy selection
+
+Scenario: Lex prefers higher denominations when multiple exact solutions exist
+  Given the wallet has denominations that allow multiple exact breakdowns
+  And Lex is selected as the strategy
+  When I enter an outgoing payment amount
+  Then the suggested breakdown uses more higher denominations in preference order
+
+Scenario: Equalisation balances remaining counts
+  Given the wallet has multiple exact solutions
+  And Equalisation is selected as the strategy
+  When I enter an outgoing payment amount
+  Then the suggested breakdown leaves remaining counts more balanced than an alternative exact breakdown
+
 Scenario: Avoid coins entirely refuses coin usage
   Given Avoid coins is enabled in Settings
   And Coins mode is set to Avoid coins entirely
@@ -213,7 +279,7 @@ Feature: Payment strategies and change suggestions
 
 Scenario: Payment strategies off disables suggestions
   Given Payment strategies are turned Off in Settings
-  When I open the payment modal and enter an amount
+  When I open Pay and enter an amount
   Then I do not see suggested denominations
   And I can only enter denominations manually
 
@@ -232,18 +298,10 @@ Scenario: Payments status backgrounds are dark-mode readable
   When I open Payments with insufficient funds
   Then the danger suggestion container uses a dark-safe red treatment with readable contrast
 
-Scenario: Cash uses one money-movement entry to Payments
-  Given I am on Cash with wallet A selected
-  When I click Add/Spend money
-  Then I navigate to Payments
-  And wallet A is preselected
-  And I can choose Outgoing or Incoming mode on Payments
-
 Scenario: Allocation is mandatory for outgoing and incoming
   Given I entered amount and note on Payments
   And denomination allocation does not yet equal the amount
   Then Apply is disabled
-  And navigation is gated except Settings
   When allocation equals the amount exactly
   Then Apply is enabled
 
@@ -320,12 +378,6 @@ Scenario: Payments denomination UI mirrors Cash pattern
   And rows communicate Denomination, Count, and Subtotal columns
   And count controls keep the same stable - input + pattern as Cash
 
-Scenario: Last payment summary follows mode
-  Given I am in Outgoing mode on Payments
-  Then I see the most recent outgoing payment in the Last section
-  When I switch to Incoming mode
-  Then I see the most recent incoming payment in the Last section
-
 Scenario: Only latest transaction can be reverted
   Given I have transaction history
   Then only the global latest transaction has a visible revert action
@@ -335,8 +387,27 @@ Scenario: Only latest transaction can be reverted
 
 Feature: Transactions table columns
 
-Scenario: Ledger column layout
+Scenario: Default column layout
   Given I open Transactions
   Then Description, Amount, and Balance columns are visible
   And there is no Wallet column
-  And there is no Note column
+
+Feature: Modal interaction
+
+Scenario: Modals close on outside click and Escape
+  Given I open any in-app modal
+  When I click outside the modal
+  Then the modal closes
+  When I press Escape
+  Then the modal closes
+
+Scenario: Settings shows app version
+  Given I open Settings
+  Then I see the app version at the bottom
+
+Feature: Button color rules
+
+Scenario: Cancel actions are neutral
+  Given I see a Cancel action in a modal or flow
+  Then it uses the neutral button style
+  And red is reserved for destructive actions only

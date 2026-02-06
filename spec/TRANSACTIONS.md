@@ -3,34 +3,28 @@
 ## Scope
 - Shows retained transaction history (last 30 days).
 - Transactions are shown per wallet via a wallet-card selector (no "all wallets" view).
+- Mobile navigation uses the `Trx` tab label (Pay is a separate tab).
 
 ## Default Row View (Collapsed)
-Transactions are presented as a bank-style ledger list (table-like layout, calm and readable).
-Columns:
-- Description (left, wide)
-- Amount (right-aligned)
-- Balance (right-aligned)
+Transactions use a bank-like ledger table.
+Columns (only):
+- Description (title + optional note + time)
+- Amount (right-aligned, signed)
+- Balance (right-aligned, running balance after each transaction)
 
-Description cell content:
-- Primary label (human readable)
-  - Incoming default: `Cash in`
-  - Outgoing default: `Payment`
-  - If note exists and is short, the note may be used as the title and the secondary line omitted.
-- Secondary line (muted): note text when not used as the title.
-- Compact time only (24h) shown next to or under the title.
-
-Amount column:
-- `+` for incoming (green)
-- `-` for outgoing (red)
-- Currency shown inline (e.g., `+€120.00`)
-
-Balance column:
-- Shows wallet balance after the transaction
-- Neutral styling (no green/red)
+Row content:
+- Title is always present:
+  - Incoming: `Cash in`
+  - Outgoing: `Payment`
+  - Other types: `Adjustment`
+- If note is short, it may be used as the title and the note line can be omitted.
+- Time is shown in 24h format under the title.
+- Note is shown as a secondary muted line when present (truncate to 30 chars; note input enforces max 30).
+- Amount uses `+` for incoming, `-` for outgoing, and includes the currency symbol inline.
 
 Row styling:
-- Subtle row tint for incoming (greenish) and outgoing (reddish)
-- Subtle hover and selected states (no heavy fills)
+- Entire row is subtly tinted green for incoming and red for outgoing.
+- Balance remains neutral.
 
 ## Filters
 - Default view is the first wallet in the wallet order.
@@ -38,12 +32,11 @@ Row styling:
 - Ordering is `created_at` descending within the selected wallet.
 
 ## Day Grouping
-- Transactions are grouped by day with a header:
+- Group rows by day with a header row:
   - `Today`
   - `Yesterday`
-  - Long date like `5 Feb 2026`
-- Sorting remains newest-first visually.
-- Full timestamp remains available in expanded details.
+  - `5 Feb 2026` (short day+month+year)
+- Sorting remains newest-first in the rendered list.
 
 ## Wallet Header (Sticky)
 - Show a sticky header directly above the transactions table.
@@ -57,21 +50,17 @@ Row styling:
 - Wallet cards row scrolls horizontally and never shrinks the rest of the page.
 
 ## Running Balance
-- Running balance is computed per wallet and shown in the right-most `Balance` column.
-- Balance is neutral (not green/red).
-- Computation:
-  - Use the wallet’s transactions in chronological order (oldest → newest).
-  - Apply each transaction’s delta to compute the balance after that transaction.
-  - Display those “after” balances in the current (newest-first) list order.
-  - If two transactions share the same timestamp, use a stable tie-break (e.g., id).
+- Display a Balance column.
+- Balance for each row is the wallet balance after applying that transaction.
+- Compute balances in chronological order, then display them on the newest-first list.
 
 ## Type Visibility
 - Must surface transaction types including: `incoming`, `outgoing`, `transfer`, `loss`, `adjustment`, `denominations_edited`.
 - `denominations_edited` rows are audit-style (`amount = 0`) and may include edit reason note.
 
 ## Details View (Expanded)
-- Row is clickable to expand (no separate Details button).
-- Expanded view appears as a full-width row under the transaction.
+- Each row is clickable to expand (no separate Details column).
+- Expanded view appears as a full-width row under the transaction (within the table).
 - Expanded view shows a calm label → value list (not a table).
 - Fields shown:
   - Full timestamp (DD/MM/YYYY 24h)
@@ -79,7 +68,7 @@ Row styling:
   - Strategy used
   - Full denomination breakdown
   - Change given/received
-  - Note only if not already shown in the row
+  - Note (full, even if truncated in row)
 
 ## Revert Rule
 - Only the latest transaction **per wallet** (by created_at) may be reverted.

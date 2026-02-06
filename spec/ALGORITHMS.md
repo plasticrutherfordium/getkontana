@@ -26,7 +26,7 @@ When the user overpays manually (allocated > entered amount):
 ## Strategy Definitions
 
 ### 1) Greedy Strategy (fast heuristic)
-**Goal:** build an exact payment breakdown by taking as many units as possible of each denomination in descending value order, without exceeding the target.
+**Goal:** build an exact payment breakdown by taking as many units as possible of each denomination in descending value order, without exceeding the target. This implicitly minimizes the number of items when greedy is optimal for the currency.
 
 **Outgoing (exact attempt):**
 - Iterate denominations in chosen ordering.
@@ -55,12 +55,13 @@ When the user overpays manually (allocated > entered amount):
   - Exact exists: `6 + 4`.
 
 ### 2) Lex Strategy
-**Goal:** preserve higher denominations when possible, preferring to use smaller denominations first.
+**Goal:** choose a deterministic, largest-to-smallest preference among exact solutions.
 
 **Outgoing (exact attempt):**
 1. Find any exact solution.
 2. Minimise total items used.
-3. Tie-break by preferring solutions that use smaller denominations (i.e., minimise use of higher denominations).
+3. Tie-break by lexicographically **maximizing** the denomination counts vector in the current ordering (largest-first by default).  
+   - This means prefer using more of higher denominations first, then the next, and so on.
 
 **Implementation expectation:**
 - Use bounded coin change (DP/backtracking) to guarantee optimality by the objectives above.
@@ -78,7 +79,7 @@ When the user overpays manually (allocated > entered amount):
 2. Minimise total items used.
 3. Choose the plan that leaves the remaining counts as even as possible:
    - `cost = sum((remainingCount_i - meanRemainingCount)^2)`
-4. Final tie-break: prefer smaller denominations (to preserve higher ones).
+4. Final tie-break: lexicographically maximize the counts vector in the current ordering (same as Lex).
 
 **Worked example (Equalisation tie-break):**
 - Denoms (value × count): `10×2, 5×4, 2×4, 1×4`

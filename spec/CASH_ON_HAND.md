@@ -18,6 +18,7 @@ If there are no wallets:
 - Wallet cards can be dragged to reorder. The order persists and is shared with Transactions.
 - On mobile, the wallet cards row scrolls horizontally; cards do not shrink and the rest of the page remains full-width.
 - Wallet row should never cause the page content to shrink; only the wallet row scrolls horizontally.
+- Wallet row is visually clipped within its container (no overflow into other sections).
 
 ## Cash Layout and Actions
 - Remove Cash header top-right wallet CTA button.
@@ -27,12 +28,14 @@ If there are no wallets:
 - Create-wallet currency selector ordering:
   - Priority first: `EUR`, then `USD`.
   - Remaining currencies listed alphabetically after a clear visual separation.
-- Under wallet cards, show one primary money-movement CTA (label can be `Add/Spend money`) that opens the payment modal.
-- Do not show separate `New payment` and `Add money` buttons in Cash.
-- Money-movement CTA preselects the active wallet and opens the payment modal in Outgoing by default.
-- If the active wallet total is 0, the modal opens in Incoming instead.
-- Secondary actions: `Edit wallet`, `Delete wallet`.
-- `Edit wallet` opens a modal with clear actions to either edit the wallet name or edit denominations.
+- Cash does not show an Add/Spend money CTA; payments are accessed from the `Pay` tab.
+- Wallet actions are accessed via a pencil/ellipsis icon on the selected wallet card (top-right).
+- Clicking the icon opens an in-app modal with actions only:
+  - Edit name
+  - Edit denominations
+  - Delete wallet (destructive)
+- The wallet actions modal has a Close control in the top-right (no in-list Cancel action).
+- Do not show Edit/Delete buttons inline on the Cash screen.
 
 ## Totals
 - No oversized standalone total hero.

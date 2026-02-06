@@ -22,6 +22,8 @@ Kontana is a local-first cash wallet tracker for physical cash, denomination cou
 - Edit Mode and payment allocation enforce exact reconciliation; no partial save.
 - Edit Mode and allocation enforce exact reconciliation; no partial save.
 - All confirmations use in-app modals (no browser `confirm`/`prompt`/`alert`).
+- In-app modals close on outside click and on Escape (desktop).
+- Cancel actions are neutral (not red). Red is reserved for destructive actions (Delete/Revert/etc.).
 - Transactions older than 30 days are auto-deleted.
 - Transactions are viewed per wallet (no "all wallets" view).
 - Retention banner is dismissible for 5 days (persisted locally).
@@ -29,17 +31,24 @@ Kontana is a local-first cash wallet tracker for physical cash, denomination cou
 - App sidebar brand uses logo only (no surrounding pill/callout copy).
 - Mobile layout (<= 768px):
   - Sidebar is hidden.
-  - Bottom navigation bar is fixed to the bottom with tabs: Cash | Transactions | Settings (Transactions centered).
+  - Bottom navigation bar is fixed to the bottom with tabs: Cash | Pay | Trx (Pay centered).
+  - Settings is accessed via a top-right gear icon in the header.
+  - Settings gear icon is a large tap target.
+  - Settings opens as an overlay (popup) and closes on outside click and Escape; includes a Close (X) control.
+  - Pay is visually emphasized in the mobile bottom nav.
   - Content has bottom padding to avoid overlap with the bottom nav.
   - Wallet cards row scrolls horizontally; page content does not shrink or scale.
+  - No global horizontal scrolling; only the wallet cards row can scroll horizontally.
+  - Wallet cards row is clipped inside its container (no overflow into other sections).
 - PWA support:
   - Provide `manifest.webmanifest` with app name, icons, theme color, and `display: standalone`.
   - Register a service worker for basic offline caching of app shell/assets.
   - Use the site favicon as the app icon.
-  - App should show the logo within the app UI (not just in the sidebar).
+  - App page header shows the logo on mobile only; desktop relies on the sidebar brand.
 
 ## Screens
-- Cash (includes payment modal): `spec/CASH_ON_HAND.md`, `spec/NEW_PAYMENT.md`
+- Cash: `spec/CASH_ON_HAND.md`
+- Pay: `spec/NEW_PAYMENT.md`
 - Transactions: `spec/TRANSACTIONS.md`
 - Settings: `spec/SETTINGS.md`
 
