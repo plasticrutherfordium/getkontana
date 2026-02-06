@@ -3,9 +3,7 @@ const CORE_ASSETS = [
   '/app',
   '/',
   '/kontana-favicon.svg',
-  '/kontana-logo.svg',
-  '/favicon.svg',
-  '/favicon.ico'
+  '/kontana-logo.svg'
 ];
 
 self.addEventListener('install', (event) => {
