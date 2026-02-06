@@ -2,3 +2,6 @@
   <link rel="stylesheet" href="{{ "kt-terminal.css" | absURL }}">
   <link rel="stylesheet" href="{{ "app.css" | absURL }}">
 {{ end }}
+{{ if .IsHome }}
+  <link rel="stylesheet" href="{{ "landing.css" | absURL }}">
+{{ end }}
