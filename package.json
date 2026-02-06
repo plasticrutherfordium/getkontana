@@ -3,15 +3,11 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
-    "preview": "astro preview",
-    "astro": "astro",
+    "dev": "hugo server -s site -p 1313 --disableFastRender",
+    "build": "hugo -s site",
     "test": "node --test"
   },
-  "dependencies": {
-    "astro": "^5.16.15"
-  },
+  "dependencies": {},
   "devDependencies": {
     "wrangler": "^4.62.0"
   }

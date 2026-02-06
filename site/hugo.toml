@@ -1,0 +1,48 @@
+baseURL = 'https://getkontana.com/'
+languageCode = 'en-us'
+title = 'Kontana'
+theme = 'terminal'
+[pagination]
+  pagerSize = 5
+
+[params]
+  contentTypeName = "posts"
+  themeColor = "green"
+  showMenuItems = 3
+  fullWidthTheme = false
+  centerTheme = true
+  autoCover = false
+  showLastUpdated = false
+  description = "A free, privacy-first cash tracker. On-device. No bank linking."
+
+[params.logo]
+  logoText = "> kontana"
+  logoHomeLink = "/"
+
+[languages]
+  [languages.en]
+    languageName = "English"
+    title = "Kontana"
+
+    [languages.en.params]
+      subtitle = "Privacy-first cash tracker"
+      owner = "Kontana"
+      keywords = "cash, tracker, privacy, offline, on-device"
+
+    [[languages.en.menu.main]]
+      identifier = "about"
+      name = "About"
+      url = "/about"
+      weight = 1
+
+    [[languages.en.menu.main]]
+      identifier = "faq"
+      name = "FAQ"
+      url = "/faq"
+      weight = 2
+
+    [[languages.en.menu.main]]
+      identifier = "app"
+      name = "Try the app"
+      url = "/app"
+      weight = 3

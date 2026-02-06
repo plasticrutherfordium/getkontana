@@ -1,38 +1,3 @@
----
-import AppLayout from '../layouts/AppLayout.astro';
----
-
-<AppLayout title="Kontana App">
-    <nav slot="sidebar" class="app-tabs" aria-label="App sections">
-      <button class="tab-btn active" data-tab="cash">Cash</button>
-      <button class="tab-btn" data-tab="pay">Pay</button>
-      <button class="tab-btn" data-tab="transactions">Trx</button>
-    </nav>
-
-  <main class="app-shell">
-    <header class="page-header">
-      <div class="page-header-spacer" aria-hidden="true"></div>
-      <div class="page-title-wrap">
-        <img src="/kontana-logo.svg" alt="Kontana" class="app-page-logo" />
-        <h1 id="page-title">Cash</h1>
-      </div>
-      <button type="button" class="settings-icon-btn" id="open-settings" aria-label="Open Settings">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm9 3.5a7.6 7.6 0 0 0-.12-1.4l2.02-1.58-2-3.46-2.44 1a7.7 7.7 0 0 0-1.2-.7l-.36-2.6H9.1l-.36 2.6c-.42.18-.82.41-1.2.7l-2.44-1-2 3.46 2.02 1.58c-.07.46-.12.93-.12 1.4 0 .48.05.95.12 1.4L3.1 13.98l2 3.46 2.44-1c.38.29.78.52 1.2.7l.36 2.6h5.34l.36-2.6c.42-.18.82-.41 1.2-.7l2.44 1 2-3.46-2.02-1.58c.07-.45.12-.92.12-1.4Z" fill="currentColor"/>
-        </svg>
-      </button>
-    </header>
-
-    <section id="tab-cash" class="tab-panel active"></section>
-    <section id="tab-pay" class="tab-panel"></section>
-    <section id="tab-transactions" class="tab-panel"></section>
-    <section id="tab-settings" class="tab-panel"></section>
-    <div id="app-modal-root"></div>
-    <div id="settings-overlay-root"></div>
-  </main>
-  
-
-  <script>
 const APP_VERSION = '0.0.1';
 const ZERO_DECIMAL_CURRENCIES = new Set(['CLP', 'SEK', 'HUF', 'NOK', 'ARS', 'JPY', 'KRW', 'XOF']);
 
@@ -3347,6 +3312,3 @@ const STORAGE_KEY = 'kontana_state_v1';
     app.paymentDraft.walletId = getActiveWallet()?.id || null;
     app.paymentDraft.strategy = app.state.settings.default_strategy;
     render();
-</script>
-
-</AppLayout>

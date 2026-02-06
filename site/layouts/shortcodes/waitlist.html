@@ -1,0 +1,50 @@
+<form id="waitlist-form" style="margin-top: 1em;">
+  <input
+    type="email"
+    name="email"
+    placeholder="your@email.com"
+    required
+    style="background: var(--background); color: var(--color); border: 1px solid var(--accent); padding: 8px 12px; font-family: 'Fira Code', monospace; font-size: 0.9rem; width: 100%; max-width: 360px;"
+  />
+  <div class="cf-turnstile" data-sitekey="0x4AAAAAACXPTpqdso7QmAhX" style="margin-top: 0.75em;"></div>
+  <button
+    type="submit"
+    style="margin-top: 0.75em; background: var(--accent); color: var(--background); border: 2px solid var(--accent); padding: 8px 20px; font-family: 'Fira Code', monospace; font-size: 0.9rem; font-weight: 600; cursor: pointer;"
+  >
+    Join waitlist
+  </button>
+  <p style="margin-top: 0.5em; font-size: 0.8rem; opacity: 0.6;">Email only. No tracking. Unsubscribe anytime.</p>
+</form>
+<div id="waitlist-msg"></div>
+
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script>
+  document.getElementById('waitlist-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    var form = e.target;
+    var msg = document.getElementById('waitlist-msg');
+    var email = form.querySelector('input[name="email"]').value;
+    var tokenInput = document.querySelector('input[name="cf-turnstile-response"]');
+    var turnstileToken = tokenInput ? tokenInput.value : '';
+
+    msg.textContent = '';
+
+    var res = await fetch('/api/waitlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, turnstileToken: turnstileToken }),
+    });
+
+    var result = await res.json().catch(function() { return { ok: false }; });
+
+    if (result.ok) {
+      msg.innerHTML = '<p style="color: var(--accent); margin-top: 0.5em;">OK: You\'re on the list.</p>';
+      form.style.display = 'none';
+    } else {
+      var message = 'ERR: Something went wrong. Please try again.';
+      if (res.status === 400) message = 'ERR: Please enter a valid email.';
+      if (res.status === 403) message = 'ERR: Captcha verification failed.';
+      msg.innerHTML = '<p style="color: #ef4444; margin-top: 0.5em;">' + message + '</p>';
+    }
+  });
+</script>

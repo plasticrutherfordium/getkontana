@@ -1,21 +1,42 @@
 # Deployment Guide for GetKontana.com
 
-## Quick Deploy Options:
+## Prerequisites
+- [Hugo](https://gohugo.io/installation/) (extended edition)
 
-### Vercel (Recommended)
+## Build
 ```bash
-npm install -g vercel
-vercel --prod
+hugo -s site
 ```
+Output is written to `site/public/`.
+
+## Quick Deploy Options:
 
 ### Netlify
 ```bash
 npm install -g netlify-cli
-netlify deploy --prod --dir=dist
+netlify deploy --prod --dir=site/public
 ```
 
+### Vercel
+```bash
+npm install -g vercel
+vercel --prod
+```
+Set the build command to `hugo -s site` and the output directory to `site/public`.
+
 ### Manual Upload
-Upload the `dist/` folder to your web server
+Upload the `site/public/` folder to your web server.
+
+## Local Development
+```bash
+hugo server -s site -p 1313 --disableFastRender
+```
+
+## Cloudflare Functions
+The `functions/` directory contains Cloudflare Workers API routes (e.g. waitlist). Deploy with:
+```bash
+npx wrangler deploy
+```
 
 ## Domain Setup:
 1. Point getkontana.com DNS to your hosting provider
