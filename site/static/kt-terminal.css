@@ -13,9 +13,9 @@
   --kt-danger: #ef4444;
   --kt-warning: #f59e0b;
   --kt-success: #19c36b;
-  --kt-radius-sm: 4px;
-  --kt-radius-md: 6px;
-  --kt-radius-lg: 8px;
+  --kt-radius-sm: 0;
+  --kt-radius-md: 0;
+  --kt-radius-lg: 0;
 }
 
 :root[data-theme='light'] {

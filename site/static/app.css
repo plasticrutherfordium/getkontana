@@ -72,7 +72,7 @@ body {
   justify-content: center;
   height: 40px;
   width: 40px;
-  border-radius: 4px;
+  border-radius: 0;
   border: 1px solid var(--kt-border);
   background: var(--kt-surface);
   color: var(--kt-text);
@@ -130,7 +130,7 @@ body {
   gap: 8px;
   min-height: 40px;
   padding: 8px 16px;
-  border-radius: 4px;
+  border-radius: 0;
   border: 1px solid var(--kt-border);
   background: var(--kt-surface);
   color: var(--kt-text);
@@ -179,7 +179,7 @@ body {
   width: 100%;
   text-align: left;
   border: 1px solid var(--kt-border);
-  border-radius: 4px;
+  border-radius: 0;
   background: var(--kt-surface);
   color: var(--kt-text-muted);
   min-height: 40px;
@@ -218,7 +218,7 @@ body {
 .banner,
 .column-toggles {
   border: 1px solid var(--kt-border);
-  border-radius: 4px;
+  border-radius: 0;
   background: var(--kt-surface);
   padding: 16px;
   overflow-x: hidden;
@@ -236,7 +236,7 @@ body {
   background: transparent;
   color: var(--kt-danger);
   padding: 4px 10px;
-  border-radius: 4px;
+  border-radius: 0;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
@@ -252,7 +252,7 @@ body {
   border-collapse: collapse;
   background: var(--kt-surface);
   border: 1px solid var(--kt-border);
-  border-radius: 4px;
+  border-radius: 0;
   overflow: hidden;
 }
 
@@ -391,7 +391,7 @@ body {
   background: var(--kt-surface-2);
   box-shadow: none;
   padding: 14px 16px;
-  border-radius: 4px;
+  border-radius: 0;
 }
 
 .allocation-line {
@@ -500,7 +500,7 @@ body {
   flex: 0 0 auto;
   min-height: 108px;
   border: 1px solid var(--kt-border);
-  border-radius: 4px;
+  border-radius: 0;
   background: var(--kt-surface-2);
   padding: 12px;
   display: grid;
@@ -549,7 +549,7 @@ body {
   z-index: 2;
   height: 32px;
   width: 32px;
-  border-radius: 4px;
+  border-radius: 0;
   border: 1px solid var(--kt-border);
   background: var(--kt-surface);
   color: var(--kt-text);
@@ -616,7 +616,7 @@ body {
   gap: 4px;
   width: 240px;
   border: 1px solid var(--kt-border);
-  border-radius: 4px;
+  border-radius: 0;
   padding: 3px;
   background: var(--kt-surface-2);
   margin-top: 4px;
@@ -624,7 +624,7 @@ body {
 
 .segment {
   min-height: 36px;
-  border-radius: 4px;
+  border-radius: 0;
   border: 0;
   background: transparent;
   color: var(--kt-text-muted);
@@ -649,7 +649,7 @@ body {
 
 .strategy-card {
   border: 1px solid var(--kt-border);
-  border-radius: 4px;
+  border-radius: 0;
   background: var(--kt-surface-2);
   padding: 12px;
   text-align: left;
@@ -690,7 +690,7 @@ body {
   background: var(--kt-surface-2);
   color: var(--kt-text-muted);
   padding: 6px 12px;
-  border-radius: 4px;
+  border-radius: 0;
   font-size: 0.76rem;
   font-weight: 600;
   cursor: pointer;
@@ -770,7 +770,7 @@ body {
   grid-template-columns: 1fr var(--denom-count-col-width) var(--denom-subtotal-col-width);
   gap: 14px;
   align-items: baseline;
-  border-radius: 4px;
+  border-radius: 0;
   background: var(--kt-surface-2);
   border: 1px solid var(--kt-border);
   padding: 12px;
@@ -800,7 +800,7 @@ body {
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  border-radius: 4px;
+  border-radius: 0;
   font-size: 0.74rem;
   font-weight: 700;
   letter-spacing: 0.01em;
@@ -842,7 +842,7 @@ body {
   margin: 0;
   min-height: 40px;
   border: 1px solid var(--kt-border);
-  border-radius: 4px;
+  border-radius: 0;
   background: var(--kt-surface);
   display: grid;
   place-items: center;
@@ -855,7 +855,7 @@ body {
   min-height: 36px;
   height: 36px;
   padding: 0;
-  border-radius: 4px;
+  border-radius: 0;
 }
 
 
@@ -902,7 +902,7 @@ body {
 
 .edit-reconciliation-pill {
   margin: 0;
-  border-radius: 4px;
+  border-radius: 0;
   padding: 9px 12px;
   border: 1px solid transparent;
   font-weight: 700;
@@ -973,7 +973,7 @@ select {
   width: 100%;
   min-height: 40px;
   border: 1px solid var(--kt-border);
-  border-radius: 4px;
+  border-radius: 0;
   padding: 8px 12px;
   background: var(--kt-surface);
   color: var(--kt-text);
@@ -991,7 +991,7 @@ select:focus {
 button {
   min-height: 40px;
   border: 1px solid var(--kt-border);
-  border-radius: 4px;
+  border-radius: 0;
   padding: 8px 14px;
   background: var(--kt-surface);
   color: var(--kt-text);
@@ -1157,7 +1157,7 @@ button:disabled {
   display: inline-block;
   margin: 0;
   padding: 5px 9px;
-  border-radius: 4px;
+  border-radius: 0;
   border: 1px solid transparent;
   font-size: 0.85rem;
   font-weight: 700;
@@ -1204,7 +1204,7 @@ button:disabled {
   margin: 0;
   padding: 14px 16px;
   border: 1px solid var(--kt-accent);
-  border-radius: 4px;
+  border-radius: 0;
   background: var(--kt-surface-2);
   font-weight: 700;
 }
@@ -1250,7 +1250,7 @@ table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.92rem;
-  border-radius: 4px;
+  border-radius: 0;
   overflow: hidden;
   border-style: hidden;
   box-shadow: 0 0 0 1px var(--kt-border);
@@ -1295,7 +1295,7 @@ tbody tr:nth-child(even):not(.tx-details) {
   overflow-y: auto;
   overflow-x: hidden;
   border: 1px solid var(--kt-border);
-  border-radius: 6px;
+  border-radius: 0;
   background: var(--kt-surface);
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
   padding: 16px;
@@ -1309,7 +1309,7 @@ tbody tr:nth-child(even):not(.tx-details) {
   color: var(--kt-text);
   height: 32px;
   width: 32px;
-  border-radius: 4px;
+  border-radius: 0;
   font-size: 1.2rem;
   line-height: 1;
   display: inline-flex;
@@ -1436,12 +1436,12 @@ tbody tr:nth-child(even):not(.tx-details) {
     font-weight: 700;
     color: var(--kt-text-muted);
     padding: 10px 8px;
-    border-radius: 4px;
+    border-radius: 0;
     border: 1px solid transparent;
   }
 
   .bottom-nav-link[data-tab='pay'] {
-    border-radius: 4px;
+    border-radius: 0;
     border-color: var(--kt-accent);
   }
 
@@ -1497,7 +1497,7 @@ tbody tr:nth-child(even):not(.tx-details) {
 
   .tx-row {
     border: 1px solid var(--kt-border);
-    border-radius: 4px;
+    border-radius: 0;
     padding: 12px;
     margin-bottom: 10px;
   }

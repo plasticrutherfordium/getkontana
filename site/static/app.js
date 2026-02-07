@@ -1157,7 +1157,7 @@ const STORAGE_KEY = 'kontana_state_v1';
             <section class="modal-card" role="dialog" aria-modal="true" aria-label="${modal.title}">
               <div class="modal-header">
                 <h3>${modal.title}</h3>
-                ${modal.showClose ? '<button type="button" class="modal-close-btn" data-modal-close aria-label="Close">×</button>' : ''}
+                ${modal.showClose ? '<button type="button" class="modal-close-btn" data-modal-close aria-label="Close"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M7 1L1 7l5 5l-5 5l6 6l5-5l5 5l6-6l-5-5l5-5l-6-6l-5 5z" clip-rule="evenodd"/></svg></button>' : ''}
               </div>
               <p>${modal.message}</p>
               ${showToggle ? `<div class="segmented-control" role="tablist" aria-label="Change denomination type">
@@ -1230,7 +1230,7 @@ const STORAGE_KEY = 'kontana_state_v1';
           <section class="modal-card" role="dialog" aria-modal="true" aria-label="${modal.title}">
             <div class="modal-header">
               <h3>${modal.title}</h3>
-              ${modal.showClose ? '<button type="button" class="modal-close-btn" data-modal-close aria-label="Close">×</button>' : ''}
+              ${modal.showClose ? '<button type="button" class="modal-close-btn" data-modal-close aria-label="Close"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M7 1L1 7l5 5l-5 5l6 6l5-5l5 5l6-6l-5-5l5-5l-6-6l-5 5z" clip-rule="evenodd"/></svg></button>' : ''}
             </div>
             <p>${modal.message}</p>
             ${modal.input ? `<label>Value<input id="modal-input" type="text" value="${modal.value || ''}" placeholder="${modal.input.placeholder || ''}" ${modal.input.maxLength ? `maxlength="${modal.input.maxLength}"` : ''} /></label>${modal.input.maxLength ? `<p class="muted modal-field-hint" data-modal-hint="__input">Maximum ${modal.input.maxLength} characters.</p>` : ''}` : ''}
@@ -1372,9 +1372,7 @@ const STORAGE_KEY = 'kontana_state_v1';
                 </button>
                 ${showActions && active ? `
                   <button type="button" class="wallet-card-action" data-wallet-action="1" aria-label="Wallet actions">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M15.7 3.3 20.7 8.3 9.3 19.7l-5.5 1.1 1.1-5.5L15.7 3.3Zm-1.4 2.1-8.2 8.2-.5 2.6 2.6-.5 8.2-8.2-2.1-2.1ZM18 5.6l-2.1-2.1 1.1-1.1 2.1 2.1L18 5.6Z" fill="currentColor"/>
-                    </svg>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M17.116.884L16.232 0l-.884.884L13.232 3L11.116.884L10.232 0l-.884.884l-6 6l1.768 1.768l5.116-5.116l1.232 1.232l-9.366 9.366l-.366.366v6L.098 22.134l1.768 1.768L3.5 22.268h6l.366-.366l13.25-13.25l.884-.884l-.884-.884zM8.464 19.768l9-9l-4.232-4.232l-9 9v4.232z" clip-rule="evenodd"/></svg>
                   </button>
                 ` : ''}
               </div>
@@ -3017,7 +3015,7 @@ const STORAGE_KEY = 'kontana_state_v1';
                 <h3>Settings</h3>
                 <p class="muted">Adjust preferences for suggestions, coins, and appearance.</p>
               </div>
-              <button type="button" class="modal-close-btn" id="settings-close" aria-label="Close">×</button>
+              <button type="button" class="modal-close-btn" id="settings-close" aria-label="Close"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M7 1L1 7l5 5l-5 5l6 6l5-5l5 5l6-6l-5-5l5-5l-6-6l-5 5z" clip-rule="evenodd"/></svg></button>
             </div>
             <section class="subpanel">
               <h3>Suggestions</h3>
