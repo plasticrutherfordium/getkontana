@@ -9,6 +9,17 @@ body {
   overflow-x: hidden;
 }
 
+#page-title,
+.tab-btn,
+.bottom-nav-link span {
+  font-family: 'Press Start 2P', monospace;
+}
+
+#page-title {
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+}
+
 .app-bottom-nav {
   display: none;
 }
@@ -70,8 +81,8 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 40px;
-  width: 40px;
+  height: 44px;
+  width: 44px;
   border-radius: 0;
   border: 1px solid var(--kt-border);
   background: var(--kt-surface);
@@ -80,8 +91,8 @@ body {
 }
 
 .settings-icon-btn svg {
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
 }
 
 .settings-header {
@@ -560,8 +571,8 @@ body {
 }
 
 .wallet-card-action svg {
-  width: 18px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
 }
 
 .wallet-card-action:hover {
@@ -1307,8 +1318,8 @@ tbody tr:nth-child(even):not(.tx-details) {
   border: 1px solid var(--kt-border);
   background: var(--kt-surface-2);
   color: var(--kt-text);
-  height: 32px;
-  width: 32px;
+  height: 36px;
+  width: 36px;
   border-radius: 0;
   font-size: 1.2rem;
   line-height: 1;

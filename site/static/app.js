@@ -1936,7 +1936,7 @@ const STORAGE_KEY = 'kontana_state_v1';
         const walletTotal = getWalletTotal(wallet);
         app.paymentDraft.mode = walletTotal === 0 ? 'incoming' : 'outgoing';
       }
-      renderNewPayment('tab-pay', { showWalletSelector: false });
+      renderNewPayment('tab-pay', { showWalletSelector: true });
     }
 
     function renderNewPayment(target = 'tab-payment', options = {}) {
