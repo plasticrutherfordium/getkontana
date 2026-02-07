@@ -45,14 +45,17 @@ If there are no wallets:
 ## Denominations View
 - Split by Bills/Coins toggle; only one category shown at a time.
 - If currency only has one category, hide the toggle.
-- Row semantics must be explicit: `Denomination × Count = Subtotal`.
-- Denomination rows use equal column widths for Denomination, Count, and Subtotal to avoid cramped labels.
+- Cash denomination rows use a three-column grid (value, count, subtotal) without header labels.
+  Semantics are implicit; labels are not shown.
+- Denomination rows use equal column widths for value, count, and subtotal to avoid cramped labels.
 - Row presentation must clearly distinguish denominations the user has vs missing denominations.
 - Zero-count denominations are always visually de-emphasized by default.
 - Default (not in Edit Mode): denomination rows are static/read-only.
 - Default (not in Edit Mode): do not show editable count controls (`- input +`) inline.
 - Denominations come from canonical per-currency mapping only.
 - Cash includes a minimal inline toggle in the denominations section to hide zero-count rows (show only denominations you have). No Settings control.
+- Wallet names are truncated with ellipsis to preserve uniform card size.
+- Selected wallet must be instantly distinguishable: 2px accent border, accent-colored currency header and total text.
 
 ## Edit Mode
 ### Entry

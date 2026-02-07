@@ -117,7 +117,8 @@ Tokens live as CSS variables (`--kt-*`) in `src/styles/terminal.css` and are map
 
 ### 4.8 Icons
 - Lucide icons via shadcn conventions.
-- Stroke-only, 16–20px.
+- Default: stroke-only, 16–20px.
+- Action icons for key controls (settings, edit, close): 24–32px for clear visibility.
 - Color follows text unless stateful.
 
 ## 5. App-Specific UI Patterns

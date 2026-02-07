@@ -20,12 +20,16 @@
 ## Inputs
 - Required: amount, denomination allocation.
 - Note/reference is optional for both Incoming and Outgoing (max 30 characters).
+- When the user approaches or reaches the max length (25+ chars), show an inline character count hint (e.g., "28/30 characters"). At 30, show "limit reached".
 - Amount and Note/Reference controls follow Cash input styling:
   - rounded control style consistent with app inputs
   - control height aligned with standard inputs (no oversized hero field)
   - label style matches other form labels
 - Amount field width is constrained to avoid full-width stretching on desktop (target max-width around 420-520px).
 - Amount input must behave like a normal editable field (multi-digit typing, select/replace, paste).
+- Amount input must never reorder digits; typing order must be preserved.
+- Amount input formats as currency while typing (thousands separators, two decimals, currency symbol).
+- Amount input accepts formatted strings and preserves caret.
 - Amount input must not use browser spinner UI.
 - Amount + Note live at the top of a single pill; the breakdown and allocation UI sits below inside the same pill, separated by a divider.
 - Cancel only appears after any entry has started, and sits at the bottom of the pill.
@@ -46,6 +50,11 @@
 - Suggestions OFF (manual mode): show all denominations for the currency, including zero-count rows.
 - Manual allocation shows `Allocated` vs `Expected` (expected = entered amount).
 - The `Allocated / Expected` summary must be prominent and clearly communicate the need to reconcile.
+- Allocation status color-coding:
+  - Yellow box when allocated ≠ expected.
+  - Red only for outgoing insufficient funds, showing "Missing …".
+  - Incoming never shows red.
+  - Do not show "Allocation is incomplete" text.
 - In manual allocation, denomination availability labels must reflect remaining availability (available minus allocated count).
 - When Suggestions are OFF, show the `Allocated / Expected` summary in the breakdown area (no “Suggestions disabled” banner).
 - Suggestions ON: denominations that exceed the remaining amount are visually de-emphasized and disabled.
@@ -108,7 +117,7 @@
 
 ## Denomination UI Parity With Cash
 - Breakdown card uses the same Bills/Coins tab pattern as Cash.
-- Denomination rows keep explicit `Denomination × Count = Subtotal` semantics.
+- Denomination rows use a three-column grid (value, count, subtotal) without header labels.
 - Row control structure mirrors Cash: stable count controls with `- input +` and matching spacing/alignment.
 - Manual allocation count inputs must be visually prominent and easy to read.
 - Denomination rows use equal column widths for Denomination, Count, and Subtotal.

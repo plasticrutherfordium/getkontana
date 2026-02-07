@@ -712,13 +712,36 @@ const STORAGE_KEY = 'kontana_state_v1';
     function parseAmountToMinor(input, currency) {
       if (!input || !input.trim()) return null;
       const scale = getMinorScale(currency);
-      const cleaned = input.trim().replace(',', '.');
-      const n = Number(cleaned);
+      const stripped = input.trim().replace(/[^0-9.,]/g, '').replace(/,/g, '');
+      if (!stripped) return null;
+      const n = Number(stripped);
       if (!Number.isFinite(n) || n <= 0) return null;
-      const decimals = cleaned.includes('.') ? cleaned.split('.')[1].length : 0;
+      const decimals = stripped.includes('.') ? stripped.split('.')[1].length : 0;
       if (scale === 1 && decimals > 0) return null;
       if (scale === 100 && decimals > 2) return null;
       return Math.round(n * scale);
+    }
+
+    function formatAmountDisplay(rawInput, currency) {
+      const stripped = rawInput.replace(/[^0-9.]/g, '');
+      if (!stripped) return '';
+      const parts = stripped.split('.');
+      const intPart = parts[0] || '';
+      const decPart = parts.length > 1 ? parts[1] : null;
+      const formatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      const scale = getMinorScale(currency);
+      const sym = getCurrencySymbol(currency);
+      if (decPart !== null) {
+        return `${sym}${formatted}.${decPart.slice(0, scale === 1 ? 0 : 2)}`;
+      }
+      return `${sym}${formatted}`;
+    }
+
+    function getCurrencySymbol(currency) {
+      try {
+        return new Intl.NumberFormat(undefined, { style: 'currency', currency, currencyDisplay: 'narrowSymbol' })
+          .formatToParts(0).find((p) => p.type === 'currency')?.value || '';
+      } catch { return ''; }
     }
 
     function normalizeWalletDenominations(wallet) {
@@ -1372,7 +1395,7 @@ const STORAGE_KEY = 'kontana_state_v1';
                 </button>
                 ${showActions && active ? `
                   <button type="button" class="wallet-card-action" data-wallet-action="1" aria-label="Wallet actions">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M17.116.884L16.232 0l-.884.884L13.232 3L11.116.884L10.232 0l-.884.884l-6 6l1.768 1.768l5.116-5.116l1.232 1.232l-9.366 9.366l-.366.366v6L.098 22.134l1.768 1.768L3.5 22.268h6l.366-.366l13.25-13.25l.884-.884l-.884-.884zM8.464 19.768l9-9l-4.232-4.232l-9 9v4.232z" clip-rule="evenodd"/></svg>
+                    <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M17.116.884L16.232 0l-.884.884L13.232 3L11.116.884L10.232 0l-.884.884l-6 6l1.768 1.768l5.116-5.116l1.232 1.232l-9.366 9.366l-.366.366v6L.098 22.134l1.768 1.768L3.5 22.268h6l.366-.366l13.25-13.25l.884-.884l-.884-.884zM8.464 19.768l9-9l-4.232-4.232l-9 9v4.232z" clip-rule="evenodd"/></svg>
                   </button>
                 ` : ''}
               </div>
@@ -1569,37 +1592,43 @@ const STORAGE_KEY = 'kontana_state_v1';
         await modalAlert('Maximum number of wallets reached (4).');
         return;
       }
-      const result = await showModal({
-        title: 'Create wallet',
-        message: 'Enter a name and choose a currency.',
-            fields: [
-              { id: 'name', label: 'Name', type: 'text', defaultValue: '', maxLength: WALLET_NAME_MAX },
-              { id: 'currency', label: 'Currency', type: 'select', defaultValue: 'EUR', optionsHtml: renderCurrencyOptions('EUR') },
-            ],
-        actions: [
-          { id: 'create', label: 'Create wallet', style: 'primary' },
-          { id: 'cancel', label: 'Cancel', style: 'secondary' },
-        ],
-      });
-      if (!result || result.id !== 'create') return;
-      const name = (result.values?.name || '').trim();
-      const currency = result.values?.currency || 'EUR';
-          if (!name) {
-            await modalAlert('Wallet name is required.');
-            return;
-          }
-          if (name.length > WALLET_NAME_MAX) {
-            await modalAlert(`Wallet name must be ${WALLET_NAME_MAX} characters or fewer.`);
-            return;
-          }
-          try {
-            const id = createWallet(app.state, name, currency);
-        app.activeWalletId = id;
-        if (!app.paymentDraft.walletId) app.paymentDraft.walletId = id;
-        saveState();
-        render();
-      } catch (err) {
-        await modalAlert(err.message || 'Unable to create wallet.');
+      let errorMsg = '';
+      let lastCurrency = 'EUR';
+      while (true) {
+        const result = await showModal({
+          title: 'Create wallet',
+          message: errorMsg ? `<p class="status danger">${errorMsg}</p>Enter a name and choose a currency.` : 'Enter a name and choose a currency.',
+          fields: [
+            { id: 'name', label: 'Name', type: 'text', defaultValue: '', maxLength: WALLET_NAME_MAX },
+            { id: 'currency', label: 'Currency', type: 'select', defaultValue: lastCurrency, optionsHtml: renderCurrencyOptions(lastCurrency) },
+          ],
+          actions: [
+            { id: 'create', label: 'Create wallet', style: 'primary' },
+            { id: 'cancel', label: 'Cancel', style: 'secondary' },
+          ],
+        });
+        if (!result || result.id !== 'create') return;
+        const name = (result.values?.name || '').trim();
+        const currency = result.values?.currency || 'EUR';
+        lastCurrency = currency;
+        if (!name) {
+          errorMsg = 'Wallet name is required.';
+          continue;
+        }
+        if (name.length > WALLET_NAME_MAX) {
+          errorMsg = `Wallet name must be ${WALLET_NAME_MAX} characters or fewer.`;
+          continue;
+        }
+        try {
+          const id = createWallet(app.state, name, currency);
+          app.activeWalletId = id;
+          if (!app.paymentDraft.walletId) app.paymentDraft.walletId = id;
+          saveState();
+          render();
+          return;
+        } catch (err) {
+          errorMsg = err.message || 'Unable to create wallet.';
+        }
       }
     }
 
@@ -1702,11 +1731,6 @@ const STORAGE_KEY = 'kontana_state_v1';
                 </div>
               ` : '<span></span>'}
               <button type="button" id="toggle-denom-visibility" class="denom-filter-toggle ${hideEmptyDenoms ? 'active' : ''}" aria-pressed="${hideEmptyDenoms ? 'true' : 'false'}">Hide empty</button>
-            </div>
-            <div class="denom-header-row">
-              <p>Denomination</p>
-              <p>× Count</p>
-              <p>= Subtotal</p>
             </div>
             <div class="denom-list">${rows}</div>
             <div class="denom-total-row">
@@ -2204,14 +2228,20 @@ const STORAGE_KEY = 'kontana_state_v1';
         ? getSortedDenoms(wallet, 'largest_first').some((row) => (effectiveAllocation[row.value_minor] || 0) > row.count)
         : false;
       if (outgoingOveruse) applyDisabled = true;
+      const allocNotEqual = amountMinor !== null && effectiveAllocated !== amountMinor;
+      const allocOverOutgoing = mode === 'outgoing' && amountMinor !== null && effectiveAllocated > amountMinor;
+      const allocToneClass = (() => {
+        if (mode === 'outgoing' && outgoingOveruse) return 'suggestion-danger';
+        if (mode === 'outgoing' && insufficientOutgoing) return 'suggestion-danger';
+        if (allocNotEqual) return 'suggestion-warn';
+        return '';
+      })();
       const allocationPreviewHtml = `
-        <div class="preview allocation-summary ${mode === 'outgoing' && amountMinor !== null && effectiveAllocated > amountMinor ? 'suggestion-warn' : ''}">
+        <div class="preview allocation-summary ${allocToneClass}">
           ${mode === 'outgoing' && usingSuggestion ? `<p class="allocation-line">Allocated (suggested): ${formatMoney(effectiveAllocated, wallet.currency)} / Expected: ${formatMoney(amountMinor || 0, wallet.currency)}</p>` : ''}
           ${mode === 'outgoing' && usingSuggestion ? '' : `<p class="allocation-line">Allocated: ${formatMoney(effectiveAllocated, wallet.currency)}${amountMinor !== null ? ` / Expected: ${formatMoney(amountMinor, wallet.currency)}` : ''}</p>`}
-          ${amountMinor !== null ? '<p class="allocation-hint">Reconcile Allocated to Expected to continue.</p>' : ''}
-          ${mode === 'outgoing' && amountMinor !== null && effectiveAllocated > amountMinor ? `<p class="status warn">You surpassed the expected amount and will receive ${formatMoney(effectiveAllocated - amountMinor, wallet.currency)} back.</p>` : ''}
+          ${allocOverOutgoing ? `<p class="status warn">Change: ${formatMoney(effectiveAllocated - amountMinor, wallet.currency)}</p>` : ''}
           ${mode === 'outgoing' && outgoingOveruse ? '<p class="status danger">Allocation exceeds available counts.</p>' : ''}
-          ${hasIncompleteAllocation() ? '<p class="status warn">Allocation is incomplete.</p>' : ''}
         </div>
       `;
 
@@ -2275,11 +2305,12 @@ const STORAGE_KEY = 'kontana_state_v1';
             <section class="card payment-entry-pill">
               <div class="payment-entry-grid">
                 <label class="payment-amount-field">Amount
-                  <input id="payment-amount" class="payment-amount-input" type="number" inputmode="decimal" step="any" value="${app.paymentDraft.amountInput}" />
+                  <input id="payment-amount" class="payment-amount-input" type="text" inputmode="decimal" value="${app.paymentDraft.amountDisplay || ''}" autocomplete="off" />
                 </label>
                 <label>Note/Reference (optional)
                   <input id="payment-note" type="text" maxlength="30" value="${app.paymentDraft.note}" />
                 </label>
+                ${app.paymentDraft.note.length >= 25 ? `<p class="muted note-limit-hint">${app.paymentDraft.note.length}/30 characters${app.paymentDraft.note.length >= 30 ? ' — limit reached' : ''}</p>` : ''}
               </div>
               <div class="payment-divider" aria-hidden="true"></div>
               <section class="payment-breakdown-inline ${validAmount ? '' : 'disabled'}">
@@ -2340,6 +2371,7 @@ const STORAGE_KEY = 'kontana_state_v1';
           app.activeWalletId = walletId;
           app.paymentDraft.walletId = walletId;
           app.paymentDraft.amountInput = '';
+          app.paymentDraft.amountDisplay = '';
           app.paymentDraft.note = '';
           app.paymentDraft.allocation = {};
           app.paymentDraft.manualEntry = false;
@@ -2371,6 +2403,7 @@ const STORAGE_KEY = 'kontana_state_v1';
       if (newTransactionBtn) {
         newTransactionBtn.addEventListener('click', () => {
           app.paymentDraft.amountInput = '';
+          app.paymentDraft.amountDisplay = '';
           app.paymentDraft.note = '';
           app.paymentDraft.allocation = {};
           app.paymentDraft.manualEntry = false;
@@ -2407,9 +2440,13 @@ const STORAGE_KEY = 'kontana_state_v1';
 
 
       document.getElementById('payment-amount').addEventListener('input', (e) => {
-        const cursorStart = e.target.selectionStart;
-        const cursorEnd = e.target.selectionEnd;
-        app.paymentDraft.amountInput = e.target.value;
+        const raw = e.target.value.replace(/[^0-9.]/g, '');
+        const prevDisplay = app.paymentDraft.amountDisplay || '';
+        app.paymentDraft.amountInput = raw;
+        const formatted = formatAmountDisplay(raw, wallet.currency);
+        app.paymentDraft.amountDisplay = formatted;
+        const cursorPos = e.target.selectionStart;
+        const lenDiff = formatted.length - e.target.value.length;
         app.paymentSuccessMessage = '';
         app.paymentSuccessSummary = null;
         app.paymentDraft.allocation = {};
@@ -2420,11 +2457,8 @@ const STORAGE_KEY = 'kontana_state_v1';
         const amountInput = document.getElementById('payment-amount');
         if (amountInput) {
           amountInput.focus();
-          if (cursorStart !== null && cursorEnd !== null) {
-            const start = Math.min(cursorStart, amountInput.value.length);
-            const end = Math.min(cursorEnd, amountInput.value.length);
-            amountInput.setSelectionRange(start, end);
-          }
+          const newPos = Math.max(0, Math.min((cursorPos || 0) + lenDiff, amountInput.value.length));
+          amountInput.setSelectionRange(newPos, newPos);
         }
       });
 
@@ -2525,6 +2559,7 @@ const STORAGE_KEY = 'kontana_state_v1';
       if (paymentCancelEntry) {
         paymentCancelEntry.addEventListener('click', () => {
           app.paymentDraft.amountInput = '';
+          app.paymentDraft.amountDisplay = '';
           app.paymentDraft.note = '';
           app.paymentDraft.allocation = {};
           app.paymentDraft.manualEntry = false;
@@ -3001,6 +3036,8 @@ const STORAGE_KEY = 'kontana_state_v1';
         el.innerHTML = '';
         return;
       }
+      const prevModal = el.querySelector('.settings-modal');
+      const savedScroll = prevModal ? prevModal.scrollTop : 0;
       const coinsRule = app.state.settings.coins_rule || 'off';
       const coinsEnabled = coinsRule !== 'off';
       const coinsMode = coinsRule === 'avoid' ? 'avoid' : 'prefer';
@@ -3111,6 +3148,9 @@ const STORAGE_KEY = 'kontana_state_v1';
           </section>
         </div>
       `;
+
+      const newModal = el.querySelector('.settings-modal');
+      if (newModal && savedScroll) newModal.scrollTop = savedScroll;
 
       el.querySelectorAll('button[data-strategy]').forEach((btn) => {
         btn.addEventListener('click', () => {

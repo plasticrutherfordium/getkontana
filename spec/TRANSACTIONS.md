@@ -48,6 +48,7 @@ Row styling:
 
 ## Wallet Row Behaviour
 - Wallet cards row scrolls horizontally and never shrinks the rest of the page.
+- Selected wallet must be instantly distinguishable: 2px accent border, accent-colored currency header and total text.
 
 ## Running Balance
 - Display a Balance column.
