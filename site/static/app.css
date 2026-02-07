@@ -491,6 +491,7 @@ body {
   gap: 10px;
   overflow-x: auto;
   padding-bottom: 4px;
+  padding-right: 14px;
   flex-wrap: nowrap;
   overscroll-behavior-x: contain;
   scrollbar-width: thin;
@@ -507,10 +508,10 @@ body {
 }
 
 .wallet-card {
-  min-width: 190px;
-  max-width: 220px;
+  min-width: 180px;
+  max-width: 180px;
   flex: 0 0 auto;
-  min-height: 108px;
+  min-height: 150px;
   border: 1px solid var(--kt-border);
   border-radius: 0;
   background: var(--kt-surface-2);
@@ -520,11 +521,13 @@ body {
   text-align: left;
   gap: 6px;
   color: var(--kt-text);
+  overflow: hidden;
 }
 
 .wallet-card.compact {
-  min-height: 94px;
-  min-width: 170px;
+  min-height: 130px;
+  min-width: 160px;
+  max-width: 160px;
 }
 
 .wallet-card-head {
@@ -911,6 +914,10 @@ body {
 .denom-total-row p:nth-child(2),
 .denom-total-row p:nth-child(3) {
   text-align: right;
+}
+
+.denom-total-row p:nth-child(2) {
+  text-align: center;
 }
 
 .edit-status {

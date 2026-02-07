@@ -1734,7 +1734,7 @@ const STORAGE_KEY = 'kontana_state_v1';
             </div>
             <div class="denom-list">${rows}</div>
             <div class="denom-total-row">
-              <p>${activeTab === 'bills' ? 'Bills total' : 'Coins total'}</p>
+              <p>Total</p>
               <p>${activeTabCount}</p>
               <p>${formatMoney(activeTabTotal, wallet.currency)}</p>
             </div>
@@ -2253,7 +2253,7 @@ const STORAGE_KEY = 'kontana_state_v1';
       const headerHtml = showWalletSelector ? `
         <section class="card payment-context-pill">
           <div class="payment-wallet-selector">
-            ${renderWalletCards(wallets, wallet.id, 'pay-wallet', false)}
+            ${renderWalletCards(wallets, wallet.id, 'pay-wallet', false, { showCreateCard: true })}
           </div>
           ${zeroWalletHint ? `<p class="muted">${zeroWalletHint}</p>` : ''}
           <div class="segmented-control" role="tablist" aria-label="Payment mode">
@@ -2386,6 +2386,14 @@ const STORAGE_KEY = 'kontana_state_v1';
           }
           render();
         });
+        bindWalletReorder('pay-wallet');
+
+        const addWalletCardBtn = document.querySelector('[data-wallet-selector="pay-wallet"][data-wallet-add="1"]');
+        if (addWalletCardBtn) {
+          addWalletCardBtn.addEventListener('click', async () => {
+            await openCreateWalletModal();
+          });
+        }
       }
 
       const goTransactions = document.getElementById('go-transactions');
@@ -2923,7 +2931,7 @@ const STORAGE_KEY = 'kontana_state_v1';
           ` : ''}
           <section class="card summary-card">
             <div class="summary-main">
-              ${wallets.length > 0 ? renderWalletCards(wallets, filters.wallet, 'tx-wallet', false) : '<p class="muted">No wallets yet.</p>'}
+              ${wallets.length > 0 ? renderWalletCards(wallets, filters.wallet, 'tx-wallet', false, { showCreateCard: true }) : '<p class="muted">No wallets yet.</p>'}
             </div>
           </section>
           ${filters.wallet && app.state.wallets[filters.wallet] ? `
@@ -3026,6 +3034,13 @@ const STORAGE_KEY = 'kontana_state_v1';
         renderTransactions();
       });
       bindWalletReorder('tx-wallet');
+
+      const addWalletCardBtn = document.querySelector('[data-wallet-selector="tx-wallet"][data-wallet-add="1"]');
+      if (addWalletCardBtn) {
+        addWalletCardBtn.addEventListener('click', async () => {
+          await openCreateWalletModal();
+        });
+      }
 
     }
 
