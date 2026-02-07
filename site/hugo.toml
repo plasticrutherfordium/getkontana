@@ -44,5 +44,5 @@ theme = 'terminal'
     [[languages.en.menu.main]]
       identifier = "app"
       name = "Try the app"
-      url = "/app"
+      url = "/app/"
       weight = 3

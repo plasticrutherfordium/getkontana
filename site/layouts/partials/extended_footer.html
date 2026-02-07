@@ -1,3 +1,3 @@
-{{ if eq .RelPermalink "/app/" }}
+{{ if or (eq .RelPermalink "/app/") (eq .RelPermalink "/app") }}
   <script src="{{ "app.js" | absURL }}" defer></script>
 {{ end }}
