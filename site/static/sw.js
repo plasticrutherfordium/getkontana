@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kontana-v1';
+const CACHE_NAME = 'kontana-v2';
 const CORE_ASSETS = [
   '/app',
   '/',

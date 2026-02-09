@@ -89,6 +89,21 @@ test('Avoid coins entirely refuses coin usage', () => {
   assert.equal(plan.status, 'insufficient');
 });
 
+test('Single cover suggests lowest overpay when exact is unavailable', () => {
+  const denoms = makeDenoms([10, 4], [1, 2]);
+  const plan = computeOutgoingPlan(denoms, 6, 'lex', ORDER_LARGEST_FIRST, true, 'off');
+  assert.equal(plan.status, 'sufficient_not_exact');
+  assert.equal(plan.paidMinor, 8);
+  assert.equal(plan.overpay, 2);
+  assert.deepEqual(mapBreakdown(plan.breakdown), new Map([[4, 2]]));
+});
+
+test('Single cover can be disabled to return insufficient for non-exact', () => {
+  const denoms = makeDenoms([10, 4], [1, 2]);
+  const plan = computeOutgoingPlan(denoms, 6, 'lex', ORDER_LARGEST_FIRST, false, 'off');
+  assert.equal(plan.status, 'insufficient');
+});
+
 test('CLP denomination catalogue maxes at 20,000', () => {
   const clp = getCurrencyDenominations('CLP');
   const values = clp.map((d) => d.value_minor);

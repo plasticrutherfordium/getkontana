@@ -26,6 +26,8 @@
 {{ if (fileExists "static/style.css") -}}
   <link rel="stylesheet" href="{{ "style.css" | absURL }}">
 {{- end }}
+<!-- App CSS - loaded last to override theme -->
+<link rel="stylesheet" href="{{ "app.css" | absURL }}">
 
 <!-- Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
