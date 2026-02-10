@@ -2271,7 +2271,18 @@ const STORAGE_KEY = 'kontana_state_v1';
       if (!el) return;
       const wallets = getWalletList();
       if (!wallets.length) {
-        el.innerHTML = '<section class="panel"><p class="empty-notice">No wallets yet. Create a wallet in Cash to enter payments.</p></section>';
+        el.innerHTML = `
+          <section class="panel">
+            <p class="empty-notice">No wallets yet. Create your first wallet to start tracking cash.</p>
+            <div class="inline-actions">
+              <button type="button" id="open-create-wallet-pay" class="btn-secondary-soft">Create wallet</button>
+            </div>
+          </section>
+        `;
+        const openCreateWalletBtn = document.getElementById('open-create-wallet-pay');
+        if (openCreateWalletBtn) {
+          openCreateWalletBtn.addEventListener('click', openCreateWalletModal);
+        }
         return;
       }
       const hasEntry = Boolean(
@@ -2300,7 +2311,18 @@ const STORAGE_KEY = 'kontana_state_v1';
       const showWalletSelector = Boolean(options.showWalletSelector);
       const wallets = getWalletList();
       if (wallets.length === 0) {
-        el.innerHTML = '<section class="panel"><p>Create a wallet first.</p></section>';
+        el.innerHTML = `
+          <section class="panel">
+            <p class="empty-notice">No wallets yet. Create your first wallet to start tracking cash.</p>
+            <div class="inline-actions">
+              <button type="button" id="open-create-wallet-payment" class="btn-secondary-soft">Create wallet</button>
+            </div>
+          </section>
+        `;
+        const openCreateWalletBtn = document.getElementById('open-create-wallet-payment');
+        if (openCreateWalletBtn) {
+          openCreateWalletBtn.addEventListener('click', openCreateWalletModal);
+        }
         return;
       }
 
@@ -3303,6 +3325,22 @@ const STORAGE_KEY = 'kontana_state_v1';
     function renderTransactions() {
       const el = document.getElementById('tab-transactions');
       const wallets = getWalletList();
+      
+      if (!wallets.length) {
+        el.innerHTML = `
+          <section class="panel">
+            <p class="empty-notice">No wallets yet. Create your first wallet to start tracking cash.</p>
+            <div class="inline-actions">
+              <button type="button" id="open-create-wallet-transactions" class="btn-secondary-soft">Create wallet</button>
+            </div>
+          </section>
+        `;
+        const openCreateWalletBtn = document.getElementById('open-create-wallet-transactions');
+        if (openCreateWalletBtn) {
+          openCreateWalletBtn.addEventListener('click', openCreateWalletModal);
+        }
+        return;
+      }
 
       const ages = app.state.transactions.map((tx) => ageDays(tx.created_at));
       const oldestAge = ages.length ? Math.max(...ages) : 0;
@@ -4154,3 +4192,15 @@ const STORAGE_KEY = 'kontana_state_v1';
 
     // Initialize lock status
     checkAppLockStatus();
+
+    // Initialize the app when DOM is ready
+    console.log('Kontana app.js loaded, DOM state:', document.readyState);
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        console.log('DOMContentLoaded fired, initializing app');
+        render();
+      });
+    } else {
+      console.log('DOM already loaded, initializing app immediately');
+      render();
+    }

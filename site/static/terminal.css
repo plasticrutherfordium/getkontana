@@ -4,6 +4,24 @@
   --accent: #19c36b;
   --code-border: #1f2b2f;
   --radius: 0;
+  
+  /* Kontana app variables */
+  --kt-bg: #0b1112;
+  --kt-surface: #1a2332;
+  --kt-surface-2: #243447;
+  --kt-border: #2a3f5f;
+  --kt-text: #e6efe9;
+  --kt-text-muted: #a0b3c3;
+  --kt-accent: #19c36b;
+  --kt-accent-2: #16d476;
+  --kt-success: #19c36b;
+  --kt-warning: #f59e0b;
+  --kt-danger: #ef4444;
+  --primary: #19c36b;
+  --primary-dark: #16d476;
+  --text-primary: #e6efe9;
+  --text-secondary: #a0b3c3;
+  --card-bg: #1a2332;
 }
 
 body {
