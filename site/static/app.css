@@ -156,6 +156,7 @@ body {
 .btn-primary-soft:hover {
   background: var(--kt-accent-2);
   border-color: var(--kt-accent-2);
+  color: var(--kt-bg);
 }
 
 .btn-secondary-soft {
@@ -177,6 +178,7 @@ body {
 .btn-danger-soft:hover {
   background: var(--kt-danger);
   color: var(--kt-bg);
+  border-color: var(--kt-danger);
 }
 
 .app-tabs {
@@ -301,6 +303,10 @@ body {
   background: var(--kt-surface-2);
 }
 
+.tx-row {
+  cursor: pointer;
+}
+
 .tx-row td {
   background: var(--kt-surface);
 }
@@ -403,6 +409,7 @@ body {
   border-top: 1px solid var(--kt-border);
   display: grid;
   gap: 8px;
+  margin-bottom: 16px;
 }
 
 .allocation-summary {
@@ -540,6 +547,19 @@ body {
 
 .wallet-card-override .wallet-card-total {
   color: var(--kt-text);
+}
+
+.wallet-card-wrap.active .wallet-card-override {
+  border-color: var(--kt-accent);
+  border-width: 2px;
+}
+
+.wallet-card-wrap.active .wallet-card-override .wallet-card-head {
+  color: var(--kt-accent);
+}
+
+.wallet-card-wrap.active .wallet-card-override .wallet-card-total {
+  color: var(--kt-accent);
 }
 
 .wallet-card {
@@ -737,11 +757,16 @@ body {
   padding: 12px;
   text-align: left;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .strategy-card h4 {
-  margin: 0 0 6px;
+  margin: 0 0 8px;
   font-size: 0.95rem;
+  display: block;
+  width: 100%;
 }
 
 .strategy-card p {
@@ -1084,9 +1109,68 @@ button {
   cursor: pointer;
 }
 
+/* Only secondary/plain buttons get green accent on hover */
 button:hover:not(:disabled) {
   border-color: var(--kt-accent);
   color: var(--kt-accent);
+}
+
+/* Green buttons: no visible change on hover (prevent green-on-green) */
+.btn-primary-soft:hover {
+  background: var(--kt-accent-2);
+  border-color: var(--kt-accent-2);
+  color: var(--kt-bg);
+}
+
+.segment.active:hover {
+  background: var(--kt-accent);
+  color: var(--kt-bg);
+  border-color: transparent;
+}
+
+/* Red/danger buttons: red emphasis on hover, never green */
+.btn-danger-soft:hover {
+  background: var(--kt-danger);
+  color: var(--kt-bg);
+  border-color: var(--kt-danger);
+}
+
+/* Active strategy/wallet/filter cards: keep their accent border, no green text */
+.strategy-card:hover {
+  border-color: var(--kt-accent);
+  color: var(--kt-text);
+}
+
+.strategy-card.active:hover {
+  color: var(--kt-text);
+  border-color: var(--kt-accent);
+}
+
+.denom-filter-toggle.active:hover {
+  color: var(--kt-bg);
+  border-color: var(--kt-accent);
+}
+
+.wallet-card.active:hover {
+  color: var(--kt-text);
+  border-color: var(--kt-accent);
+}
+
+.app-sidebar .app-tabs button.tab-btn.active:hover {
+  background: var(--kt-accent);
+  color: var(--kt-bg);
+  border-color: transparent;
+}
+
+.app-bottom-nav .bottom-nav-link.active:hover {
+  color: var(--kt-bg);
+}
+
+/* Revert button in tx list: red hover */
+.tx-revert-btn:hover {
+  background: var(--kt-danger);
+  color: var(--kt-bg);
+  border-color: var(--kt-danger);
 }
 
 button:disabled {
@@ -1459,6 +1543,14 @@ tbody tr:nth-child(even):not(.tx-details) {
   padding-bottom: 16px;
 }
 
+.settings-subsection {
+  display: grid;
+  gap: 12px;
+  margin-left: 16px;
+  padding-left: 16px;
+  border-left: 2px solid var(--kt-border);
+}
+
 .settings-section:last-of-type {
   border-bottom: none;
   padding-bottom: 0;
@@ -1657,32 +1749,88 @@ tbody tr:nth-child(even):not(.tx-details) {
 
   .tx-table,
   .tx-table tbody,
-  .tx-table tr,
   .tx-table td {
     display: block;
     width: 100%;
   }
 
+  .tx-table tr {
+    display: block;
+    width: 100%;
+  }
+
+  .tx-table tr.tx-details-row {
+    display: none !important;
+  }
+
+  .tx-table tr.tx-details-row.open {
+    display: block !important;
+  }
+
   .tx-row {
     border: 1px solid var(--kt-border);
     border-radius: 0;
-    padding: 12px;
-    margin-bottom: 10px;
+    padding: 10px 12px;
+    margin-bottom: 0;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .tx-row.is-expanded {
+    margin-bottom: 0;
+    border-bottom: none;
   }
 
   .tx-row td {
     padding: 0;
     border: 0;
+    display: block;
+  }
+
+  .tx-desc {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .tx-desc-main {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .tx-desc-sub {
-    margin-top: 6px;
+    margin-top: 2px;
+    font-size: 0.82rem;
   }
 
-  .tx-amount,
+  .tx-amount {
+    text-align: right;
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-size: 0.92rem;
+  }
+
   .tx-balance {
-    text-align: left;
-    margin-top: 8px;
+    text-align: right;
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-size: 0.82rem;
+    color: var(--kt-text-muted);
+  }
+
+  .tx-details-row {
+    display: none;
+  }
+
+  .tx-details-row.open {
+    display: block;
+    border: 1px solid var(--kt-border);
+    border-top: none;
+    padding: 0 12px 12px;
+    margin-bottom: 10px;
+    background: var(--kt-surface-2);
   }
 
   .tx-details-row td {

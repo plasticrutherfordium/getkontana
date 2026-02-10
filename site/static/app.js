@@ -1210,7 +1210,6 @@ const STORAGE_KEY = 'kontana_state_v1';
           }
           return { ...tx, type: type || 'adjustment', delta_minor: 0 };
         });
-        purgeRetention(merged);
         const walletIds = Object.keys(merged.wallets);
         const normalizedOrder = [];
         const seen = new Set();
@@ -1392,7 +1391,6 @@ const STORAGE_KEY = 'kontana_state_v1';
     }
 
     function render() {
-      purgeRetention(app.state);
       Object.values(app.state.wallets).forEach((wallet) => normalizeWalletDenominations(wallet));
       saveState();
       setAppearance(app.state.settings.appearance);
@@ -2008,7 +2006,8 @@ const STORAGE_KEY = 'kontana_state_v1';
       const activeTabTotal = activeTabDenoms.reduce((sum, row) => sum + row.value_minor * getDenomCount(wallet, row.value_minor), 0);
       const activeTabCount = activeTabDenoms.reduce((sum, row) => sum + getDenomCount(wallet, row.value_minor), 0);
 
-      const rows = getSortedDenoms(wallet, 'largest_first')
+      const denomOrderSetting = app.state.settings.denomination_order || ORDER_LARGEST_FIRST;
+      const rows = getSortedDenoms(wallet, denomOrderSetting)
         .filter((row) => {
           if (activeTab === 'all') return true;
           if (activeTab === 'bills') return row.type === 'note';
@@ -2573,7 +2572,7 @@ const STORAGE_KEY = 'kontana_state_v1';
 
       const incomingManualDirect = mode === 'incoming' && app.paymentDraft.incomingEntryMode === 'manual';
       const manualDirect = app.paymentDraft.incomingEntryMode === 'manual';
-      const allRowsForTab = getSortedDenoms(wallet, 'largest_first')
+      const allRowsForTab = getSortedDenoms(wallet, denomOrder)
         .filter((row) => (activeTab === 'all' ? true : (activeTab === 'bills' ? row.type === 'note' : row.type === 'coin')));
       const rowsForTab = manualDirect
         ? allRowsForTab
@@ -2587,7 +2586,7 @@ const STORAGE_KEY = 'kontana_state_v1';
             return row.value_minor <= amountMinor;
           })
           : []);
-      const showManualEditor = manualDirect || (validAmount && (app.paymentDraft.manualEntry || !suggestionAvailable || coverSuggestionState));
+      const showManualEditor = manualDirect || (validAmount && app.paymentDraft.manualEntry);
 
       const allocationRows = rowsForTab
         .map((row) => {
@@ -2681,8 +2680,8 @@ const STORAGE_KEY = 'kontana_state_v1';
                 ${successSummary.change_expected_minor > 0 ? `<div class="tx-success-row"><span>Change</span><span>${formatMoney(successSummary.change_expected_minor, successSummary.currency)} / ${formatMoney(successSummary.change_received_minor, successSummary.currency)}</span></div>` : ''}
               </div>
               <div class="inline-actions">
-                <button type="button" id="go-transactions" class="btn-secondary-soft">Go to Transactions</button>
                 <button type="button" id="new-transaction" class="btn-secondary-soft">New transaction</button>
+                <button type="button" id="revert-last-transaction" class="btn-danger-soft">Revert transaction</button>
               </div>
             </section>
           ` : `
@@ -2742,8 +2741,12 @@ const STORAGE_KEY = 'kontana_state_v1';
                         <p class="status warn">Suggestions are off</p>
                       </div>
                       ${allocationPreviewHtml}
+                      ${!showManualEditor ? `<div class="inline-actions"><button type="button" id="payment-edit-manual" class="btn-secondary-soft">Edit manually</button></div>` : ''}
                     ` : ''}
-                    ${!strategiesEnabled && mode !== 'outgoing' ? allocationPreviewHtml : ''}
+                    ${!strategiesEnabled && mode !== 'outgoing' ? `
+                      ${allocationPreviewHtml}
+                      ${!showManualEditor ? `<div class="inline-actions"><button type="button" id="payment-edit-manual" class="btn-secondary-soft">Edit manually</button></div>` : ''}
+                    ` : ''}
 
                     ${strategiesEnabled ? `
                     ${noExactSuggestionState ? `
@@ -2824,14 +2827,37 @@ const STORAGE_KEY = 'kontana_state_v1';
         }
       }
 
-      const goTransactions = document.getElementById('go-transactions');
-      if (goTransactions) {
-        goTransactions.addEventListener('click', () => {
-          if (app.paymentSuccessSummary?.wallet_id && app.state.wallets[app.paymentSuccessSummary.wallet_id]) {
-            app.activeWalletId = app.paymentSuccessSummary.wallet_id;
-            app.txFilters.wallet = app.paymentSuccessSummary.wallet_id;
+      const revertBtn = document.getElementById('revert-last-transaction');
+      if (revertBtn) {
+        revertBtn.addEventListener('click', async () => {
+          const confirmed = await modalConfirm('Revert this transaction? The wallet will be restored to its previous state.');
+          if (!confirmed) return;
+          const summary = app.paymentSuccessSummary;
+          if (!summary) return;
+          const txIdx = app.state.transactions.findIndex((tx) => tx.wallet_id === summary.wallet_id && tx.created_at === summary.created_at);
+          if (txIdx !== -1) {
+            const tx = app.state.transactions[txIdx];
+            const wallet = app.state.wallets[tx.wallet_id];
+            if (wallet && tx.breakdown) {
+              const direction = tx.type === 'incoming' ? -1 : 1;
+              applyBreakdownToWallet(wallet, tx.breakdown, direction);
+            }
+            if (wallet && tx.change_breakdown) {
+              applyBreakdownToWallet(wallet, tx.change_breakdown, -1);
+            }
+            app.state.transactions.splice(txIdx, 1);
           }
-          app.activeTab = 'transactions';
+          app.paymentSuccessMessage = '';
+          app.paymentSuccessSummary = null;
+          app.paymentDraft.amountInput = '';
+          app.paymentDraft.amountDisplay = '';
+          app.paymentDraft.note = '';
+          app.paymentDraft.allocation = {};
+          app.paymentDraft.manualEntry = false;
+          app.paymentDraft.startedAllocation = false;
+          app.paymentDraft.showAllDenoms = false;
+          app.paymentDraft.incomingEntryMode = null;
+          app.pendingOutgoingChange = null;
           render();
         });
       }
@@ -3342,10 +3368,6 @@ const STORAGE_KEY = 'kontana_state_v1';
         return;
       }
 
-      const ages = app.state.transactions.map((tx) => ageDays(tx.created_at));
-      const oldestAge = ages.length ? Math.max(...ages) : 0;
-      const scheduledNextDeletionCount = ages.length ? ages.filter((days) => days === oldestAge).length : 0;
-      const nextCleanupDays = ages.length ? Math.max(0, RETENTION_DAYS - oldestAge) : RETENTION_DAYS;
       const latestByWallet = new Map();
       app.state.transactions.forEach((tx) => {
         if (!tx.wallet_id) return;
@@ -3451,42 +3473,13 @@ const STORAGE_KEY = 'kontana_state_v1';
         `;
       }).join('');
 
-      const bannerKey = 'kontana_tx_banner_dismissed_at';
-      const dismissedAt = Number(localStorage.getItem(bannerKey) || 0);
-      const bannerHidden = dismissedAt && Date.now() - dismissedAt < 5 * 24 * 60 * 60 * 1000;
-
       el.innerHTML = `
         <section class="panel">
-          ${!bannerHidden ? `
-            <div class="banner tx-banner">
-              <div class="banner-content">
-                <p>Transactions older than 30 days are deleted automatically.</p>
-                <p><strong>${scheduledNextDeletionCount} transactions will be deleted next.</strong></p>
-                <p><strong>${nextCleanupDays} days remaining until the next deletion window.</strong></p>
-                <p>Back up your history from Settings.</p>
-              </div>
-              <button type="button" class="banner-close-btn" id="tx-banner-close" aria-label="Don't show again for 5 days"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path fill-rule="evenodd" d="M7 1L1 7l5 5l-5 5l6 6l5-5l5 5l6-6l-5-5l5-5l-6-6l-5 5z" clip-rule="evenodd"/></svg></button>
-            </div>
-          ` : ''}
           <section class="card summary-card">
             <div class="summary-main">
               ${wallets.length > 0 ? renderWalletCards(wallets, filters.wallet, 'tx-wallet', false, { showCreateCard: true, showActions: true }) : '<p class="muted">No wallets yet.</p>'}
             </div>
           </section>
-          ${filters.wallet && app.state.wallets[filters.wallet] ? `
-            <section class="card tx-wallet-header">
-              <div class="tx-wallet-header-main">
-                <div>
-                  <p class="muted">Selected wallet</p>
-                  <p><strong>${app.state.wallets[filters.wallet].name}</strong> · ${CURRENCY_NAMES[app.state.wallets[filters.wallet].currency] || app.state.wallets[filters.wallet].currency}</p>
-                </div>
-                <div class="tx-wallet-header-balance">
-                  <p class="muted">Balance</p>
-                  <p><strong>${formatMoney(getWalletTotal(app.state.wallets[filters.wallet]), app.state.wallets[filters.wallet].currency)}</strong></p>
-                </div>
-              </div>
-            </section>
-          ` : ''}
           ${filtered.length === 0
             ? '<p>No transactions yet.</p>'
             : `<table class="tx-table">
@@ -3502,14 +3495,6 @@ const STORAGE_KEY = 'kontana_state_v1';
           }
         </section>
       `;
-
-      const closeBannerBtn = document.getElementById('tx-banner-close');
-      if (closeBannerBtn) {
-        closeBannerBtn.addEventListener('click', () => {
-          localStorage.setItem(bannerKey, String(Date.now()));
-          renderTransactions();
-        });
-      }
 
       document.querySelectorAll('.tx-row').forEach((row) => {
         const toggle = () => {
@@ -3675,6 +3660,8 @@ const STORAGE_KEY = 'kontana_state_v1';
       const showBillsCoins = app.state.settings.show_bills_coins;
       const showCents = app.state.settings.show_cents;
 
+      const denomOrder = app.state.settings.denomination_order || ORDER_LARGEST_FIRST;
+
       el.innerHTML = `
         <div class="modal-backdrop" id="settings-backdrop">
           <section class="modal-card settings-modal" role="dialog" aria-modal="true" aria-label="Settings">
@@ -3691,8 +3678,7 @@ const STORAGE_KEY = 'kontana_state_v1';
                 <button type="button" class="segment ${strategiesEnabled ? 'active' : ''}" data-strategy-toggle="on">On</button>
               </div>
               ${strategiesEnabled ? `
-                <div class="subpanel-divider"></div>
-                <div class="stack-form">
+                <div class="settings-subsection">
                   <p class="muted"><strong>Strategies</strong></p>
                   <p class="muted">How suggestions are calculated.</p>
                   <div class="strategy-grid" role="group" aria-label="Default strategy">
@@ -3709,7 +3695,8 @@ const STORAGE_KEY = 'kontana_state_v1';
                       <p>Prefers surplus denominations to keep wallet mix balanced.</p>
                     </button>
                   </div>
-                  <div class="subpanel-divider"></div>
+                </div>
+                <div class="settings-subsection">
                   <p class="muted"><strong>Single cover</strong></p>
                   <p class="muted">When a strategy can't match the exact amount, suggest the lowest single or mix of denominations that can cover it. You'll get cash back.</p>
                   <div class="segmented-control" role="group" aria-label="Single cover">
@@ -3717,8 +3704,7 @@ const STORAGE_KEY = 'kontana_state_v1';
                     <button type="button" class="segment ${singleCoverEnabled ? 'active' : ''}" data-single-cover="on">On</button>
                   </div>
                 </div>
-                <div class="subpanel-divider"></div>
-                <div class="stack-form">
+                <div class="settings-subsection">
                   <p class="muted"><strong>Change suggestions</strong></p>
                   <p class="muted">Show a suggested change breakdown when overpaying, or go manual-only when Off.</p>
                   <div class="segmented-control" role="group" aria-label="Change suggestions">
@@ -3726,8 +3712,7 @@ const STORAGE_KEY = 'kontana_state_v1';
                     <button type="button" class="segment ${changeSuggestionsEnabled ? 'active' : ''}" data-change-suggest="on">On</button>
                   </div>
                 </div>
-                <div class="subpanel-divider"></div>
-                <div class="stack-form">
+                <div class="settings-subsection">
                   <p class="muted"><strong>Coins rules</strong></p>
                   <p class="muted">Control whether coins are used in suggested breakdowns.</p>
                   <div class="segmented-control" role="group" aria-label="Coins rules">
@@ -3748,6 +3733,15 @@ const STORAGE_KEY = 'kontana_state_v1';
                   ` : ''}
                 </div>
               ` : ''}
+            </section>
+
+            <section class="settings-section">
+              <h3>Invert denomination order</h3>
+              <p class="muted">By default, denominations are listed from largest to smallest. Turn this on to invert the order (smallest to largest).</p>
+              <div class="segmented-control" role="group" aria-label="Invert denomination order">
+                <button type="button" class="segment ${denomOrder === ORDER_LARGEST_FIRST ? 'active' : ''}" data-denom-order="${ORDER_LARGEST_FIRST}">Off</button>
+                <button type="button" class="segment ${denomOrder === ORDER_SMALLEST_FIRST ? 'active' : ''}" data-denom-order="${ORDER_SMALLEST_FIRST}">On</button>
+              </div>
             </section>
 
             <section class="settings-section">
@@ -3801,11 +3795,11 @@ const STORAGE_KEY = 'kontana_state_v1';
             </section>
 
             <section class="settings-section">
-              <h3>Sign up</h3>
-              <p>Optional. Email only. Stored locally now; server sync can be added later.</p>
+              <h3>Newsletter</h3>
+              <p class="muted">Optional. Sign up to receive our newsletter and news about when the new Kontana with AI capabilities launches. We will only use your email for this purpose.</p>
               <form id="launch-updates-form" class="stack-form">
                 <label>Email <input type="email" id="launch-email" required /></label>
-                <label class="check-row"><input type="checkbox" id="launch-consent" /> Email me launch updates</label>
+                <label class="check-row"><input type="checkbox" id="launch-consent" /> Email me newsletter and launch updates</label>
                 <button type="submit" class="btn-secondary-soft">Sign up</button>
               </form>
               ${app.launchSignupMessage ? `<p>${app.launchSignupMessage}</p>` : ''}
@@ -3887,6 +3881,17 @@ const STORAGE_KEY = 'kontana_state_v1';
           app.state.settings.single_cover = next;
           saveState();
           renderSettings();
+        });
+      });
+
+      el.querySelectorAll('button[data-denom-order]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const next = btn.dataset.denomOrder;
+          if (app.state.settings.denomination_order === next) return;
+          app.state.settings.denomination_order = next;
+          saveState();
+          renderSettings();
+          render();
         });
       });
 
@@ -4038,6 +4043,10 @@ const STORAGE_KEY = 'kontana_state_v1';
         }
         previousTab = app.activeTab;
         app.activeTab = btn.dataset.tab;
+        if (previousTab === 'pay' && app.activeTab !== 'pay') {
+          app.paymentSuccessMessage = '';
+          app.paymentSuccessSummary = null;
+        }
         setupTabs();
         if (app.activeTab === 'cash') renderCashOnHand();
         if (app.activeTab === 'pay') renderPay();
@@ -4053,7 +4062,12 @@ const STORAGE_KEY = 'kontana_state_v1';
           await modalAlert('Finish or cancel Edit denominations before navigating.');
           return;
         }
+        const prevTab = app.activeTab;
         app.activeTab = link.dataset.tab;
+        if (prevTab === 'pay' && app.activeTab !== 'pay') {
+          app.paymentSuccessMessage = '';
+          app.paymentSuccessSummary = null;
+        }
         setupTabs();
         if (app.activeTab === 'cash') renderCashOnHand();
         if (app.activeTab === 'pay') renderPay();
