@@ -705,19 +705,418 @@ const STORAGE_KEY = 'kontana_state_v1';
     };
 
     const WALLET_NAME_MAX = 18;
+    const I18N = {
+      en: {
+        'tab.cash': 'Cash',
+        'tab.pay': 'Pay',
+        'tab.transactions': 'Transactions',
+        'tab.settings': 'Settings',
+        'tab.transactions_short': 'Trx',
+        'nav.wallet_selector': 'Wallet selector',
+        'nav.create_wallet': 'Create wallet',
+        'time.today': 'Today',
+        'time.yesterday': 'Yesterday',
+
+        'common.off': 'Off',
+        'common.on': 'On',
+        'common.light': 'Light',
+        'common.dark': 'Dark',
+        'common.cancel': 'Cancel',
+        'common.confirm': 'Confirm',
+        'common.close': 'Close',
+        'common.total': 'Total',
+        'common.date': 'Date',
+        'common.wallet': 'Wallet',
+        'common.amount': 'Amount',
+        'common.note': 'Note',
+        'common.change': 'Change',
+
+        'cash.no_wallets': 'No wallets yet. Create your first wallet to start tracking cash.',
+        'cash.create_wallet': 'Create wallet',
+        'cash.wallet_empty': 'Wallet is empty. Add money by creating an incoming payment in Pay.',
+        'cash.edit_mode_active': 'Edit mode active',
+        'cash.allocated_expected': 'Allocated: {allocated} / Expected: {expected}',
+        'cash.reconciled': 'Reconciled.',
+        'cash.over_by': "You're over by {amount}",
+        'cash.short_by': "You're short by {amount}",
+        'cash.finish_edit': 'Finish edit',
+        'cash.cancel_edit': 'Cancel edit',
+        'cash.bills': 'Bills',
+        'cash.coins': 'Coins',
+        'cash.hide_empty': 'Hide empty',
+        'cash.denomination_type': 'Denomination type',
+        'cash.decrease_count': 'Decrease count',
+        'cash.increase_count': 'Increase count',
+
+        'wallet.actions_title': 'Wallet actions',
+        'wallet.manage': 'Manage {name}.',
+        'wallet.edit_name': 'Edit name',
+        'wallet.edit_denoms': 'Edit denominations',
+        'wallet.delete': 'Delete wallet',
+        'wallet.new_name_prompt': 'New wallet name',
+        'wallet.edit_name_title': 'Edit Wallet Name',
+        'wallet.name_required': 'Wallet name is required.',
+        'wallet.name_too_long': 'Wallet name must be {max} characters or fewer.',
+        'wallet.delete_confirm': 'Delete wallet {name}? This removes its cash and transactions.',
+        'wallet.delete_title': 'Delete Wallet',
+        'wallet.create_title': 'Create wallet',
+        'wallet.create_message': 'Enter a name and choose a currency.',
+        'wallet.field_name': 'Name',
+        'wallet.field_currency': 'Currency',
+        'wallet.create_action': 'Create wallet',
+        'wallet.max_reached': 'Maximum number of wallets reached (4).',
+        'wallet.finish_or_cancel_before_create': 'Finish or cancel the current allocation/edit before creating a wallet.',
+        'wallet.edit_denoms_question': 'Edit denominations?',
+        'wallet.edit_denoms_instead': 'Edit denominations instead of entering a transaction?',
+        'wallet.enter_edit_mode': 'Enter edit mode',
+
+        'pay.blocked_title': 'Payments are blocked while Edit denominations mode is active.',
+        'pay.blocked_body': 'Finish or cancel edit mode in Cash first.',
+        'pay.confirm_change_received': 'Confirm change received',
+        'pay.finalize_outgoing_for': 'Finalize outgoing payment for {amount}.',
+        'pay.expected_change': 'Expected change: {amount}',
+        'pay.suggested_change': 'Suggested change',
+        'pay.received_change_breakdown': 'Received change breakdown',
+        'pay.denomination': 'Denomination',
+        'pay.count': 'Count',
+        'pay.subtotal': 'Subtotal',
+        'pay.no_denoms_for_change': 'No denominations available for this change amount.',
+        'pay.received_vs_expected': 'Received: {received} / {expected}',
+        'pay.change_total_reconciled': 'Change total reconciled.',
+        'pay.change_total_must_match': 'Received change must exactly match expected change.',
+        'pay.confirm_and_finalize': 'Confirm and finalize',
+        'pay.wallet_empty_hint': 'Wallet is empty. Start with an incoming payment.',
+        'pay.change_tab_label': 'Change denomination type',
+        'pay.no_denoms_in_tab': 'No denominations available in this tab.',
+        'pay.no_auto_suggestion': 'No automatic suggestion',
+        'pay.confirm_suggested': 'Confirm suggested',
+        'pay.enter_manually': 'Enter manually',
+
+        'tx.none': 'No transactions yet.',
+        'tx.table.description': 'Description',
+        'tx.table.amount': 'Amount',
+        'tx.table.balance': 'Balance',
+        'tx.revert_title': 'Revert Transaction',
+        'tx.revert_body': 'This will remove the transaction and restore the wallet cash state.',
+        'tx.revert_action': 'Revert',
+        'tx.revert_button': 'Revert transaction',
+        'tx.unable_revert': 'Unable to revert this transaction.',
+        'tx.denoms_edited': 'Denominations edited',
+        'tx.cash_in': 'Cash in',
+        'tx.payment': 'Payment',
+        'tx.adjustment': 'Adjustment',
+        'tx.detail.timestamp': 'Timestamp',
+        'tx.detail.type': 'Type',
+        'tx.detail.prior_denoms': 'Prior denominations',
+        'tx.detail.new_denoms': 'New denominations',
+        'tx.detail.direction': 'Direction',
+        'tx.detail.strategy': 'Strategy',
+        'tx.detail.breakdown': 'Breakdown',
+        'tx.detail.change': 'Change',
+        'tx.detail.note': 'Note',
+
+        'settings.title': 'Settings',
+        'settings.section.behaviour': 'Behaviour',
+        'settings.section.appearance': 'Appearance',
+        'settings.section.security': 'Security',
+        'settings.section.data': 'Data',
+        'settings.behaviour.helper': 'These settings affect how payments and suggestions are calculated.',
+        'settings.suggestions.title': 'Suggestions',
+        'settings.suggestions.body': 'Suggestions show recommended denominations; you still confirm or edit manually.',
+        'settings.strategies.title': 'Strategies',
+        'settings.strategies.body': 'How suggestions are calculated.',
+        'settings.strategy.minimise.title': 'Minimise',
+        'settings.strategy.minimise.body': 'Uses larger denominations first to reduce item count.',
+        'settings.strategy.preserve.title': 'Preserve',
+        'settings.strategy.preserve.body': 'Prefers higher denominations first when multiple exact options exist.',
+        'settings.strategy.balance.title': 'Balance',
+        'settings.strategy.balance.body': 'Prefers surplus denominations to keep wallet mix balanced.',
+        'settings.single_cover.title': 'Single cover',
+        'settings.single_cover.body': "When a strategy can't match the exact amount, suggest the lowest single or mix of denominations that can cover it. You'll get cash back.",
+        'settings.change_suggestions.title': 'Change suggestions',
+        'settings.change_suggestions.body': 'Show a suggested change breakdown when overpaying, or go manual-only when Off.',
+        'settings.coins_rules.title': 'Coins rules',
+        'settings.coins_rules.body': 'Control whether coins are used in suggested breakdowns.',
+        'settings.coins_mode.avoid.title': 'Avoid coins entirely',
+        'settings.coins_mode.avoid.body': 'Notes only. If notes cannot pay the amount, the payment is insufficient.',
+        'settings.coins_mode.prefer.title': 'Prefer notes',
+        'settings.coins_mode.prefer.body': 'Coins used only if needed to pay exactly (or to make change).',
+        'settings.invert_denom_order.title': 'Invert denomination order',
+        'settings.invert_denom_order.body': 'By default, denominations are listed from largest to smallest. Turn this on to invert the order (smallest to largest).',
+        'settings.denom_order.normal': 'Normal',
+        'settings.denom_order.inverted': 'Inverted',
+        'settings.show_bills_coins.title': 'Show bills and coins',
+        'settings.show_bills_coins.body': 'Divide denominations between bills and coins. When off, all denominations appear in a single list. Some denominations might not be categorised entirely correctly.',
+        'settings.show_cents.title': 'Show cents',
+        'settings.show_cents.body': 'When on, all currencies that use cents will always show .00. When off, .00 is hidden unless there are actual cents to display.',
+        'settings.security.title': 'Security',
+        'settings.security.body': 'Lock the app with biometric authentication (fingerprint or face recognition).',
+        'settings.appearance.title': 'Appearance',
+        'settings.appearance.body': 'Match the app theme to the website.',
+        'settings.appearance.aria': 'Theme',
+        'settings.export.title': 'Export data',
+        'settings.export.json': 'Export JSON',
+        'settings.export.pdf': 'Export PDF',
+        'settings.delete_all.title': 'Delete all data',
+        'settings.delete_all.body': 'This removes wallets, denominations, transactions, and settings.',
+        'settings.delete_all.action': 'Delete all data',
+        'settings.newsletter.title': 'Newsletter',
+        'settings.newsletter.body': 'Optional. Sign up to receive our newsletter and news about when the new Kontana with AI capabilities launches. We will only use your email for this purpose.',
+        'settings.newsletter.email': 'Email',
+        'settings.newsletter.consent': 'Email me newsletter and launch updates',
+        'settings.newsletter.signup': 'Sign up',
+        'settings.language.title': 'Language',
+        'settings.language.body': 'Choose the app language.',
+        'settings.language.english': 'English',
+        'settings.language.spanish': 'Spanish',
+
+        'currency.most_used': 'Most used',
+        'currency.other': 'Other currencies',
+
+        'export.snapshot_title': 'Kontana Snapshot Report',
+        'export.generated': 'Generated: {date}',
+        'export.wallet_totals': 'Wallet Totals',
+        'export.transactions_last_30': 'Transactions (Last 30 Days)',
+
+        'alerts.popup_blocked': 'Popup blocked. Allow popups to export PDF report.',
+        'alerts.max_wallets': 'You can have up to 4 wallets. Delete one to create another.',
+        'alerts.finish_edit_before_nav': 'Finish or cancel Edit denominations before navigating.',
+        'alerts.finish_edit_before_create_wallet': 'Finish or cancel the current allocation/edit before creating a wallet.',
+        'alerts.finish_edit_disabled': 'Finish edit is disabled until allocated total matches expected total exactly.',
+        'alerts.change_must_equal': 'Change must equal exactly {amount}.',
+        'alerts.biometric_unavailable': 'Biometric authentication is not available on this device.',
+        'alerts.biometric_failed_enable': 'Biometric authentication failed. Biometric lock not enabled.',
+        'alerts.auth_failed': 'Authentication failed. Please try again.',
+        'alerts.launch_email_consent': 'Enter a valid email and provide explicit consent.',
+        'alerts.launch_saved_local': 'Saved locally. Future sync is not configured yet.',
+        'alerts.launch_saved_and_sent': 'Saved locally and sent to updates endpoint.',
+        'alerts.launch_saved_sync_failed': 'Saved locally. Sync failed and can be retried later.',
+        'confirm.delete_all.prompt': 'Type DELETE ALL DATA to confirm.',
+        'confirm.delete_all.title': 'Delete All Data',
+        'confirm.delete_all.mismatch': 'Confirmation text did not match.',
+        'lock.unlock': 'Unlock with Biometrics',
+        'biometric.unlock_reason': 'Authenticate to unlock the app',
+      },
+      es: {
+        'tab.cash': 'Efectivo',
+        'tab.pay': 'Pagar',
+        'tab.transactions': 'Movimientos',
+        'tab.settings': 'Ajustes',
+        'tab.transactions_short': 'Mov.',
+        'nav.wallet_selector': 'Selector de monederos',
+        'nav.create_wallet': 'Crear monedero',
+        'time.today': 'Hoy',
+        'time.yesterday': 'Ayer',
+
+        'common.off': 'No',
+        'common.on': 'Sí',
+        'common.light': 'Claro',
+        'common.dark': 'Oscuro',
+        'common.cancel': 'Cancelar',
+        'common.confirm': 'Confirmar',
+        'common.close': 'Cerrar',
+        'common.total': 'Total',
+
+        'cash.no_wallets': 'Aún no hay monederos. Crea tu primer monedero para empezar a registrar efectivo.',
+        'cash.create_wallet': 'Crear monedero',
+        'cash.wallet_empty': 'El monedero está vacío. Añade dinero creando un ingreso en Pagar.',
+        'cash.edit_mode_active': 'Modo de edición activo',
+        'cash.allocated_expected': 'Asignado: {allocated} / Esperado: {expected}',
+        'cash.reconciled': 'Cuadrado.',
+        'cash.over_by': 'Te sobra {amount}',
+        'cash.short_by': 'Te falta {amount}',
+        'cash.finish_edit': 'Finalizar edición',
+        'cash.cancel_edit': 'Cancelar edición',
+        'cash.bills': 'Billetes',
+        'cash.coins': 'Monedas',
+        'cash.hide_empty': 'Ocultar vacíos',
+        'cash.denomination_type': 'Tipo de denominación',
+        'cash.decrease_count': 'Disminuir cantidad',
+        'cash.increase_count': 'Aumentar cantidad',
+
+        'wallet.actions_title': 'Acciones del monedero',
+        'wallet.manage': 'Gestionar {name}.',
+        'wallet.edit_name': 'Editar nombre',
+        'wallet.edit_denoms': 'Editar denominaciones',
+        'wallet.delete': 'Eliminar monedero',
+        'wallet.new_name_prompt': 'Nuevo nombre del monedero',
+        'wallet.edit_name_title': 'Editar nombre del monedero',
+        'wallet.name_required': 'El nombre del monedero es obligatorio.',
+        'wallet.name_too_long': 'El nombre del monedero debe tener {max} caracteres o menos.',
+        'wallet.delete_confirm': '¿Eliminar el monedero {name}? Esto elimina su efectivo y sus movimientos.',
+        'wallet.delete_title': 'Eliminar monedero',
+        'wallet.create_title': 'Crear monedero',
+        'wallet.create_message': 'Introduce un nombre y elige una divisa.',
+        'wallet.field_name': 'Nombre',
+        'wallet.field_currency': 'Divisa',
+        'wallet.create_action': 'Crear monedero',
+        'wallet.max_reached': 'Se alcanzó el número máximo de monederos (4).',
+        'wallet.finish_or_cancel_before_create': 'Finaliza o cancela la asignación/edición actual antes de crear un monedero.',
+        'wallet.edit_denoms_question': '¿Editar denominaciones?',
+        'wallet.edit_denoms_instead': '¿Editar denominaciones en lugar de introducir un movimiento?',
+        'wallet.enter_edit_mode': 'Entrar en modo de edición',
+
+        'pay.blocked_title': 'Los pagos están bloqueados mientras el modo Editar denominaciones está activo.',
+        'pay.blocked_body': 'Primero finaliza o cancela la edición en Efectivo.',
+        'pay.mode_outgoing': 'Salida',
+        'pay.mode_incoming': 'Entrada',
+        'pay.payment_mode': 'Modo de pago',
+        'pay.selected_wallet': 'Monedero seleccionado',
+        'pay.amount_label': 'Importe',
+        'pay.note_label': 'Nota/Referencia (opcional)',
+        'pay.note_limit': '{count}/30 caracteres{suffix}',
+        'pay.note_limit_reached': ' — límite alcanzado',
+        'pay.enter_amount_to_allocate': 'Introduce un importe para asignar denominaciones.',
+        'pay.no_denoms_available': 'No hay denominaciones disponibles.',
+        'pay.no_denoms_available_for_amount': 'No hay denominaciones disponibles en esta pestaña para ese importe.',
+        'pay.insufficient_funds': 'Fondos insuficientes',
+        'pay.suggestions_off': 'Las sugerencias están desactivadas',
+        'pay.edit_manually': 'Editar manualmente',
+        'pay.use_and_finalize': 'Usar y finalizar',
+        'pay.use_suggested': 'Usar sugerida',
+        'pay.finalize_incoming': 'Finalizar entrada',
+        'pay.new_transaction': 'Nuevo movimiento',
+        'pay.revert_transaction': 'Revertir movimiento',
+        'pay.revert_confirm': '¿Revertir este movimiento? El monedero se restaurará a su estado anterior.',
+        'pay.enter_change_received': 'Introducir cambio recibido',
+        'pay.confirm_change_received': 'Confirmar cambio recibido',
+        'pay.finalize_outgoing_for': 'Finalizar el pago de {amount}.',
+        'pay.expected_change': 'Cambio esperado: {amount}',
+        'pay.suggested_change': 'Cambio sugerido',
+        'pay.received_change_breakdown': 'Desglose del cambio recibido',
+        'pay.denomination': 'Denominación',
+        'pay.count': 'Cantidad',
+        'pay.subtotal': 'Subtotal',
+        'pay.no_denoms_for_change': 'No hay denominaciones disponibles para este importe de cambio.',
+        'pay.received_vs_expected': 'Recibido: {received} / {expected}',
+        'pay.change_total_reconciled': 'El total del cambio cuadra.',
+        'pay.change_total_must_match': 'El cambio recibido debe coincidir exactamente con el cambio esperado.',
+        'pay.confirm_and_finalize': 'Confirmar y finalizar',
+        'pay.wallet_empty_hint': 'El monedero está vacío. Empieza con un ingreso.',
+        'pay.change_tab_label': 'Tipo de denominación del cambio',
+        'pay.no_denoms_in_tab': 'No hay denominaciones disponibles en esta pestaña.',
+        'pay.no_auto_suggestion': 'Sin sugerencia automática',
+        'pay.confirm_suggested': 'Confirmar sugerencia',
+        'pay.enter_manually': 'Introducir manualmente',
+
+        'tx.none': 'Aún no hay movimientos.',
+        'tx.table.description': 'Descripción',
+        'tx.table.amount': 'Importe',
+        'tx.table.balance': 'Saldo',
+        'tx.revert_title': 'Revertir movimiento',
+        'tx.revert_body': 'Esto eliminará el movimiento y restaurará el estado de efectivo del monedero.',
+        'tx.revert_action': 'Revertir',
+        'tx.revert_button': 'Revertir movimiento',
+        'tx.unable_revert': 'No se puede revertir este movimiento.',
+        'tx.denoms_edited': 'Denominaciones editadas',
+        'tx.cash_in': 'Ingreso',
+        'tx.payment': 'Pago',
+        'tx.adjustment': 'Ajuste',
+        'tx.detail.timestamp': 'Fecha y hora',
+        'tx.detail.type': 'Tipo',
+        'tx.detail.prior_denoms': 'Denominaciones anteriores',
+        'tx.detail.new_denoms': 'Denominaciones nuevas',
+        'tx.detail.direction': 'Dirección',
+        'tx.detail.strategy': 'Estrategia',
+        'tx.detail.breakdown': 'Desglose',
+        'tx.detail.change': 'Cambio',
+        'tx.detail.note': 'Nota',
+
+        'settings.title': 'Ajustes',
+        'settings.section.behaviour': 'Comportamiento',
+        'settings.section.appearance': 'Apariencia',
+        'settings.section.security': 'Seguridad',
+        'settings.section.data': 'Datos',
+        'settings.behaviour.helper': 'Estos ajustes afectan cómo se calculan los pagos y las sugerencias.',
+        'settings.suggestions.title': 'Sugerencias',
+        'settings.suggestions.body': 'Las sugerencias muestran denominaciones recomendadas; aún confirmas o editas manualmente.',
+        'settings.strategies.title': 'Estrategias',
+        'settings.strategies.body': 'Cómo se calculan las sugerencias.',
+        'settings.strategy.minimise.title': 'Minimizar',
+        'settings.strategy.minimise.body': 'Usa primero las denominaciones grandes para reducir el número de piezas.',
+        'settings.strategy.preserve.title': 'Conservar',
+        'settings.strategy.preserve.body': 'Prefiere denominaciones altas cuando existen varias opciones exactas.',
+        'settings.strategy.balance.title': 'Equilibrar',
+        'settings.strategy.balance.body': 'Prefiere denominaciones con excedente para equilibrar el monedero.',
+        'settings.single_cover.title': 'Cobertura única',
+        'settings.single_cover.body': 'Cuando una estrategia no puede igualar el importe exacto, sugiere la denominación única o mezcla más baja que lo cubra. Recibirás cambio.',
+        'settings.change_suggestions.title': 'Sugerencias de cambio',
+        'settings.change_suggestions.body': 'Muestra un desglose sugerido del cambio al pagar de más, o usa solo modo manual si está en No.',
+        'settings.coins_rules.title': 'Reglas de monedas',
+        'settings.coins_rules.body': 'Controla si se usan monedas en los desgloses sugeridos.',
+        'settings.coins_mode.avoid.title': 'Evitar monedas por completo',
+        'settings.coins_mode.avoid.body': 'Solo billetes. Si los billetes no pueden pagar el importe, el pago es insuficiente.',
+        'settings.coins_mode.prefer.title': 'Preferir billetes',
+        'settings.coins_mode.prefer.body': 'Las monedas se usan solo si es necesario para pagar exacto (o para dar cambio).',
+        'settings.invert_denom_order.title': 'Invertir el orden de denominaciones',
+        'settings.invert_denom_order.body': 'Por defecto, las denominaciones se listan de mayor a menor. Actívalo para invertir el orden (de menor a mayor).',
+        'settings.denom_order.normal': 'Normal',
+        'settings.denom_order.inverted': 'Invertido',
+        'settings.show_bills_coins.title': 'Mostrar billetes y monedas',
+        'settings.show_bills_coins.body': 'Divide las denominaciones entre billetes y monedas. Si está en No, todas aparecen en una sola lista. Algunas denominaciones pueden no estar categorizadas correctamente.',
+        'settings.show_cents.title': 'Mostrar céntimos',
+        'settings.show_cents.body': 'Si está en Sí, todas las divisas con céntimos siempre mostrarán .00. Si está en No, .00 se oculta salvo que haya céntimos reales.',
+        'settings.security.title': 'Seguridad',
+        'settings.security.body': 'Bloquea la app con autenticación biométrica (huella o reconocimiento facial).',
+        'settings.appearance.title': 'Apariencia',
+        'settings.appearance.body': 'Iguala el tema de la app con el del sitio web.',
+        'settings.appearance.aria': 'Tema',
+        'settings.export.title': 'Exportar datos',
+        'settings.export.json': 'Exportar JSON',
+        'settings.export.pdf': 'Exportar PDF',
+        'settings.delete_all.title': 'Eliminar todos los datos',
+        'settings.delete_all.body': 'Esto elimina monederos, denominaciones, movimientos y ajustes.',
+        'settings.delete_all.action': 'Eliminar todos los datos',
+        'settings.newsletter.title': 'Boletín',
+        'settings.newsletter.body': 'Opcional. Suscríbete para recibir nuestro boletín y noticias sobre cuándo se lanza el nuevo Kontana con capacidades de IA. Usaremos tu email solo para este fin.',
+        'settings.newsletter.email': 'Email',
+        'settings.newsletter.consent': 'Envíame el boletín y novedades del lanzamiento',
+        'settings.newsletter.signup': 'Suscribirme',
+        'settings.language.title': 'Idioma',
+        'settings.language.body': 'Elige el idioma de la app.',
+        'settings.language.english': 'Inglés',
+        'settings.language.spanish': 'Español',
+
+        'currency.most_used': 'Más usadas',
+        'currency.other': 'Otras divisas',
+
+        'export.snapshot_title': 'Informe de estado de Kontana',
+        'export.generated': 'Generado: {date}',
+        'export.wallet_totals': 'Totales por monedero',
+        'export.transactions_last_30': 'Movimientos (últimos 30 días)',
+
+        'alerts.popup_blocked': 'Ventana emergente bloqueada. Permite popups para exportar el informe PDF.',
+        'alerts.max_wallets': 'Puedes tener hasta 4 monederos. Elimina uno para crear otro.',
+        'alerts.finish_edit_before_nav': 'Finaliza o cancela Editar denominaciones antes de navegar.',
+        'alerts.finish_edit_before_create_wallet': 'Finaliza o cancela la asignación/edición actual antes de crear un monedero.',
+        'alerts.finish_edit_disabled': 'Finalizar edición está desactivado hasta que el total asignado coincida exactamente con el total esperado.',
+        'alerts.change_must_equal': 'El cambio debe ser exactamente {amount}.',
+        'alerts.biometric_unavailable': 'La autenticación biométrica no está disponible en este dispositivo.',
+        'alerts.biometric_failed_enable': 'Falló la autenticación biométrica. No se activó el bloqueo biométrico.',
+        'alerts.auth_failed': 'Falló la autenticación. Inténtalo de nuevo.',
+        'alerts.launch_email_consent': 'Introduce un email válido y proporciona consentimiento explícito.',
+        'alerts.launch_saved_local': 'Guardado localmente. La sincronización futura aún no está configurada.',
+        'alerts.launch_saved_and_sent': 'Guardado localmente y enviado al endpoint de actualizaciones.',
+        'alerts.launch_saved_sync_failed': 'Guardado localmente. La sincronización falló y se puede reintentar más tarde.',
+        'confirm.delete_all.prompt': 'Escribe DELETE ALL DATA para confirmar.',
+        'confirm.delete_all.title': 'Eliminar todos los datos',
+        'confirm.delete_all.mismatch': 'El texto de confirmación no coincide.',
+      },
+    };
+
+    function t(key, vars) {
+      const lang = app?.state?.settings?.language || 'en';
+      const table = I18N[lang] || I18N.en;
+      const raw = table[key] ?? I18N.en[key] ?? key;
+      if (!vars) return raw;
+      return String(raw).replace(/\{(\w+)\}/g, (_, name) => (vars[name] ?? `{${name}}`));
+    }
+
     const PAGE_META = {
-      cash: {
-        title: 'Cash',
-      },
-      pay: {
-        title: 'Pay',
-      },
-      transactions: {
-        title: 'Transactions',
-      },
-      settings: {
-        title: 'Settings',
-      },
+      cash: { titleKey: 'tab.cash' },
+      pay: { titleKey: 'tab.pay' },
+      transactions: { titleKey: 'tab.transactions' },
+      settings: { titleKey: 'tab.settings' },
     };
 
     function getInitialAppearance() {
@@ -731,6 +1130,7 @@ const STORAGE_KEY = 'kontana_state_v1';
       return {
         version: 1,
         settings: {
+          language: 'en',
           payment_strategies: true,
           change_suggestions: true,
           default_strategy: 'greedy',
@@ -793,7 +1193,11 @@ const STORAGE_KEY = 'kontana_state_v1';
     }
 
     function strategyDisplayName(key) {
-      const names = { greedy: 'Minimise', lex: 'Preserve', equalisation: 'Balance' };
+      const names = {
+        greedy: t('settings.strategy.minimise.title'),
+        lex: t('settings.strategy.preserve.title'),
+        equalisation: t('settings.strategy.balance.title'),
+      };
       return names[key] || key || '-';
     }
 
@@ -837,10 +1241,10 @@ const STORAGE_KEY = 'kontana_state_v1';
       const target = new Date(isoString);
       const todayKey = dayKey(today.toISOString());
       const targetKey = dayKey(target.toISOString());
-      if (targetKey === todayKey) return 'Today';
+      if (targetKey === todayKey) return t('time.today');
       const yesterday = new Date(today);
       yesterday.setDate(today.getDate() - 1);
-      if (targetKey === dayKey(yesterday.toISOString())) return 'Yesterday';
+      if (targetKey === dayKey(yesterday.toISOString())) return t('time.yesterday');
       return formatDateEU(isoString);
     }
 
@@ -874,10 +1278,10 @@ const STORAGE_KEY = 'kontana_state_v1';
       const { priority, rest } = getCurrencyOrder();
       const renderOption = (code) => `<option value="${code}" ${selectedCode === code ? 'selected' : ''}>${CURRENCY_FLAGS[code] || '🏳️'} ${CURRENCY_NAMES[code] || code}</option>`;
       return `
-        <optgroup label="Most used">
+        <optgroup label="${t('currency.most_used')}">
           ${priority.map(renderOption).join('')}
         </optgroup>
-        <optgroup label="Other currencies">
+        <optgroup label="${t('currency.other')}">
           ${rest.map(renderOption).join('')}
         </optgroup>
       `;
@@ -1075,15 +1479,15 @@ const STORAGE_KEY = 'kontana_state_v1';
     function openPdfReport(state) {
       const date = new Date().toISOString().slice(0, 10);
       const lines = [];
-      lines.push('Kontana Snapshot Report');
-      lines.push(`Generated: ${new Date().toLocaleString()}`);
+      lines.push(t('export.snapshot_title'));
+      lines.push(t('export.generated', { date: new Date().toLocaleString() }));
       lines.push('');
-      lines.push('Wallet Totals');
+      lines.push(t('export.wallet_totals'));
       for (const wallet of Object.values(state.wallets)) {
         lines.push(`- ${toWalletLabel(wallet)}: ${formatMoney(getWalletTotal(wallet), wallet.currency)}`);
       }
       lines.push('');
-      lines.push('Transactions (Last 30 Days)');
+      lines.push(t('export.transactions_last_30'));
       const txs = [...state.transactions].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       for (const tx of txs) {
         const amountMinor = Number.isFinite(tx.requested_amount_minor) ? tx.requested_amount_minor : (tx.amount_minor || 0);
@@ -1093,7 +1497,7 @@ const STORAGE_KEY = 'kontana_state_v1';
 
       const w = window.open('', '_blank');
       if (!w) {
-        modalAlert('Popup blocked. Allow popups to export PDF report.');
+        modalAlert(t('alerts.popup_blocked'));
         return;
       }
       w.document.write(`<!doctype html><html><head><title>kontana-report-${date}.pdf</title><style>body{font-family:ui-sans-serif,system-ui;padding:24px;white-space:pre-wrap;line-height:1.45}</style></head><body>${lines.join('\n').replace(/</g, '&lt;')}</body></html>`);
@@ -1104,13 +1508,13 @@ const STORAGE_KEY = 'kontana_state_v1';
 
     function createWallet(state, name, currency) {
       if (Object.keys(state.wallets).length >= MAX_WALLETS) {
-        throw new Error('You can have up to 4 wallets. Delete one to create another.');
+        throw new Error(t('alerts.max_wallets'));
       }
       if (!name || name.trim().length === 0) {
-        throw new Error('Wallet name is required.');
+        throw new Error(t('wallet.name_required'));
       }
       if (name.trim().length > WALLET_NAME_MAX) {
-        throw new Error(`Wallet name must be ${WALLET_NAME_MAX} characters or fewer.`);
+        throw new Error(t('wallet.name_too_long', { max: WALLET_NAME_MAX }));
       }
       const id = uid('wallet');
       state.wallets[id] = {
@@ -1153,6 +1557,9 @@ const STORAGE_KEY = 'kontana_state_v1';
         const parsed = JSON.parse(raw);
         const merged = { ...makeDefaultState(), ...parsed };
         merged.settings = { ...makeDefaultState().settings, ...(parsed.settings || {}) };
+        if (!['en', 'es'].includes(merged.settings.language)) {
+          merged.settings.language = 'en';
+        }
         if (typeof merged.settings.payment_strategies !== 'boolean') {
           merged.settings.payment_strategies = true;
         }
@@ -1513,18 +1920,18 @@ const STORAGE_KEY = 'kontana_state_v1';
             <section class="modal-card" role="dialog" aria-modal="true" aria-label="${modal.title}">
               <div class="modal-header">
                 <h3>${modal.title}</h3>
-                ${modal.showClose ? '<button type="button" class="modal-close-btn" data-modal-close aria-label="Close"><svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path fill-rule="evenodd" d="M7 1L1 7l5 5l-5 5l6 6l5-5l5 5l6-6l-5-5l5-5l-6-6l-5 5z" clip-rule="evenodd"/></svg></button>' : ''}
+                ${modal.showClose ? `<button type="button" class="modal-close-btn" data-modal-close aria-label="${t('common.close')}"><svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path fill-rule="evenodd" d="M7 1L1 7l5 5l-5 5l6 6l5-5l5 5l6-6l-5-5l5-5l-6-6l-5 5z" clip-rule="evenodd"/></svg></button>` : ''}
               </div>
               <p>${modal.message}</p>
-              ${showToggle ? `<div class="segmented-control" role="tablist" aria-label="Change denomination type">
-                <button type="button" class="segment ${app.modal.changeTab === 'bills' ? 'active' : ''}" data-modal-change-tab="bills">Bills</button>
-                <button type="button" class="segment ${app.modal.changeTab === 'coins' ? 'active' : ''}" data-modal-change-tab="coins">Coins</button>
+              ${showToggle ? `<div class="segmented-control" role="tablist" aria-label="${t('pay.change_tab_label')}">
+                <button type="button" class="segment ${app.modal.changeTab === 'bills' ? 'active' : ''}" data-modal-change-tab="bills">${t('cash.bills')}</button>
+                <button type="button" class="segment ${app.modal.changeTab === 'coins' ? 'active' : ''}" data-modal-change-tab="coins">${t('cash.coins')}</button>
               </div>` : ''}
-              <div class="modal-change-list">${total > 0 ? rows : '<p class="muted">No denominations available in this tab.</p>'}</div>
-              <p class="muted">Received: ${formatMoney(receivedTotal, ed.currency)} / ${formatMoney(ed.expectedChangeMinor, ed.currency)}</p>
+              <div class="modal-change-list">${total > 0 ? rows : `<p class="muted">${t('pay.no_denoms_in_tab')}</p>`}</div>
+              <p class="muted">${t('pay.received_vs_expected', { received: formatMoney(receivedTotal, ed.currency), expected: formatMoney(ed.expectedChangeMinor, ed.currency) })}</p>
               <div class="inline-actions">
-                <button type="button" data-modal-change-action="submit" class="btn-primary-soft" ${canConfirm ? '' : 'disabled'}>Confirm</button>
-                <button type="button" data-modal-change-action="cancel" class="btn-secondary-soft">Cancel</button>
+                <button type="button" data-modal-change-action="submit" class="btn-primary-soft" ${canConfirm ? '' : 'disabled'}>${t('common.confirm')}</button>
+                <button type="button" data-modal-change-action="cancel" class="btn-secondary-soft">${t('common.cancel')}</button>
               </div>
             </section>
           </div>
@@ -1676,9 +2083,18 @@ const STORAGE_KEY = 'kontana_state_v1';
         btn.classList.toggle('active', btn.dataset.tab === app.activeTab);
         const blocked = gated && btn.dataset.tab !== app.activeTab;
         btn.disabled = Boolean(blocked);
+        if (btn.dataset.tab === 'cash') btn.textContent = t('tab.cash');
+        if (btn.dataset.tab === 'pay') btn.textContent = t('tab.pay');
+        if (btn.dataset.tab === 'transactions') btn.textContent = t('tab.transactions_short');
       });
       document.querySelectorAll('.bottom-nav-link').forEach((link) => {
         link.classList.toggle('active', link.dataset.tab === app.activeTab);
+        const span = link.querySelector('span');
+        if (span) {
+          if (link.dataset.tab === 'cash') span.textContent = t('tab.cash');
+          if (link.dataset.tab === 'pay') span.textContent = t('tab.pay');
+          if (link.dataset.tab === 'transactions') span.textContent = t('tab.transactions_short');
+        }
       });
       document.querySelectorAll('.tab-panel').forEach((panel) => {
         panel.classList.toggle('active', panel.id === `tab-${app.activeTab}`);
@@ -1686,7 +2102,10 @@ const STORAGE_KEY = 'kontana_state_v1';
 
       const meta = PAGE_META[app.activeTab] || PAGE_META.cash;
       const titleEl = document.getElementById('page-title');
-      if (titleEl) titleEl.textContent = meta.title;
+      if (titleEl) titleEl.textContent = t(meta.titleKey || 'tab.cash');
+
+      const settingsBtn = document.getElementById('open-settings');
+      if (settingsBtn) settingsBtn.setAttribute('aria-label', t('tab.settings'));
     }
 
     function renderWalletCards(wallets, activeWalletId, selectorId, compact = false, options = {}) {
@@ -1700,14 +2119,14 @@ const STORAGE_KEY = 'kontana_state_v1';
             class="${cls} wallet-card-add"
             data-wallet-selector="${selectorId}"
             data-wallet-add="1"
-            aria-label="Create wallet"
+            aria-label="${t('nav.create_wallet')}"
           >
             <span class="wallet-card-add-plus">+</span>
           </button>
         `
         : '';
       return `
-        <div class="wallet-cards" role="radiogroup" aria-label="Wallet selector">
+        <div class="wallet-cards" role="radiogroup" aria-label="${t('nav.wallet_selector')}">
           ${wallets.map((wallet) => {
             const active = wallet.id === activeWalletId;
             return `
@@ -1729,7 +2148,7 @@ const STORAGE_KEY = 'kontana_state_v1';
                   </div>
                 </div>
                 ${showActions && active ? `
-                  <button type="button" class="wallet-card-action" data-wallet-action="1" aria-label="Wallet actions">
+                  <button type="button" class="wallet-card-action" data-wallet-action="1" aria-label="${t('wallet.actions_title')}">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M30.47 6.1H32v4.57h-1.53Zm-1.52 4.57h1.52v1.52h-1.52Zm0-6.1h1.52V6.1h-1.52Zm-1.52 7.62h1.52v1.52h-1.52Zm0-9.14h1.52v1.52h-1.52ZM25.9 13.71h1.53v1.53H25.9Zm0-3.04h1.53v1.52H25.9Zm0-9.15h1.53v1.53H25.9Zm-1.52 13.72h1.52v1.52h-1.52Zm0-6.1h1.52v1.53h-1.52Zm-1.53 7.62h1.53v1.53h-1.53Zm0-6.09h1.53v1.52h-1.53Zm0-3.05h1.53v1.52h-1.53ZM21.33 0h4.57v1.52h-4.57Zm0 18.29h1.52v1.52h-1.52Zm0-6.1h1.52v1.52h-1.52Zm0-6.09h1.52v1.52h-1.52Zm-1.52 13.71h1.52v1.52h-1.52Zm0-6.1h1.52v1.53h-1.52Zm0-6.09h1.52v1.52h-1.52Zm0-3.05h1.52V6.1h-1.52Zm0-3.05h1.52v1.53h-1.52Zm-1.53 19.81h1.53v1.53h-1.53Zm0-6.09h1.53v1.52h-1.53Zm0-6.1h1.53v1.53h-1.53Zm0-6.09h1.53v1.52h-1.53Zm-1.52 19.81h1.52v1.52h-1.52Zm0-6.1h1.52v1.53h-1.52Zm0-6.09h1.52v1.52h-1.52Zm0-6.1h1.52V6.1h-1.52Zm-1.52 19.81h1.52v1.52h-1.52Zm0-6.09h1.52v1.52h-1.52Zm0-6.1h1.52v1.52h-1.52Zm0-6.09h1.52v1.52h-1.52Zm-1.53 19.8h1.53v1.53h-1.53Zm0-6.09h1.53v1.52h-1.53Zm0-6.1h1.53v1.53h-1.53Zm0-6.09h1.53v1.52h-1.53Zm-1.52 19.81h1.52v1.52h-1.52Zm0-6.1h1.52v1.53h-1.52Zm0-6.09h1.52v1.52h-1.52Zm0-6.1h1.52v1.53h-1.52Zm-1.53 13.72h1.53v1.52h-1.53Zm0-6.1h1.53v1.53h-1.53Zm0-6.09h1.53v1.52h-1.53Zm0 19.81h1.53v-1.53h-1.53v-4.57H7.62v-3.05H3.05v-1.52H1.52v1.52H0V32h10.66Zm-1.52 0H4.57v-1.53H3.05v-1.52H1.52v-4.57h4.57v3.04h3.05Zm0-12.19h1.52v1.52H9.14Zm0-6.1h1.52v1.52H9.14Zm-1.52 7.62h1.52v1.52H7.62Zm0-6.1h1.52v1.53H7.62Zm-1.53 1.53h1.53v1.52H6.09Zm-1.52 1.52h1.52v1.53H4.57Zm-1.52 1.53h1.52v1.52H3.05Z"/></svg>
                   </button>
                 ` : ''}
@@ -1883,7 +2302,7 @@ const STORAGE_KEY = 'kontana_state_v1';
     }
 
     function breakdownHtml(wallet, breakdown) {
-      if (!breakdown || breakdown.length === 0) return '<p class="muted">No breakdown.</p>';
+      if (!breakdown || breakdown.length === 0) return `<p class="muted">${t('pay.no_auto_suggestion')}</p>`;
       return `<ul class="breakdown">${breakdown.map((row) => `<li>${formatDenomValue(row.value_minor, wallet.currency)} x ${row.count}</li>`).join('')}</ul>`;
     }
 
@@ -1893,8 +2312,8 @@ const STORAGE_KEY = 'kontana_state_v1';
       const hasBills = options.some((row) => row.type === 'note');
       const hasCoins = options.some((row) => row.type === 'coin');
       const response = await showModal({
-        title: 'Enter change received',
-        message: `Expected change: ${formatMoney(expectedChangeMinor, wallet.currency)}`,
+        title: t('pay.enter_change_received'),
+        message: t('pay.expected_change', { amount: formatMoney(expectedChangeMinor, wallet.currency) }),
         changeEditor: {
           currency: wallet.currency,
           expectedChangeMinor,
@@ -1912,7 +2331,7 @@ const STORAGE_KEY = 'kontana_state_v1';
       });
       const total = getAllocationTotal(allocation);
       if (total !== expectedChangeMinor) {
-        await modalAlert(`Change must equal exactly ${formatMoney(expectedChangeMinor, wallet.currency)}.`);
+        await modalAlert(t('alerts.change_must_equal', { amount: formatMoney(expectedChangeMinor, wallet.currency) }));
         return null;
       }
       return allocation;
@@ -1920,26 +2339,26 @@ const STORAGE_KEY = 'kontana_state_v1';
 
     async function openCreateWalletModal() {
       if (app.editMode || isAppGated()) {
-        await modalAlert('Finish or cancel the current allocation/edit before creating a wallet.');
+        await modalAlert(t('wallet.finish_or_cancel_before_create'));
         return;
       }
       if (Object.keys(app.state.wallets).length >= MAX_WALLETS) {
-        await modalAlert('Maximum number of wallets reached (4).');
+        await modalAlert(t('wallet.max_reached'));
         return;
       }
       let errorMsg = '';
       let lastCurrency = 'EUR';
       while (true) {
         const result = await showModal({
-          title: 'Create wallet',
-          message: errorMsg ? `<p class="status danger">${errorMsg}</p>Enter a name and choose a currency.` : 'Enter a name and choose a currency.',
+          title: t('wallet.create_title'),
+          message: errorMsg ? `<p class="status danger">${errorMsg}</p>${t('wallet.create_message')}` : t('wallet.create_message'),
           fields: [
-            { id: 'name', label: 'Name', type: 'text', defaultValue: '', maxLength: WALLET_NAME_MAX },
-            { id: 'currency', label: 'Currency', type: 'select', defaultValue: lastCurrency, optionsHtml: renderCurrencyOptions(lastCurrency) },
+            { id: 'name', label: t('wallet.field_name'), type: 'text', defaultValue: '', maxLength: WALLET_NAME_MAX },
+            { id: 'currency', label: t('wallet.field_currency'), type: 'select', defaultValue: lastCurrency, optionsHtml: renderCurrencyOptions(lastCurrency) },
           ],
           actions: [
-            { id: 'create', label: 'Create wallet', style: 'primary' },
-            { id: 'cancel', label: 'Cancel', style: 'secondary' },
+            { id: 'create', label: t('wallet.create_action'), style: 'primary' },
+            { id: 'cancel', label: t('common.cancel'), style: 'secondary' },
           ],
         });
         if (!result || result.id !== 'create') return;
@@ -1947,11 +2366,11 @@ const STORAGE_KEY = 'kontana_state_v1';
         const currency = result.values?.currency || 'EUR';
         lastCurrency = currency;
         if (!name) {
-          errorMsg = 'Wallet name is required.';
+          errorMsg = t('wallet.name_required');
           continue;
         }
         if (name.length > WALLET_NAME_MAX) {
-          errorMsg = `Wallet name must be ${WALLET_NAME_MAX} characters or fewer.`;
+          errorMsg = t('wallet.name_too_long', { max: WALLET_NAME_MAX });
           continue;
         }
         try {
@@ -1979,9 +2398,9 @@ const STORAGE_KEY = 'kontana_state_v1';
       if (!wallet) {
         el.innerHTML = `
           <section class="panel">
-            <p class="empty-notice">No wallets yet. Create your first wallet to start tracking cash.</p>
+            <p class="empty-notice">${t('cash.no_wallets')}</p>
             <div class="inline-actions">
-              <button type="button" id="open-create-wallet" class="btn-secondary-soft">Create wallet</button>
+              <button type="button" id="open-create-wallet" class="btn-secondary-soft">${t('cash.create_wallet')}</button>
             </div>
           </section>
         `;
@@ -2042,16 +2461,16 @@ const STORAGE_KEY = 'kontana_state_v1';
               ${renderWalletCards(wallets, wallet.id, 'cash-wallet', false, { showCreateCard: true, showActions: !isEditMode })}
             </div>
             ${!isEditMode && currentTotal === 0 ? `
-              <p class="status warn">Wallet is empty. Add money by creating an incoming payment in Pay.</p>
+              <p class="status warn">${t('cash.wallet_empty')}</p>
             ` : ''}
             ${isEditMode ? `
               <section class="edit-status">
-                <p class="status warn">Edit mode active</p>
-                <p class="edit-reconciliation">Allocated: ${formatMoney(currentTotal, wallet.currency)} / Expected: ${formatMoney(expectedTotal, wallet.currency)}</p>
-                <p class="edit-reconciliation-pill ${difference === 0 ? 'success' : 'danger'}">${difference === 0 ? 'Reconciled.' : (difference > 0 ? `You're over by ${formatMoney(Math.abs(difference), wallet.currency)}` : `You're short by ${formatMoney(Math.abs(difference), wallet.currency)}`)}</p>
+                <p class="status warn">${t('cash.edit_mode_active')}</p>
+                <p class="edit-reconciliation">${t('cash.allocated_expected', { allocated: formatMoney(currentTotal, wallet.currency), expected: formatMoney(expectedTotal, wallet.currency) })}</p>
+                <p class="edit-reconciliation-pill ${difference === 0 ? 'success' : 'danger'}">${difference === 0 ? t('cash.reconciled') : (difference > 0 ? t('cash.over_by', { amount: formatMoney(Math.abs(difference), wallet.currency) }) : t('cash.short_by', { amount: formatMoney(Math.abs(difference), wallet.currency) }))}</p>
                 <div class="inline-actions edit-actions">
-                  <button type="button" id="finish-edit-mode" class="btn-primary-soft" ${difference !== 0 ? 'disabled' : ''}>Finish edit</button>
-                  <button type="button" id="cancel-edit-mode" class="btn-secondary-soft">Cancel edit</button>
+                  <button type="button" id="finish-edit-mode" class="btn-primary-soft" ${difference !== 0 ? 'disabled' : ''}>${t('cash.finish_edit')}</button>
+                  <button type="button" id="cancel-edit-mode" class="btn-secondary-soft">${t('cash.cancel_edit')}</button>
                 </div>
               </section>
             ` : ''}
@@ -2061,16 +2480,16 @@ const STORAGE_KEY = 'kontana_state_v1';
             <section class="card">
               <div class="denom-controls">
                 ${showToggle ? `
-                  <div class="segmented-control" role="tablist" aria-label="Denomination type">
-                    <button type="button" class="segment ${activeTab === 'bills' ? 'active' : ''}" id="segment-bills" role="tab" aria-selected="${activeTab === 'bills' ? 'true' : 'false'}">Bills</button>
-                    <button type="button" class="segment ${activeTab === 'coins' ? 'active' : ''}" id="segment-coins" role="tab" aria-selected="${activeTab === 'coins' ? 'true' : 'false'}">Coins</button>
+                  <div class="segmented-control" role="tablist" aria-label="${t('cash.denomination_type')}">
+                    <button type="button" class="segment ${activeTab === 'bills' ? 'active' : ''}" id="segment-bills" role="tab" aria-selected="${activeTab === 'bills' ? 'true' : 'false'}">${t('cash.bills')}</button>
+                    <button type="button" class="segment ${activeTab === 'coins' ? 'active' : ''}" id="segment-coins" role="tab" aria-selected="${activeTab === 'coins' ? 'true' : 'false'}">${t('cash.coins')}</button>
                   </div>
                 ` : '<span></span>'}
-                <button type="button" id="toggle-denom-visibility" class="denom-filter-toggle ${hideEmptyDenoms ? 'active' : ''}" aria-pressed="${hideEmptyDenoms ? 'true' : 'false'}">Hide empty</button>
+                <button type="button" id="toggle-denom-visibility" class="denom-filter-toggle ${hideEmptyDenoms ? 'active' : ''}" aria-pressed="${hideEmptyDenoms ? 'true' : 'false'}">${t('cash.hide_empty')}</button>
               </div>
               <div class="denom-list">${rows}</div>
               <div class="denom-total-row">
-                <p>Total</p>
+                <p>${t('common.total')}</p>
                 <p>${activeTabCount}</p>
                 <p>${formatMoney(activeTabTotal, wallet.currency)}</p>
               </div>
@@ -2081,7 +2500,7 @@ const STORAGE_KEY = 'kontana_state_v1';
 
       bindWalletCards('cash-wallet', async (walletId) => {
         if (app.editMode && app.editMode.walletId !== walletId) {
-          await modalAlert('Finish or cancel Edit denominations before navigating.');
+          await modalAlert(t('alerts.finish_edit_before_nav'));
           return;
         }
         app.activeWalletId = walletId;
@@ -2122,20 +2541,20 @@ const STORAGE_KEY = 'kontana_state_v1';
       if (cashWalletActionsBtn) {
         cashWalletActionsBtn.addEventListener('click', async () => {
           const choice = await showModal({
-            title: 'Wallet actions',
-            message: `Manage ${wallet.name}.`,
+            title: t('wallet.actions_title'),
+            message: t('wallet.manage', { name: wallet.name }),
             showClose: true,
             actions: [
-              { id: 'name', label: 'Edit name', style: 'secondary' },
-              { id: 'denoms', label: 'Edit denominations', style: 'secondary' },
-              { id: 'delete', label: 'Delete wallet', style: 'danger' },
+              { id: 'name', label: t('wallet.edit_name'), style: 'secondary' },
+              { id: 'denoms', label: t('wallet.edit_denoms'), style: 'secondary' },
+              { id: 'delete', label: t('wallet.delete'), style: 'danger' },
             ],
           });
           if (choice === 'name') {
-            const name = await modalPrompt('New wallet name', wallet.name, 'Edit Wallet Name', '', WALLET_NAME_MAX);
+            const name = await modalPrompt(t('wallet.new_name_prompt'), wallet.name, t('wallet.edit_name_title'), '', WALLET_NAME_MAX);
             if (!name) return;
             if (name.length > WALLET_NAME_MAX) {
-              await modalAlert(`Wallet name must be ${WALLET_NAME_MAX} characters or fewer.`);
+              await modalAlert(t('wallet.name_too_long', { max: WALLET_NAME_MAX }));
               return;
             }
             wallet.name = name.trim();
@@ -2145,7 +2564,7 @@ const STORAGE_KEY = 'kontana_state_v1';
             return;
           }
           if (choice === 'delete') {
-            const ok = await modalConfirm(`Delete wallet ${wallet.name}? This removes its cash and transactions.`, 'Delete Wallet');
+            const ok = await modalConfirm(t('wallet.delete_confirm', { name: wallet.name }), t('wallet.delete_title'));
             if (!ok) return;
             const id = wallet.id;
             delete app.state.wallets[id];
@@ -2166,11 +2585,11 @@ const STORAGE_KEY = 'kontana_state_v1';
           }
           if (choice !== 'denoms') return;
           const ok = await showModal({
-            title: 'Edit denominations?',
-            message: 'Edit denominations instead of entering a transaction?',
+            title: t('wallet.edit_denoms_question'),
+            message: t('wallet.edit_denoms_instead'),
             actions: [
-              { id: 'edit', label: 'Enter edit mode', style: 'secondary' },
-              { id: 'cancel', label: 'Cancel', style: 'secondary' },
+              { id: 'edit', label: t('wallet.enter_edit_mode'), style: 'secondary' },
+              { id: 'cancel', label: t('common.cancel'), style: 'secondary' },
             ],
           });
           if (ok !== 'edit') return;
@@ -2184,7 +2603,7 @@ const STORAGE_KEY = 'kontana_state_v1';
           if (!app.editMode || app.editMode.walletId !== wallet.id) return;
           const draftTotal = getWalletDraftTotal(wallet);
           if (draftTotal !== expectedTotal) {
-            await modalAlert('Finish edit is disabled until allocated total matches expected total exactly.');
+            await modalAlert(t('alerts.finish_edit_disabled'));
             return;
           }
           wallet.denominations.forEach((d) => {
@@ -2272,9 +2691,9 @@ const STORAGE_KEY = 'kontana_state_v1';
       if (!wallets.length) {
         el.innerHTML = `
           <section class="panel">
-            <p class="empty-notice">No wallets yet. Create your first wallet to start tracking cash.</p>
+            <p class="empty-notice">${t('cash.no_wallets')}</p>
             <div class="inline-actions">
-              <button type="button" id="open-create-wallet-pay" class="btn-secondary-soft">Create wallet</button>
+              <button type="button" id="open-create-wallet-pay" class="btn-secondary-soft">${t('cash.create_wallet')}</button>
             </div>
           </section>
         `;
@@ -2312,9 +2731,9 @@ const STORAGE_KEY = 'kontana_state_v1';
       if (wallets.length === 0) {
         el.innerHTML = `
           <section class="panel">
-            <p class="empty-notice">No wallets yet. Create your first wallet to start tracking cash.</p>
+            <p class="empty-notice">${t('cash.no_wallets')}</p>
             <div class="inline-actions">
-              <button type="button" id="open-create-wallet-payment" class="btn-secondary-soft">Create wallet</button>
+              <button type="button" id="open-create-wallet-payment" class="btn-secondary-soft">${t('cash.create_wallet')}</button>
             </div>
           </section>
         `;
@@ -2329,8 +2748,8 @@ const STORAGE_KEY = 'kontana_state_v1';
         el.innerHTML = `
           <section class="panel">
             <section class="card">
-              <p class="status warn">Payments are blocked while Edit denominations mode is active.</p>
-              <p>Finish or cancel edit mode in Cash first.</p>
+              <p class="status warn">${t('pay.blocked_title')}</p>
+              <p>${t('pay.blocked_body')}</p>
             </section>
           </section>
         `;
@@ -2387,25 +2806,25 @@ const STORAGE_KEY = 'kontana_state_v1';
         el.innerHTML = `
           <section class="panel">
             <section class="card">
-              <h3>Confirm change received</h3>
-              <p class="muted">Finalize outgoing payment for ${formatMoney(pending.requestedAmountMinor, pendingWallet.currency)}.</p>
-              <p class="status warn">Expected change: ${formatMoney(pending.expectedChangeMinor, pendingWallet.currency)}</p>
+              <h3>${t('pay.confirm_change_received')}</h3>
+              <p class="muted">${t('pay.finalize_outgoing_for', { amount: formatMoney(pending.requestedAmountMinor, pendingWallet.currency) })}</p>
+              <p class="status warn">${t('pay.expected_change', { amount: formatMoney(pending.expectedChangeMinor, pendingWallet.currency) })}</p>
               <div class="preview">
-                <p class="muted">Suggested change</p>
+                <p class="muted">${t('pay.suggested_change')}</p>
                 ${breakdownHtml(pendingWallet, pending.suggestedChangeBreakdown)}
               </div>
-              <p class="muted">Received change breakdown</p>
+              <p class="muted">${t('pay.received_change_breakdown')}</p>
               <div class="denom-header-row">
-                <p>Denomination</p><p>Count</p><p>Subtotal</p>
+                <p>${t('pay.denomination')}</p><p>${t('pay.count')}</p><p>${t('pay.subtotal')}</p>
               </div>
-              <div class="denom-list">${changeRowHtml || '<p class="muted">No denominations available for this change amount.</p>'}</div>
+              <div class="denom-list">${changeRowHtml || `<p class="muted">${t('pay.no_denoms_for_change')}</p>`}</div>
               <div class="preview">
-                <p class="muted">Received: ${formatMoney(receivedTotal, pendingWallet.currency)} / ${formatMoney(pending.expectedChangeMinor, pendingWallet.currency)}</p>
-                ${canFinalize ? '<p class="status success">Change total reconciled.</p>' : '<p class="status danger">Received change must exactly match expected change.</p>'}
+                <p class="muted">${t('pay.received_vs_expected', { received: formatMoney(receivedTotal, pendingWallet.currency), expected: formatMoney(pending.expectedChangeMinor, pendingWallet.currency) })}</p>
+                ${canFinalize ? `<p class="status success">${t('pay.change_total_reconciled')}</p>` : `<p class="status danger">${t('pay.change_total_must_match')}</p>`}
               </div>
               <div class="inline-actions edit-actions">
-                <button type="button" id="confirm-outgoing-finalize" class="btn-primary-soft" ${canFinalize ? '' : 'disabled'}>Confirm and finalize</button>
-                <button type="button" id="cancel-change-confirm" class="btn-secondary-soft">Cancel</button>
+                <button type="button" id="confirm-outgoing-finalize" class="btn-primary-soft" ${canFinalize ? '' : 'disabled'}>${t('pay.confirm_and_finalize')}</button>
+                <button type="button" id="cancel-change-confirm" class="btn-secondary-soft">${t('common.cancel')}</button>
               </div>
             </section>
           </section>
@@ -2478,7 +2897,7 @@ const STORAGE_KEY = 'kontana_state_v1';
       const mode = app.paymentDraft.mode;
       const wallet = app.state.wallets[app.paymentDraft.walletId];
       const walletTotalForHint = getWalletTotal(wallet);
-      const zeroWalletHint = walletTotalForHint === 0 ? 'Wallet is empty. Start with an incoming payment.' : '';
+      const zeroWalletHint = walletTotalForHint === 0 ? t('pay.wallet_empty_hint') : '';
       const amountMinor = parseAmountToMinor(app.paymentDraft.amountInput, wallet.currency);
       const noteText = app.paymentDraft.note.trim().slice(0, 30);
       const draftAllocated = getDraftAllocationTotal();
@@ -2641,21 +3060,21 @@ const STORAGE_KEY = 'kontana_state_v1';
           <div class="payment-wallet-selector">
             ${renderWalletCards(wallets, wallet.id, 'pay-wallet', false, { showCreateCard: true, showActions: true })}
           </div>
-          <div class="segmented-control" role="tablist" aria-label="Payment mode">
-            <button type="button" id="mode-outgoing" class="segment ${mode === 'outgoing' ? 'active' : ''}">↑ Outgoing</button>
-            <button type="button" id="mode-incoming" class="segment ${mode === 'incoming' ? 'active' : ''}">↓ Incoming</button>
+          <div class="segmented-control" role="tablist" aria-label="${t('pay.payment_mode')}">
+            <button type="button" id="mode-outgoing" class="segment ${mode === 'outgoing' ? 'active' : ''}">↑ ${t('pay.mode_outgoing')}</button>
+            <button type="button" id="mode-incoming" class="segment ${mode === 'incoming' ? 'active' : ''}">↓ ${t('pay.mode_incoming')}</button>
           </div>
           ${zeroWalletHint ? `<p class="status warn">${zeroWalletHint}</p>` : ''}
         </section>
       ` : `
         <section class="card payment-context-pill">
           <div class="payment-wallet-summary">
-            <p class="muted">Selected wallet</p>
+            <p class="muted">${t('pay.selected_wallet')}</p>
             <p><strong>${CURRENCY_FLAGS[wallet.currency] || ''} ${wallet.name}</strong> · ${CURRENCY_NAMES[wallet.currency] || wallet.currency} · ${formatMoney(getWalletTotal(wallet), wallet.currency)}</p>
           </div>
-          <div class="segmented-control" role="tablist" aria-label="Payment mode">
-            <button type="button" id="mode-outgoing" class="segment ${mode === 'outgoing' ? 'active' : ''}">↑ Outgoing</button>
-            <button type="button" id="mode-incoming" class="segment ${mode === 'incoming' ? 'active' : ''}">↓ Incoming</button>
+          <div class="segmented-control" role="tablist" aria-label="${t('pay.payment_mode')}">
+            <button type="button" id="mode-outgoing" class="segment ${mode === 'outgoing' ? 'active' : ''}">↑ ${t('pay.mode_outgoing')}</button>
+            <button type="button" id="mode-incoming" class="segment ${mode === 'incoming' ? 'active' : ''}">↓ ${t('pay.mode_incoming')}</button>
           </div>
           ${zeroWalletHint ? `<p class="status warn">${zeroWalletHint}</p>` : ''}
         </section>
@@ -2666,22 +3085,22 @@ const STORAGE_KEY = 'kontana_state_v1';
           ${app.paymentSuccessSummary ? `
             <section class="card payment-context-pill">
               <div class="payment-wallet-summary">
-                <p class="muted">Selected wallet</p>
+                <p class="muted">${t('pay.selected_wallet')}</p>
                 <p><strong>${CURRENCY_FLAGS[wallet.currency] || ''} ${wallet.name}</strong> · ${CURRENCY_NAMES[wallet.currency] || wallet.currency} · ${formatMoney(getWalletTotal(wallet), wallet.currency)}</p>
               </div>
             </section>
             <section class="card">
               <p class="status ${successTone}">${app.paymentSuccessMessage}</p>
               <div class="tx-success-summary">
-                <div class="tx-success-row"><span>Date</span><span>${formatDateTimeEU(successSummary.created_at)}</span></div>
-                <div class="tx-success-row"><span>Wallet</span><span>${successSummary.wallet_name}</span></div>
-                <div class="tx-success-row"><span>Amount</span><span class="tx-amount ${successSummary.type === 'incoming' ? 'incoming' : 'outgoing'}">${successAmountLabel}</span></div>
-                <div class="tx-success-row"><span>Note</span><span>${truncateNote(successSummary.note || '', 30) || '-'}</span></div>
-                ${successSummary.change_expected_minor > 0 ? `<div class="tx-success-row"><span>Change</span><span>${formatMoney(successSummary.change_expected_minor, successSummary.currency)} / ${formatMoney(successSummary.change_received_minor, successSummary.currency)}</span></div>` : ''}
+                <div class="tx-success-row"><span>${t('common.date')}</span><span>${formatDateTimeEU(successSummary.created_at)}</span></div>
+                <div class="tx-success-row"><span>${t('common.wallet')}</span><span>${successSummary.wallet_name}</span></div>
+                <div class="tx-success-row"><span>${t('common.amount')}</span><span class="tx-amount ${successSummary.type === 'incoming' ? 'incoming' : 'outgoing'}">${successAmountLabel}</span></div>
+                <div class="tx-success-row"><span>${t('common.note')}</span><span>${truncateNote(successSummary.note || '', 30) || '-'}</span></div>
+                ${successSummary.change_expected_minor > 0 ? `<div class="tx-success-row"><span>${t('common.change')}</span><span>${formatMoney(successSummary.change_expected_minor, successSummary.currency)} / ${formatMoney(successSummary.change_received_minor, successSummary.currency)}</span></div>` : ''}
               </div>
               <div class="inline-actions">
-                <button type="button" id="new-transaction" class="btn-secondary-soft">New transaction</button>
-                <button type="button" id="revert-last-transaction" class="btn-danger-soft">Revert transaction</button>
+                <button type="button" id="new-transaction" class="btn-secondary-soft">${t('pay.new_transaction')}</button>
+                <button type="button" id="revert-last-transaction" class="btn-danger-soft">${t('pay.revert_transaction')}</button>
               </div>
             </section>
           ` : `
@@ -2692,60 +3111,60 @@ const STORAGE_KEY = 'kontana_state_v1';
               ${manualDirect ? `
               <div class="payment-entry-grid">
                 ${mode === 'outgoing' ? `
-                <label class="payment-amount-field">Amount
+                <label class="payment-amount-field">${t('pay.amount_label')}
                   <input id="payment-amount" class="payment-amount-input" type="text" inputmode="decimal" value="${app.paymentDraft.amountDisplay || ''}" autocomplete="off" />
                 </label>
                 ` : ''}
-                <label>Note/Reference (optional)
+                <label>${t('pay.note_label')}
                   <input id="payment-note" type="text" maxlength="30" value="${app.paymentDraft.note}" />
                 </label>
-                ${app.paymentDraft.note.length >= 25 ? `<p class="muted note-limit-hint">${app.paymentDraft.note.length}/30 characters${app.paymentDraft.note.length >= 30 ? ' — limit reached' : ''}</p>` : ''}
+                ${app.paymentDraft.note.length >= 25 ? `<p class="muted note-limit-hint">${t('pay.note_limit', { count: app.paymentDraft.note.length, suffix: app.paymentDraft.note.length >= 30 ? t('pay.note_limit_reached') : '' })}</p>` : ''}
               </div>
               <div class="payment-divider" aria-hidden="true"></div>
               <section class="payment-breakdown-inline">
                 ${allocationPreviewHtml}
                 ${showToggle ? `
-                  <div class="segmented-control" role="tablist" aria-label="Denomination type">
-                    <button type="button" class="segment ${activeTab === 'bills' ? 'active' : ''}" id="payment-bills">Bills</button>
-                    <button type="button" class="segment ${activeTab === 'coins' ? 'active' : ''}" id="payment-coins">Coins</button>
+                  <div class="segmented-control" role="tablist" aria-label="${t('cash.denomination_type')}">
+                    <button type="button" class="segment ${activeTab === 'bills' ? 'active' : ''}" id="payment-bills">${t('cash.bills')}</button>
+                    <button type="button" class="segment ${activeTab === 'coins' ? 'active' : ''}" id="payment-coins">${t('cash.coins')}</button>
                   </div>
                 ` : ''}
-                <div class="denom-list">${allocationRows || '<p class="muted">No denominations available.</p>'}</div>
+                <div class="denom-list">${allocationRows || `<p class="muted">${t('pay.no_denoms_available')}</p>`}</div>
               </section>
               <div class="payment-actions">
-                ${mode === 'incoming' ? (effectiveAllocated > 0 ? '<button type="submit" class="btn-primary-soft">Finalize</button>' : '') : ''}
-                ${mode === 'outgoing' && validAmount && !applyDisabled ? '<button type="submit" class="btn-primary-soft">Finalize</button>' : ''}
-                <button type="button" id="payment-cancel-entry" class="btn-secondary-soft">Cancel</button>
+                ${mode === 'incoming' ? (effectiveAllocated > 0 ? `<button type="submit" class="btn-primary-soft">${t('pay.confirm_and_finalize')}</button>` : '') : ''}
+                ${mode === 'outgoing' && validAmount && !applyDisabled ? `<button type="submit" class="btn-primary-soft">${t('pay.confirm_and_finalize')}</button>` : ''}
+                <button type="button" id="payment-cancel-entry" class="btn-secondary-soft">${t('common.cancel')}</button>
               </div>
               ` : `
               <div class="payment-entry-grid">
-                <label class="payment-amount-field">Amount
+                <label class="payment-amount-field">${t('pay.amount_label')}
                   <input id="payment-amount" class="payment-amount-input" type="text" inputmode="decimal" value="${app.paymentDraft.amountDisplay || ''}" autocomplete="off" />
                 </label>
-                <label>Note/Reference (optional)
+                <label>${t('pay.note_label')}
                   <input id="payment-note" type="text" maxlength="30" value="${app.paymentDraft.note}" />
                 </label>
-                ${app.paymentDraft.note.length >= 25 ? `<p class="muted note-limit-hint">${app.paymentDraft.note.length}/30 characters${app.paymentDraft.note.length >= 30 ? ' — limit reached' : ''}</p>` : ''}
+                ${app.paymentDraft.note.length >= 25 ? `<p class="muted note-limit-hint">${t('pay.note_limit', { count: app.paymentDraft.note.length, suffix: app.paymentDraft.note.length >= 30 ? t('pay.note_limit_reached') : '' })}</p>` : ''}
               </div>
               <div class="payment-divider" aria-hidden="true"></div>
               <section class="payment-breakdown-inline ${validAmount ? '' : 'disabled'}">
                 ${validAmount ? `
                   ${insufficientOutgoing ? `
                     <div class="preview suggestion-danger">
-                      <p class="status danger">Insufficient funds</p>
+                      <p class="status danger">${t('pay.insufficient_funds')}</p>
                       ${suggestionStatusHtml}
                     </div>
                   ` : `
                     ${!strategiesEnabled && mode === 'outgoing' ? `
                       <div class="preview suggestion-warn">
-                        <p class="status warn">Suggestions are off</p>
+                        <p class="status warn">${t('pay.suggestions_off')}</p>
                       </div>
                       ${allocationPreviewHtml}
-                      ${!showManualEditor ? `<div class="inline-actions"><button type="button" id="payment-edit-manual" class="btn-secondary-soft">Edit manually</button></div>` : ''}
+                      ${!showManualEditor ? `<div class="inline-actions"><button type="button" id="payment-edit-manual" class="btn-secondary-soft">${t('pay.edit_manually')}</button></div>` : ''}
                     ` : ''}
                     ${!strategiesEnabled && mode !== 'outgoing' ? `
                       ${allocationPreviewHtml}
-                      ${!showManualEditor ? `<div class="inline-actions"><button type="button" id="payment-edit-manual" class="btn-secondary-soft">Edit manually</button></div>` : ''}
+                      ${!showManualEditor ? `<div class="inline-actions"><button type="button" id="payment-edit-manual" class="btn-secondary-soft">${t('pay.edit_manually')}</button></div>` : ''}
                     ` : ''}
 
                     ${strategiesEnabled ? `
@@ -2755,38 +3174,38 @@ const STORAGE_KEY = 'kontana_state_v1';
                       </div>
                       ${allocationPreviewHtml}
                       <div class="inline-actions">
-                        <button type="button" id="payment-edit-manual" class="btn-secondary-soft">Edit manually</button>
+                        <button type="button" id="payment-edit-manual" class="btn-secondary-soft">${t('pay.edit_manually')}</button>
                       </div>
                     ` : `
                     <div class="preview ${suggestionToneClass}">
                       ${suggestedBreakdown.length > 0 ? breakdownHtml(wallet, suggestedBreakdown) : ''}
                       ${suggestionStatusHtml}
                       ${allocationPreviewHtml}
-                      ${suggestionAvailable ? `<div class="inline-actions"><button type="button" id="payment-use-suggested" class="${usingSuggestion ? 'btn-primary-soft' : 'btn-secondary-soft'}">${mode === 'outgoing' ? (ctx?.status === 'EXACT_PAYABLE' ? 'Use and finalize' : 'Use suggested') : 'Use and finalize'}</button><button type="button" id="payment-edit-manual" class="btn-secondary-soft">Edit manually</button></div>` : ''}
+                      ${suggestionAvailable ? `<div class="inline-actions"><button type="button" id="payment-use-suggested" class="${usingSuggestion ? 'btn-primary-soft' : 'btn-secondary-soft'}">${mode === 'outgoing' ? (ctx?.status === 'EXACT_PAYABLE' ? t('pay.use_and_finalize') : t('pay.use_suggested')) : t('pay.use_and_finalize')}</button><button type="button" id="payment-edit-manual" class="btn-secondary-soft">${t('pay.edit_manually')}</button></div>` : ''}
                     </div>
                     `}
                     ` : ''}
                     ${showManualEditor ? `
                       ${showToggle ? `
-                        <div class="segmented-control" role="tablist" aria-label="Denomination type">
-                          <button type="button" class="segment ${activeTab === 'bills' ? 'active' : ''}" id="payment-bills">Bills</button>
-                          <button type="button" class="segment ${activeTab === 'coins' ? 'active' : ''}" id="payment-coins">Coins</button>
+                        <div class="segmented-control" role="tablist" aria-label="${t('cash.denomination_type')}">
+                          <button type="button" class="segment ${activeTab === 'bills' ? 'active' : ''}" id="payment-bills">${t('cash.bills')}</button>
+                          <button type="button" class="segment ${activeTab === 'coins' ? 'active' : ''}" id="payment-coins">${t('cash.coins')}</button>
                         </div>
                       ` : ''}
-                      <div class="denom-list">${allocationRows || '<p class="muted">No denominations available in this tab for the amount.</p>'}</div>
+                      <div class="denom-list">${allocationRows || `<p class="muted">${t('pay.no_denoms_available_for_amount')}</p>`}</div>
                     ` : ''}
                     ${strategiesEnabled && !exactSuggestionState && !noExactSuggestionState && !coverSuggestionState ? '' : ''}
                   `}
-                ` : '<p class="muted">Enter an amount to allocate denominations.</p>'}
+                ` : `<p class="muted">${t('pay.enter_amount_to_allocate')}</p>`}
               </section>
               <div class="payment-actions">
                 ${mode === 'incoming' && (app.paymentDraft.manualEntry || !suggestionAvailable) && !applyDisabled && validAmount
-                  ? '<button type="submit" class="btn-primary-soft">Finalize incoming</button>'
+                  ? `<button type="submit" class="btn-primary-soft">${t('pay.finalize_incoming')}</button>`
                   : ''}
                 ${mode === 'outgoing' && (app.paymentDraft.manualEntry || !suggestionAvailable) && !applyDisabled && validAmount
-                  ? '<button type="submit" class="btn-primary-soft">Finalize outgoing</button>'
+                  ? `<button type="submit" class="btn-primary-soft">${t('pay.confirm_and_finalize')}</button>`
                   : ''}
-                ${hasDraftEntry ? '<button type="button" id="payment-cancel-entry" class="btn-secondary-soft">Cancel</button>' : ''}
+                ${hasDraftEntry ? `<button type="button" id="payment-cancel-entry" class="btn-secondary-soft">${t('common.cancel')}</button>` : ''}
               </div>
               `}
             </section>
@@ -2830,7 +3249,7 @@ const STORAGE_KEY = 'kontana_state_v1';
       const revertBtn = document.getElementById('revert-last-transaction');
       if (revertBtn) {
         revertBtn.addEventListener('click', async () => {
-          const confirmed = await modalConfirm('Revert this transaction? The wallet will be restored to its previous state.');
+          const confirmed = await modalConfirm(t('pay.revert_confirm'));
           if (!confirmed) return;
           const summary = app.paymentSuccessSummary;
           if (!summary) return;
@@ -3085,17 +3504,17 @@ const STORAGE_KEY = 'kontana_state_v1';
             return;
           }
           const suggestedLabel = changeBreakdown.length > 0
-            ? changeBreakdown.map((row) => `${formatDenomValue(row.value_minor, wallet.currency)} x ${row.count}`).join('<br>')
-            : 'No automatic suggestion';
-          const changeAction = await showModal({
-            title: 'Confirm change received',
-            message: `<strong>Expected change:</strong> ${formatMoney(changeExpectedMinor, wallet.currency)}<br><strong>Suggested received:</strong><br>${suggestedLabel}`,
-            actions: [
-              { id: 'confirm_suggested', label: 'Confirm suggested', style: 'primary' },
-              { id: 'manual_change', label: 'Enter manually', style: 'secondary' },
-              { id: 'cancel', label: 'Cancel', style: 'secondary' },
-            ],
-          });
+          ? changeBreakdown.map((row) => `${formatDenomValue(row.value_minor, wallet.currency)} x ${row.count}`).join('<br>')
+          : t('pay.no_auto_suggestion');
+        const changeAction = await showModal({
+          title: t('pay.confirm_change_received'),
+          message: `<strong>${t('pay.expected_change', { amount: '' }).replace(/:\s*$/, '')}:</strong> ${formatMoney(changeExpectedMinor, wallet.currency)}<br><strong>${t('pay.suggested_change')}:</strong><br>${suggestedLabel}`,
+          actions: [
+            { id: 'confirm_suggested', label: t('pay.confirm_suggested'), style: 'primary' },
+            { id: 'manual_change', label: t('pay.enter_manually'), style: 'secondary' },
+            { id: 'cancel', label: t('common.cancel'), style: 'secondary' },
+          ],
+        });
           if (changeAction === 'confirm_suggested') {
             applyBreakdownToWallet(wallet, breakdown, -1);
             if (changeBreakdown.length > 0) {
@@ -3281,20 +3700,20 @@ const STORAGE_KEY = 'kontana_state_v1';
       if (payWalletActionsBtn) {
         payWalletActionsBtn.addEventListener('click', async () => {
           const choice = await showModal({
-            title: 'Wallet actions',
-            message: `Manage ${wallet.name}.`,
+            title: t('wallet.actions_title'),
+            message: t('wallet.manage', { name: wallet.name }),
             showClose: true,
             actions: [
-              { id: 'name', label: 'Edit name', style: 'secondary' },
-              { id: 'denoms', label: 'Edit denominations', style: 'secondary' },
-              { id: 'delete', label: 'Delete wallet', style: 'danger' },
+              { id: 'name', label: t('wallet.edit_name'), style: 'secondary' },
+              { id: 'denoms', label: t('wallet.edit_denoms'), style: 'secondary' },
+              { id: 'delete', label: t('wallet.delete'), style: 'danger' },
             ],
           });
           if (choice === 'name') {
-            const name = await modalPrompt('New wallet name', wallet.name, 'Edit Wallet Name', '', WALLET_NAME_MAX);
+            const name = await modalPrompt(t('wallet.new_name_prompt'), wallet.name, t('wallet.edit_name_title'), '', WALLET_NAME_MAX);
             if (!name) return;
             if (name.length > WALLET_NAME_MAX) {
-              await modalAlert(`Wallet name must be ${WALLET_NAME_MAX} characters or fewer.`);
+              await modalAlert(t('wallet.name_too_long', { max: WALLET_NAME_MAX }));
               return;
             }
             wallet.name = name.trim();
@@ -3304,7 +3723,7 @@ const STORAGE_KEY = 'kontana_state_v1';
             return;
           }
           if (choice === 'delete') {
-            const ok = await modalConfirm(`Delete wallet ${wallet.name}? This removes its cash and transactions.`, 'Delete Wallet');
+            const ok = await modalConfirm(t('wallet.delete_confirm', { name: wallet.name }), t('wallet.delete_title'));
             if (!ok) return;
             const id = wallet.id;
             delete app.state.wallets[id];
@@ -3325,11 +3744,11 @@ const STORAGE_KEY = 'kontana_state_v1';
           }
           if (choice !== 'denoms') return;
           const ok = await showModal({
-            title: 'Edit denominations?',
-            message: 'Edit denominations instead of entering a transaction?',
+            title: t('wallet.edit_denoms_question'),
+            message: t('wallet.edit_denoms_instead'),
             actions: [
-              { id: 'edit', label: 'Enter edit mode', style: 'secondary' },
-              { id: 'cancel', label: 'Cancel', style: 'secondary' },
+              { id: 'edit', label: t('wallet.enter_edit_mode'), style: 'secondary' },
+              { id: 'cancel', label: t('common.cancel'), style: 'secondary' },
             ],
           });
           if (ok !== 'edit') return;
@@ -3355,9 +3774,9 @@ const STORAGE_KEY = 'kontana_state_v1';
       if (!wallets.length) {
         el.innerHTML = `
           <section class="panel">
-            <p class="empty-notice">No wallets yet. Create your first wallet to start tracking cash.</p>
+            <p class="empty-notice">${t('cash.no_wallets')}</p>
             <div class="inline-actions">
-              <button type="button" id="open-create-wallet-transactions" class="btn-secondary-soft">Create wallet</button>
+              <button type="button" id="open-create-wallet-transactions" class="btn-secondary-soft">${t('cash.create_wallet')}</button>
             </div>
           </section>
         `;
@@ -3431,28 +3850,28 @@ const STORAGE_KEY = 'kontana_state_v1';
         const useNoteAsTitle = noteText && noteText.length <= 24;
         const isDenomEdit = tx.type === 'denominations_edited';
         const titleText = isDenomEdit
-          ? 'Denominations edited'
+          ? t('tx.denoms_edited')
           : (useNoteAsTitle
             ? noteText
-            : (tx.type === 'incoming' ? 'Cash in' : tx.type === 'outgoing' ? 'Payment' : 'Adjustment'));
+            : (tx.type === 'incoming' ? t('tx.cash_in') : tx.type === 'outgoing' ? t('tx.payment') : t('tx.adjustment')));
         const secondaryText = `${formatTimeEU(tx.created_at)}${(!isDenomEdit && !useNoteAsTitle && shortNote) ? ` · ${shortNote}` : ''}`;
         const changeSummary = tx.change_expected_minor
           ? `${formatMoney(tx.change_expected_minor, tx.currency)} / ${formatMoney(tx.change_received_minor || 0, tx.currency)}${detailChange !== '-' ? ` (${detailChange})` : ''}`
           : '-';
         const balanceLabel = formatMoney(balanceById.get(tx.id) || 0, tx.currency);
         const detailsBodyHtml = isDenomEdit
-          ? `<div class="tx-detail"><span>Timestamp</span><span>${formatDateTimeEU(tx.created_at)}</span></div>
-             <div class="tx-detail"><span>Type</span><span>Denominations edited</span></div>
-             <div class="tx-detail"><span>Prior denominations</span><span>${detailPrior}</span></div>
-             <div class="tx-detail"><span>New denominations</span><span>${detailNew}</span></div>
-             ${isLatestForWallet ? `<button type="button" class="btn-danger-soft tx-revert-btn" data-revert-tx-id="${tx.id}">Revert transaction</button>` : ''}`
-          : `<div class="tx-detail"><span>Timestamp</span><span>${formatDateTimeEU(tx.created_at)}</span></div>
-             <div class="tx-detail"><span>Direction</span><span>${tx.type || '-'}</span></div>
-             <div class="tx-detail"><span>Strategy</span><span>${strategyDisplayName(tx.strategy)}</span></div>
-             <div class="tx-detail"><span>Breakdown</span><span>${detailPaid}</span></div>
-             <div class="tx-detail"><span>Change</span><span>${changeSummary}</span></div>
-             <div class="tx-detail"><span>Note</span><span>${noteText || '-'}</span></div>
-             ${isLatestForWallet ? `<button type="button" class="btn-danger-soft tx-revert-btn" data-revert-tx-id="${tx.id}">Revert transaction</button>` : ''}`;
+          ? `<div class="tx-detail"><span>${t('tx.detail.timestamp')}</span><span>${formatDateTimeEU(tx.created_at)}</span></div>
+             <div class="tx-detail"><span>${t('tx.detail.type')}</span><span>${t('tx.denoms_edited')}</span></div>
+             <div class="tx-detail"><span>${t('tx.detail.prior_denoms')}</span><span>${detailPrior}</span></div>
+             <div class="tx-detail"><span>${t('tx.detail.new_denoms')}</span><span>${detailNew}</span></div>
+             ${isLatestForWallet ? `<button type="button" class="btn-danger-soft tx-revert-btn" data-revert-tx-id="${tx.id}">${t('tx.revert_button')}</button>` : ''}`
+          : `<div class="tx-detail"><span>${t('tx.detail.timestamp')}</span><span>${formatDateTimeEU(tx.created_at)}</span></div>
+             <div class="tx-detail"><span>${t('tx.detail.direction')}</span><span>${tx.type || '-'}</span></div>
+             <div class="tx-detail"><span>${t('tx.detail.strategy')}</span><span>${strategyDisplayName(tx.strategy)}</span></div>
+             <div class="tx-detail"><span>${t('tx.detail.breakdown')}</span><span>${detailPaid}</span></div>
+             <div class="tx-detail"><span>${t('tx.detail.change')}</span><span>${changeSummary}</span></div>
+             <div class="tx-detail"><span>${t('tx.detail.note')}</span><span>${noteText || '-'}</span></div>
+             ${isLatestForWallet ? `<button type="button" class="btn-danger-soft tx-revert-btn" data-revert-tx-id="${tx.id}">${t('tx.revert_button')}</button>` : ''}`;
         return `
           ${groupHeader}
           <tr class="tx-row ${amountClass}" data-tx-id="${tx.id}" role="button" tabindex="0">
@@ -3481,13 +3900,13 @@ const STORAGE_KEY = 'kontana_state_v1';
             </div>
           </section>
           ${filtered.length === 0
-            ? '<p>No transactions yet.</p>'
+            ? `<p>${t('tx.none')}</p>`
             : `<table class="tx-table">
                 <thead>
                   <tr>
-                    <th>Description</th>
-                    <th>Amount</th>
-                    <th>Balance</th>
+                    <th>${t('tx.table.description')}</th>
+                    <th>${t('tx.table.amount')}</th>
+                    <th>${t('tx.table.balance')}</th>
                   </tr>
                 </thead>
                 <tbody>${rows}</tbody>
@@ -3521,11 +3940,11 @@ const STORAGE_KEY = 'kontana_state_v1';
           const latestForWallet = latestByWallet.get(tx.wallet_id);
           if (!latestForWallet || latestForWallet.id !== tx.id) return;
           const confirmResult = await showModal({
-            title: 'Revert Transaction',
-            message: 'This will remove the transaction and restore the wallet cash state.',
+            title: t('tx.revert_title'),
+            message: t('tx.revert_body'),
             actions: [
-              { id: 'revert', label: 'Revert', style: 'danger' },
-              { id: 'cancel', label: 'Cancel', style: 'secondary' },
+              { id: 'revert', label: t('tx.revert_action'), style: 'danger' },
+              { id: 'cancel', label: t('common.cancel'), style: 'secondary' },
             ],
           });
           if (confirmResult !== 'revert') return;
@@ -3543,7 +3962,7 @@ const STORAGE_KEY = 'kontana_state_v1';
           } else if (tx.type === 'adjustment') {
             // Adjustments do not directly mutate denomination counts.
           } else {
-            await modalAlert('Unable to revert this transaction.');
+            await modalAlert(t('tx.unable_revert'));
             return;
           }
           app.state.transactions = app.state.transactions.filter((row) => row.id !== tx.id);
@@ -3573,20 +3992,20 @@ const STORAGE_KEY = 'kontana_state_v1';
           if (!activeWallet) return;
           
           const choice = await showModal({
-            title: 'Wallet actions',
-            message: `Manage ${activeWallet.name}.`,
+            title: t('wallet.actions_title'),
+            message: t('wallet.manage', { name: activeWallet.name }),
             showClose: true,
             actions: [
-              { id: 'name', label: 'Edit name', style: 'secondary' },
-              { id: 'denoms', label: 'Edit denominations', style: 'secondary' },
-              { id: 'delete', label: 'Delete wallet', style: 'danger' },
+              { id: 'name', label: t('wallet.edit_name'), style: 'secondary' },
+              { id: 'denoms', label: t('wallet.edit_denoms'), style: 'secondary' },
+              { id: 'delete', label: t('wallet.delete'), style: 'danger' },
             ],
           });
           if (choice === 'name') {
-            const name = await modalPrompt('New wallet name', activeWallet.name, 'Edit Wallet Name', '', WALLET_NAME_MAX);
+            const name = await modalPrompt(t('wallet.new_name_prompt'), activeWallet.name, t('wallet.edit_name_title'), '', WALLET_NAME_MAX);
             if (!name) return;
             if (name.length > WALLET_NAME_MAX) {
-              await modalAlert(`Wallet name must be ${WALLET_NAME_MAX} characters or fewer.`);
+              await modalAlert(t('wallet.name_too_long', { max: WALLET_NAME_MAX }));
               return;
             }
             activeWallet.name = name.trim();
@@ -3596,7 +4015,7 @@ const STORAGE_KEY = 'kontana_state_v1';
             return;
           }
           if (choice === 'delete') {
-            const ok = await modalConfirm(`Delete wallet ${activeWallet.name}? This removes its cash and transactions.`, 'Delete Wallet');
+            const ok = await modalConfirm(t('wallet.delete_confirm', { name: activeWallet.name }), t('wallet.delete_title'));
             if (!ok) return;
             const id = activeWallet.id;
             delete app.state.wallets[id];
@@ -3617,11 +4036,11 @@ const STORAGE_KEY = 'kontana_state_v1';
           }
           if (choice !== 'denoms') return;
           const ok = await showModal({
-            title: 'Edit denominations?',
-            message: 'Edit denominations instead of entering a transaction?',
+            title: t('wallet.edit_denoms_question'),
+            message: t('wallet.edit_denoms_instead'),
             actions: [
-              { id: 'edit', label: 'Enter edit mode', style: 'secondary' },
-              { id: 'cancel', label: 'Cancel', style: 'secondary' },
+              { id: 'edit', label: t('wallet.enter_edit_mode'), style: 'secondary' },
+              { id: 'cancel', label: t('common.cancel'), style: 'secondary' },
             ],
           });
           if (ok !== 'edit') return;
@@ -3664,143 +4083,165 @@ const STORAGE_KEY = 'kontana_state_v1';
 
       el.innerHTML = `
         <div class="modal-backdrop" id="settings-backdrop">
-          <section class="modal-card settings-modal" role="dialog" aria-modal="true" aria-label="Settings">
+          <section class="modal-card settings-modal" role="dialog" aria-modal="true" aria-label="${t('settings.title')}">
             <div class="settings-title-bar">
               <div></div>
-              <h3 class="settings-title">Settings</h3>
-              <button type="button" class="modal-close-btn" id="settings-close" aria-label="Close"><svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path fill-rule="evenodd" d="M7 1L1 7l5 5l-5 5l6 6l5-5l5 5l6-6l-5-5l5-5l-6-6l-5 5z" clip-rule="evenodd"/></svg></button>
+              <h3 class="settings-title">${t('settings.title')}</h3>
+              <button type="button" class="modal-close-btn" id="settings-close" aria-label="${t('common.close')}"><svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path fill-rule="evenodd" d="M7 1L1 7l5 5l-5 5l6 6l5-5l5 5l6-6l-5-5l5-5l-6-6l-5 5z" clip-rule="evenodd"/></svg></button>
             </div>
             <section class="settings-section">
-              <h3>Suggestions</h3>
-              <p class="muted">Suggestions show recommended denominations; you still confirm or edit manually.</p>
-              <div class="segmented-control" role="group" aria-label="Suggestions">
-                <button type="button" class="segment ${!strategiesEnabled ? 'active' : ''}" data-strategy-toggle="off">Off</button>
-                <button type="button" class="segment ${strategiesEnabled ? 'active' : ''}" data-strategy-toggle="on">On</button>
-              </div>
-              ${strategiesEnabled ? `
-                <div class="settings-subsection">
-                  <p class="muted"><strong>Strategies</strong></p>
-                  <p class="muted">How suggestions are calculated.</p>
-                  <div class="strategy-grid" role="group" aria-label="Default strategy">
-                    <button type="button" class="strategy-card ${app.state.settings.default_strategy === 'greedy' ? 'active' : ''}" data-strategy="greedy">
-                      <h4>Minimise</h4>
-                      <p>Uses larger denominations first to reduce item count.</p>
-                    </button>
-                    <button type="button" class="strategy-card ${app.state.settings.default_strategy === 'lex' ? 'active' : ''}" data-strategy="lex">
-                      <h4>Preserve</h4>
-                      <p>Prefers higher denominations first when multiple exact options exist.</p>
-                    </button>
-                    <button type="button" class="strategy-card ${app.state.settings.default_strategy === 'equalisation' ? 'active' : ''}" data-strategy="equalisation">
-                      <h4>Balance</h4>
-                      <p>Prefers surplus denominations to keep wallet mix balanced.</p>
-                    </button>
-                  </div>
+              <h3>${t('settings.section.behaviour')}</h3>
+              <p class="muted">${t('settings.behaviour.helper')}</p>
+
+              <div class="settings-item">
+                <div class="settings-item-title">${t('settings.suggestions.title')}</div>
+                <p class="muted">${t('settings.suggestions.body')}</p>
+                <div class="segmented-control" role="group" aria-label="${t('settings.suggestions.title')}">
+                  <button type="button" class="segment ${!strategiesEnabled ? 'active' : ''}" data-strategy-toggle="off">${t('common.off')}</button>
+                  <button type="button" class="segment ${strategiesEnabled ? 'active' : ''}" data-strategy-toggle="on">${t('common.on')}</button>
                 </div>
-                <div class="settings-subsection">
-                  <p class="muted"><strong>Single cover</strong></p>
-                  <p class="muted">When a strategy can't match the exact amount, suggest the lowest single or mix of denominations that can cover it. You'll get cash back.</p>
-                  <div class="segmented-control" role="group" aria-label="Single cover">
-                    <button type="button" class="segment ${!singleCoverEnabled ? 'active' : ''}" data-single-cover="off">Off</button>
-                    <button type="button" class="segment ${singleCoverEnabled ? 'active' : ''}" data-single-cover="on">On</button>
-                  </div>
-                </div>
-                <div class="settings-subsection">
-                  <p class="muted"><strong>Change suggestions</strong></p>
-                  <p class="muted">Show a suggested change breakdown when overpaying, or go manual-only when Off.</p>
-                  <div class="segmented-control" role="group" aria-label="Change suggestions">
-                    <button type="button" class="segment ${!changeSuggestionsEnabled ? 'active' : ''}" data-change-suggest="off">Off</button>
-                    <button type="button" class="segment ${changeSuggestionsEnabled ? 'active' : ''}" data-change-suggest="on">On</button>
-                  </div>
-                </div>
-                <div class="settings-subsection">
-                  <p class="muted"><strong>Coins rules</strong></p>
-                  <p class="muted">Control whether coins are used in suggested breakdowns.</p>
-                  <div class="segmented-control" role="group" aria-label="Coins rules">
-                    <button type="button" class="segment ${coinsEnabled ? '' : 'active'}" data-coins-toggle="off">Off</button>
-                    <button type="button" class="segment ${coinsEnabled ? 'active' : ''}" data-coins-toggle="on">On</button>
-                  </div>
-                  ${coinsEnabled ? `
-                    <div class="strategy-grid" role="group" aria-label="Coins mode">
-                      <button type="button" class="strategy-card ${coinsMode === 'avoid' ? 'active' : ''}" data-coins-mode="avoid">
-                        <h4>Avoid coins entirely</h4>
-                        <p>Notes only. If notes cannot pay the amount, the payment is insufficient.</p>
+                ${strategiesEnabled ? `
+                  <div class="settings-subsection">
+                    <p class="muted"><strong>${t('settings.strategies.title')}</strong></p>
+                    <p class="muted">${t('settings.strategies.body')}</p>
+                    <div class="strategy-grid" role="group" aria-label="Default strategy">
+                      <button type="button" class="strategy-card ${app.state.settings.default_strategy === 'greedy' ? 'active' : ''}" data-strategy="greedy">
+                        <div class="strategy-card-title">${t('settings.strategy.minimise.title')}</div>
+                        <p>${t('settings.strategy.minimise.body')}</p>
                       </button>
-                      <button type="button" class="strategy-card ${coinsMode === 'prefer' ? 'active' : ''}" data-coins-mode="prefer">
-                        <h4>Prefer notes</h4>
-                        <p>Coins used only if needed to pay exactly (or to make change).</p>
+                      <button type="button" class="strategy-card ${app.state.settings.default_strategy === 'lex' ? 'active' : ''}" data-strategy="lex">
+                        <div class="strategy-card-title">${t('settings.strategy.preserve.title')}</div>
+                        <p>${t('settings.strategy.preserve.body')}</p>
+                      </button>
+                      <button type="button" class="strategy-card ${app.state.settings.default_strategy === 'equalisation' ? 'active' : ''}" data-strategy="equalisation">
+                        <div class="strategy-card-title">${t('settings.strategy.balance.title')}</div>
+                        <p>${t('settings.strategy.balance.body')}</p>
                       </button>
                     </div>
-                  ` : ''}
+                  </div>
+                  <div class="settings-subsection">
+                    <p class="muted"><strong>${t('settings.single_cover.title')}</strong></p>
+                    <p class="muted">${t('settings.single_cover.body')}</p>
+                    <div class="segmented-control" role="group" aria-label="${t('settings.single_cover.title')}">
+                      <button type="button" class="segment ${!singleCoverEnabled ? 'active' : ''}" data-single-cover="off">${t('common.off')}</button>
+                      <button type="button" class="segment ${singleCoverEnabled ? 'active' : ''}" data-single-cover="on">${t('common.on')}</button>
+                    </div>
+                  </div>
+                  <div class="settings-subsection">
+                    <p class="muted"><strong>${t('settings.change_suggestions.title')}</strong></p>
+                    <p class="muted">${t('settings.change_suggestions.body')}</p>
+                    <div class="segmented-control" role="group" aria-label="${t('settings.change_suggestions.title')}">
+                      <button type="button" class="segment ${!changeSuggestionsEnabled ? 'active' : ''}" data-change-suggest="off">${t('common.off')}</button>
+                      <button type="button" class="segment ${changeSuggestionsEnabled ? 'active' : ''}" data-change-suggest="on">${t('common.on')}</button>
+                    </div>
+                  </div>
+                  <div class="settings-subsection">
+                    <p class="muted"><strong>${t('settings.coins_rules.title')}</strong></p>
+                    <p class="muted">${t('settings.coins_rules.body')}</p>
+                    <div class="segmented-control" role="group" aria-label="${t('settings.coins_rules.title')}">
+                      <button type="button" class="segment ${coinsEnabled ? '' : 'active'}" data-coins-toggle="off">${t('common.off')}</button>
+                      <button type="button" class="segment ${coinsEnabled ? 'active' : ''}" data-coins-toggle="on">${t('common.on')}</button>
+                    </div>
+                    ${coinsEnabled ? `
+                      <div class="strategy-grid" role="group" aria-label="Coins mode">
+                        <button type="button" class="strategy-card ${coinsMode === 'avoid' ? 'active' : ''}" data-coins-mode="avoid">
+                          <div class="strategy-card-title">${t('settings.coins_mode.avoid.title')}</div>
+                          <p>${t('settings.coins_mode.avoid.body')}</p>
+                        </button>
+                        <button type="button" class="strategy-card ${coinsMode === 'prefer' ? 'active' : ''}" data-coins-mode="prefer">
+                          <div class="strategy-card-title">${t('settings.coins_mode.prefer.title')}</div>
+                          <p>${t('settings.coins_mode.prefer.body')}</p>
+                        </button>
+                      </div>
+                    ` : ''}
+                  </div>
+                ` : ''}
+              </div>
+
+              <div class="settings-item">
+                <div class="settings-item-title">${t('settings.invert_denom_order.title')}</div>
+                <p class="muted">${t('settings.invert_denom_order.body')}</p>
+                <div class="segmented-control" role="group" aria-label="${t('settings.invert_denom_order.title')}">
+                  <button type="button" class="segment ${denomOrder === ORDER_LARGEST_FIRST ? 'active' : ''}" data-denom-order="${ORDER_LARGEST_FIRST}">${t('settings.denom_order.normal')}</button>
+                  <button type="button" class="segment ${denomOrder === ORDER_SMALLEST_FIRST ? 'active' : ''}" data-denom-order="${ORDER_SMALLEST_FIRST}">${t('settings.denom_order.inverted')}</button>
                 </div>
-              ` : ''}
-            </section>
+              </div>
 
-            <section class="settings-section">
-              <h3>Invert denomination order</h3>
-              <p class="muted">By default, denominations are listed from largest to smallest. Turn this on to invert the order (smallest to largest).</p>
-              <div class="segmented-control" role="group" aria-label="Invert denomination order">
-                <button type="button" class="segment ${denomOrder === ORDER_LARGEST_FIRST ? 'active' : ''}" data-denom-order="${ORDER_LARGEST_FIRST}">Off</button>
-                <button type="button" class="segment ${denomOrder === ORDER_SMALLEST_FIRST ? 'active' : ''}" data-denom-order="${ORDER_SMALLEST_FIRST}">On</button>
+              <div class="settings-item">
+                <div class="settings-item-title">${t('settings.show_bills_coins.title')}</div>
+                <p class="muted">${t('settings.show_bills_coins.body')}</p>
+                <div class="segmented-control" role="group" aria-label="${t('settings.show_bills_coins.title')}">
+                  <button type="button" class="segment ${!showBillsCoins ? 'active' : ''}" data-bills-coins-toggle="off">${t('common.off')}</button>
+                  <button type="button" class="segment ${showBillsCoins ? 'active' : ''}" data-bills-coins-toggle="on">${t('common.on')}</button>
+                </div>
+              </div>
+
+              <div class="settings-item">
+                <div class="settings-item-title">${t('settings.show_cents.title')}</div>
+                <p class="muted">${t('settings.show_cents.body')}</p>
+                <div class="segmented-control" role="group" aria-label="${t('settings.show_cents.title')}">
+                  <button type="button" class="segment ${!showCents ? 'active' : ''}" data-show-cents-toggle="off">${t('common.off')}</button>
+                  <button type="button" class="segment ${showCents ? 'active' : ''}" data-show-cents-toggle="on">${t('common.on')}</button>
+                </div>
               </div>
             </section>
 
             <section class="settings-section">
-              <h3>Show bills and coins</h3>
-              <p class="muted">Divide denominations between bills and coins. When off, all denominations appear in a single list. Some denominations might not be categorised entirely correctly.</p>
-              <div class="segmented-control" role="group" aria-label="Show bills and coins">
-                <button type="button" class="segment ${!showBillsCoins ? 'active' : ''}" data-bills-coins-toggle="off">Off</button>
-                <button type="button" class="segment ${showBillsCoins ? 'active' : ''}" data-bills-coins-toggle="on">On</button>
+              <h3>${t('settings.section.appearance')}</h3>
+              <div class="settings-item">
+                <div class="settings-item-title">${t('settings.appearance.title')}</div>
+                <p class="muted">${t('settings.appearance.body')}</p>
+                <div class="segmented-control appearance-control" role="group" aria-label="${t('settings.appearance.aria')}">
+                  <button type="button" class="segment ${app.state.settings.appearance === 'light' ? 'active' : ''}" data-appearance="light">${t('common.light')}</button>
+                  <button type="button" class="segment ${app.state.settings.appearance === 'dark' ? 'active' : ''}" data-appearance="dark">${t('common.dark')}</button>
+                </div>
+              </div>
+              <div class="settings-item">
+                <div class="settings-item-title">${t('settings.language.title')}</div>
+                <p class="muted">${t('settings.language.body')}</p>
+                <div class="segmented-control" role="group" aria-label="${t('settings.language.title')}">
+                  <button type="button" class="segment ${app.state.settings.language === 'en' ? 'active' : ''}" data-language="en">${t('settings.language.english')}</button>
+                  <button type="button" class="segment ${app.state.settings.language === 'es' ? 'active' : ''}" data-language="es">${t('settings.language.spanish')}</button>
+                </div>
               </div>
             </section>
 
             <section class="settings-section">
-              <h3>Show cents</h3>
-              <p class="muted">When on, all currencies that use cents will always show .00. When off, .00 is hidden unless there are actual cents to display.</p>
-              <div class="segmented-control" role="group" aria-label="Show cents">
-                <button type="button" class="segment ${!showCents ? 'active' : ''}" data-show-cents-toggle="off">Off</button>
-                <button type="button" class="segment ${showCents ? 'active' : ''}" data-show-cents-toggle="on">On</button>
+              <h3>${t('settings.section.security')}</h3>
+              <div class="settings-item">
+                <div class="settings-item-title">${t('settings.security.title')}</div>
+                <p class="muted">${t('settings.security.body')}</p>
+                <div class="segmented-control" role="group" aria-label="${t('settings.security.title')}">
+                  <button type="button" class="segment ${!app.state.settings.biometric_lock ? 'active' : ''}" data-biometric-toggle="off">${t('common.off')}</button>
+                  <button type="button" class="segment ${app.state.settings.biometric_lock ? 'active' : ''}" data-biometric-toggle="on">${t('common.on')}</button>
+                </div>
               </div>
             </section>
 
             <section class="settings-section">
-              <h3>Security</h3>
-              <p class="muted">Lock the app with biometric authentication (fingerprint or face recognition).</p>
-              <div class="segmented-control" role="group" aria-label="Biometric lock">
-                <button type="button" class="segment ${!app.state.settings.biometric_lock ? 'active' : ''}" data-biometric-toggle="off">Off</button>
-                <button type="button" class="segment ${app.state.settings.biometric_lock ? 'active' : ''}" data-biometric-toggle="on">On</button>
+              <h3>${t('settings.section.data')}</h3>
+              <div class="settings-item">
+                <div class="settings-item-title">${t('settings.export.title')}</div>
+                <div class="inline-actions">
+                  <button type="button" id="export-json" class="btn-secondary-soft">${t('settings.export.json')}</button>
+                  <button type="button" id="export-pdf" class="btn-secondary-soft">${t('settings.export.pdf')}</button>
+                </div>
+              </div>
+
+              <div class="settings-item settings-danger-zone">
+                <div class="settings-item-title">${t('settings.delete_all.title')}</div>
+                <p>${t('settings.delete_all.body')}</p>
+                <button class="btn-danger-soft" type="button" id="delete-all-data">${t('settings.delete_all.action')}</button>
               </div>
             </section>
 
             <section class="settings-section">
-              <h3>Appearance</h3>
-              <p class="muted">Match the app theme to the website.</p>
-              <div class="segmented-control appearance-control" role="group" aria-label="Theme">
-                <button type="button" class="segment ${app.state.settings.appearance === 'light' ? 'active' : ''}" data-appearance="light">Light</button>
-                <button type="button" class="segment ${app.state.settings.appearance === 'dark' ? 'active' : ''}" data-appearance="dark">Dark</button>
-              </div>
-            </section>
-
-            <section class="settings-section">
-              <h3>Export</h3>
-              <div class="inline-actions">
-                <button type="button" id="export-json" class="btn-secondary-soft">Export JSON</button>
-                <button type="button" id="export-pdf" class="btn-secondary-soft">Export PDF</button>
-              </div>
-            </section>
-
-            <section class="settings-section">
-              <h3>Delete all data</h3>
-              <p>This removes wallets, denominations, transactions, and settings.</p>
-              <button class="btn-danger-soft" type="button" id="delete-all-data">Delete all data</button>
-            </section>
-
-            <section class="settings-section">
-              <h3>Newsletter</h3>
-              <p class="muted">Optional. Sign up to receive our newsletter and news about when the new Kontana with AI capabilities launches. We will only use your email for this purpose.</p>
+              <h3>${t('settings.newsletter.title')}</h3>
+              <p class="muted">${t('settings.newsletter.body')}</p>
               <form id="launch-updates-form" class="stack-form">
-                <label>Email <input type="email" id="launch-email" required /></label>
-                <label class="check-row"><input type="checkbox" id="launch-consent" /> Email me newsletter and launch updates</label>
-                <button type="submit" class="btn-secondary-soft">Sign up</button>
+                <label>${t('settings.newsletter.email')} <input type="email" id="launch-email" required /></label>
+                <label class="check-row"><input type="checkbox" id="launch-consent" /> ${t('settings.newsletter.consent')}</label>
+                <button type="submit" class="btn-secondary-soft">${t('settings.newsletter.signup')}</button>
               </form>
               ${app.launchSignupMessage ? `<p>${app.launchSignupMessage}</p>` : ''}
             </section>
@@ -3856,14 +4297,14 @@ const STORAGE_KEY = 'kontana_state_v1';
           if (next) {
             // Enable biometric lock - first verify biometrics are available
             if (!await checkBiometricAvailability()) {
-              await modalAlert('Biometric authentication is not available on this device.');
+              await modalAlert(t('alerts.biometric_unavailable'));
               return;
             }
             
             // Test biometric authentication before enabling
             const success = await authenticateWithBiometrics('Test authentication to enable biometric lock');
             if (!success) {
-              await modalAlert('Biometric authentication failed. Biometric lock not enabled.');
+              await modalAlert(t('alerts.biometric_failed_enable'));
               return;
             }
           }
@@ -3871,6 +4312,17 @@ const STORAGE_KEY = 'kontana_state_v1';
           app.state.settings.biometric_lock = next;
           saveState();
           renderSettings();
+        });
+      });
+
+      el.querySelectorAll('button[data-language]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const next = btn.dataset.language === 'es' ? 'es' : 'en';
+          if (app.state.settings.language === next) return;
+          app.state.settings.language = next;
+          saveState();
+          renderSettings();
+          render();
         });
       });
 
@@ -3972,9 +4424,9 @@ const STORAGE_KEY = 'kontana_state_v1';
       document.getElementById('export-pdf').addEventListener('click', () => openPdfReport(app.state));
 
       document.getElementById('delete-all-data').addEventListener('click', async () => {
-        const token = await modalPrompt('Type DELETE ALL DATA to confirm.', '', 'Delete All Data', 'DELETE ALL DATA');
+        const token = await modalPrompt(t('confirm.delete_all.prompt'), '', t('confirm.delete_all.title'), 'DELETE ALL DATA');
         if (token !== 'DELETE ALL DATA') {
-          await modalAlert('Confirmation text did not match.');
+          await modalAlert(t('confirm.delete_all.mismatch'));
           return;
         }
         app.state = makeDefaultState();
@@ -4000,7 +4452,7 @@ const STORAGE_KEY = 'kontana_state_v1';
         const email = document.getElementById('launch-email').value.trim();
         const consent = document.getElementById('launch-consent').checked;
         if (!email || !consent) {
-          app.launchSignupMessage = 'Enter a valid email and provide explicit consent.';
+          app.launchSignupMessage = t('alerts.launch_email_consent');
           renderSettings();
           return;
         }
@@ -4015,7 +4467,7 @@ const STORAGE_KEY = 'kontana_state_v1';
 
         const endpoint = app.state.settings.launch_updates_endpoint;
         if (!endpoint) {
-          app.launchSignupMessage = 'Saved locally. Future sync is not configured yet.';
+          app.launchSignupMessage = t('alerts.launch_saved_local');
           renderSettings();
           return;
         }
@@ -4026,9 +4478,9 @@ const STORAGE_KEY = 'kontana_state_v1';
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, consent }),
           });
-          app.launchSignupMessage = 'Saved locally and sent to updates endpoint.';
+          app.launchSignupMessage = t('alerts.launch_saved_and_sent');
         } catch {
-          app.launchSignupMessage = 'Saved locally. Sync failed and can be retried later.';
+          app.launchSignupMessage = t('alerts.launch_saved_sync_failed');
         }
         renderSettings();
       });
@@ -4038,7 +4490,7 @@ const STORAGE_KEY = 'kontana_state_v1';
     document.querySelectorAll('.tab-btn').forEach((btn) => {
       btn.addEventListener('click', async () => {
         if (isAppGated() && btn.dataset.tab !== app.activeTab) {
-          await modalAlert('Finish or cancel Edit denominations before navigating.');
+          await modalAlert(t('alerts.finish_edit_before_nav'));
           return;
         }
         previousTab = app.activeTab;
@@ -4059,7 +4511,7 @@ const STORAGE_KEY = 'kontana_state_v1';
       link.addEventListener('click', async (event) => {
         event.preventDefault();
         if (isAppGated() && link.dataset.tab !== app.activeTab) {
-          await modalAlert('Finish or cancel Edit denominations before navigating.');
+          await modalAlert(t('alerts.finish_edit_before_nav'));
           return;
         }
         const prevTab = app.activeTab;
@@ -4080,7 +4532,7 @@ const STORAGE_KEY = 'kontana_state_v1';
     if (settingsBtn) {
       settingsBtn.addEventListener('click', async () => {
         if (isAppGated()) {
-          await modalAlert('Finish or cancel Edit denominations before navigating.');
+          await modalAlert(t('alerts.finish_edit_before_nav'));
           return;
         }
         app.settingsOpen = true;
@@ -4144,13 +4596,13 @@ const STORAGE_KEY = 'kontana_state_v1';
         return;
       }
       
-      const success = await authenticateWithBiometrics('Authenticate to unlock the app');
+      const success = await authenticateWithBiometrics(t('biometric.unlock_reason'));
       if (success) {
         app.isLocked = false;
         app.lockedAt = null;
         render();
       } else {
-        await modalAlert('Authentication failed. Please try again.');
+        await modalAlert(t('alerts.auth_failed'));
       }
     }
 
@@ -4160,16 +4612,16 @@ const STORAGE_KEY = 'kontana_state_v1';
       
       el.innerHTML = `
         <div class="modal-backdrop lock-backdrop">
-          <section class="lock-screen" role="dialog" aria-modal="true" aria-label="App Locked">
+          <section class="lock-screen" role="dialog" aria-modal="true" aria-label="${t('lock.title')}">
             <div class="lock-content">
               <img src="/kontana-logo.svg" alt="Kontana" class="lock-logo" />
-              <h2>App Locked</h2>
-              <p class="muted">Use biometric authentication to unlock</p>
+              <h2>${t('lock.title')}</h2>
+              <p class="muted">${t('lock.body')}</p>
               <button type="button" class="btn-primary" id="unlock-btn">
                 <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" style="margin-right: 8px;">
                   <path d="M12 17a2 2 0 0 0 2-2c0-1.11-.89-2-2-2a2 2 0 0 0-2 2 2 2 0 0 0 2 2m6-9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2h1V6a5 5 0 0 1 10 0v2h1m-6-5a3 3 0 0 0-3 3v2h6V6a3 3 0 0 0-3-3Z"/>
                 </svg>
-                Unlock with Biometrics
+                ${t('lock.unlock')}
               </button>
             </div>
           </section>

@@ -1558,9 +1558,27 @@ tbody tr:nth-child(even):not(.tx-details) {
 
 .settings-section h3 {
   margin: 0;
-  font-size: 1.08rem;
-  letter-spacing: -0.01em;
+  font-size: 1.02rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
+
+ .settings-item-title {
+   font-weight: 700;
+ }
+
+ .strategy-card-title {
+   margin: 0 0 8px;
+   font-size: 0.95rem;
+   display: block;
+   font-weight: 700;
+ }
+
+ .settings-danger-zone {
+   margin-top: 12px;
+   padding-top: 12px;
+   border-top: 1px solid var(--kt-border);
+ }
 
 .modal-card.modal-payment {
   width: min(980px, 100%);
