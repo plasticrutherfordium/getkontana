@@ -805,6 +805,19 @@ const STORAGE_KEY = 'kontana_state_v1';
         'pay.no_denoms_available_for_amount': 'No denominations available in this tab for that amount.',
         'pay.insufficient_funds': 'Insufficient funds',
 
+        'pay.suggestions_off': 'Suggestions are off',
+        'pay.edit_manually': 'Edit manually',
+        'pay.use_and_finalize': 'Use and finalize',
+        'pay.use_suggested': 'Use suggested',
+        'pay.finalize_incoming': 'Finalize incoming',
+        'pay.new_transaction': 'New transaction',
+        'pay.revert_transaction': 'Revert transaction',
+        'pay.revert_confirm': 'Revert this transaction? The wallet will be restored to its previous state.',
+        'pay.enter_change_received': 'Enter change received',
+
+        'lock.title': 'Locked',
+        'lock.body': 'Unlock the app to continue.',
+
         'tx.none': 'No transactions yet.',
         'tx.table.description': 'Description',
         'tx.table.amount': 'Amount',
@@ -1114,6 +1127,9 @@ const STORAGE_KEY = 'kontana_state_v1';
         'confirm.delete_all.prompt': 'Escribe DELETE ALL DATA para confirmar.',
         'confirm.delete_all.title': 'Eliminar todos los datos',
         'confirm.delete_all.mismatch': 'El texto de confirmación no coincide.',
+
+        'lock.title': 'Bloqueado',
+        'lock.body': 'Desbloquea la app para continuar.',
       },
     };
 
