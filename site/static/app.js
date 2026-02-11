@@ -712,6 +712,7 @@ const STORAGE_KEY = 'kontana_state_v1';
         'tab.transactions': 'Transactions',
         'tab.settings': 'Settings',
         'tab.transactions_short': 'Trx',
+        'nav.tab.cash': 'Cash',
         'nav.wallet_selector': 'Wallet selector',
         'nav.create_wallet': 'Create wallet',
         'time.today': 'Today',
@@ -929,6 +930,7 @@ const STORAGE_KEY = 'kontana_state_v1';
         'tab.transactions': 'Movimientos',
         'tab.settings': 'Ajustes',
         'tab.transactions_short': 'Mov.',
+        'nav.tab.cash': 'Cash',
         'nav.wallet_selector': 'Selector de monederos',
         'nav.create_wallet': 'Crear monedero',
         'time.today': 'Hoy',
@@ -2112,7 +2114,7 @@ const STORAGE_KEY = 'kontana_state_v1';
         btn.classList.toggle('active', btn.dataset.tab === app.activeTab);
         const blocked = gated && btn.dataset.tab !== app.activeTab;
         btn.disabled = Boolean(blocked);
-        if (btn.dataset.tab === 'cash') btn.textContent = t('tab.cash');
+        if (btn.dataset.tab === 'cash') btn.textContent = t('nav.tab.cash');
         if (btn.dataset.tab === 'pay') btn.textContent = t('tab.pay');
         if (btn.dataset.tab === 'transactions') btn.textContent = t('tab.transactions_short');
       });
@@ -2120,7 +2122,7 @@ const STORAGE_KEY = 'kontana_state_v1';
         link.classList.toggle('active', link.dataset.tab === app.activeTab);
         const span = link.querySelector('span');
         if (span) {
-          if (link.dataset.tab === 'cash') span.textContent = t('tab.cash');
+          if (link.dataset.tab === 'cash') span.textContent = t('nav.tab.cash');
           if (link.dataset.tab === 'pay') span.textContent = t('tab.pay');
           if (link.dataset.tab === 'transactions') span.textContent = t('tab.transactions_short');
         }
