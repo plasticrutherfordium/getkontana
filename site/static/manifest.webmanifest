@@ -8,9 +8,9 @@
   "theme_color": "#0b1618",
   "icons": [
     {
-      "src": "/kontana-favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml"
+      "src": "/favicon-kontana3.png",
+      "sizes": "512x512",
+      "type": "image/png"
     }
   ]
 }

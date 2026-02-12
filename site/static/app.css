@@ -17,7 +17,7 @@ body {
 }
 
 #page-title {
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   letter-spacing: 0.04em;
 }
 
@@ -41,6 +41,10 @@ body {
   height: 26px;
   width: auto;
   display: block;
+  border: 0 !important;
+  padding: 0 !important;
+  margin: 0;
+  border-radius: 0 !important;
 }
 
 .app-main {
@@ -106,20 +110,18 @@ body {
 }
 
 .app-page-logo {
-  height: 30px;
-  width: auto;
   display: none;
 }
 
 @media (max-width: 768px) {
   .app-page-logo {
-    display: block;
+    display: none;
   }
 }
 
 .page-header h1 {
   margin: 0;
-  font-size: clamp(2rem, 3vw, 2.45rem);
+  font-size: clamp(2.5rem, 4vw, 3.2rem);
   line-height: 1.05;
   letter-spacing: -0.03em;
 }

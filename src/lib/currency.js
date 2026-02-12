@@ -251,14 +251,21 @@ export function getCurrencyDenominations(currency) {
   const majorValues = CURRENCY_DENOMINATIONS_MAJOR[currency] || [];
   const scale = getMinorScale(currency);
   const noteValues = new Set((CURRENCY_NOTE_VALUES_MAJOR[currency] || []).map((value) => Math.round(value * scale)));
-  return majorValues.map((major) => {
-    const valueMinor = Math.round(major * scale);
-    return {
+  const seen = new Set();
+  return majorValues
+    .map((major) => Math.round(major * scale))
+    .filter((valueMinor) => {
+      if (!Number.isFinite(valueMinor) || valueMinor <= 0) return false;
+      if (seen.has(valueMinor)) return false;
+      seen.add(valueMinor);
+      return true;
+    })
+    .sort((a, b) => b - a)
+    .map((valueMinor) => ({
       value_minor: valueMinor,
-      label: String(major),
+      label: String(valueMinor / scale),
       type: noteValues.has(valueMinor) ? 'note' : 'coin',
-    };
-  });
+    }));
 }
 
 export function getCurrencySymbol(currency) {
