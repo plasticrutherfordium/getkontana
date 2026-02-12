@@ -4,10 +4,14 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "hugo server -s site -p 1313 --disableFastRender",
-    "build": "hugo -s site",
-    "test": "node --test"
+    "build": "npm run vendor:pdf-lib && hugo -s site",
+    "test": "node --test",
+    "vendor:pdf-lib": "cp node_modules/pdf-lib/dist/pdf-lib.min.js site/static/lib/pdf-lib.min.js",
+    "postinstall": "npm run vendor:pdf-lib"
   },
-  "dependencies": {},
+  "dependencies": {
+    "pdf-lib": "^1.17.1"
+  },
   "devDependencies": {
     "wrangler": "^4.62.0"
   }

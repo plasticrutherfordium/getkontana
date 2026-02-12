@@ -13,6 +13,7 @@ theme = 'terminal'
   centerTheme = true
   autoCover = false
   showLastUpdated = false
+  appVersion = "0.0.2"
   description = "A free, privacy-first cash tracker. On-device. No bank linking."
 
 [params.logo]

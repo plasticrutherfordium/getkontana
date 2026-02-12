@@ -1,3 +1,4 @@
 {{ if or (eq .RelPermalink "/app/") (eq .RelPermalink "/app") }}
+  <script src="{{ "lib/pdf-lib.min.js" | absURL }}"></script>
   <script src="{{ "app.js" | absURL }}"></script>
 {{ end }}

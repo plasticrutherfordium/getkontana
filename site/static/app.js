@@ -1,4 +1,4 @@
-const APP_VERSION = '0.0.1';
+const APP_VERSION = '0.0.2';
 const ZERO_DECIMAL_CURRENCIES = new Set([
   'CLP', 'SEK', 'HUF', 'NOK', 'ARS', 'JPY', 'KRW', 'XOF',
   'VND', 'UYU', 'ISK', 'BIF', 'DJF', 'GNF', 'KPW', 'LAK',
@@ -252,14 +252,21 @@ function getCurrencyDenominations(currency) {
   const majorValues = CURRENCY_DENOMINATIONS_MAJOR[currency] || [];
   const scale = getMinorScale(currency);
   const noteValues = new Set((CURRENCY_NOTE_VALUES_MAJOR[currency] || []).map((value) => Math.round(value * scale)));
-  return majorValues.map((major) => {
-    const valueMinor = Math.round(major * scale);
-    return {
+  const seen = new Set();
+  return majorValues
+    .map((major) => Math.round(major * scale))
+    .filter((valueMinor) => {
+      if (!Number.isFinite(valueMinor) || valueMinor <= 0) return false;
+      if (seen.has(valueMinor)) return false;
+      seen.add(valueMinor);
+      return true;
+    })
+    .sort((a, b) => b - a)
+    .map((valueMinor) => ({
       value_minor: valueMinor,
-      label: String(major),
+      label: String(valueMinor / scale),
       type: noteValues.has(valueMinor) ? 'note' : 'coin',
-    };
-  });
+    }));
 }
 
 function defaultDenominations(currency) {
@@ -579,15 +586,13 @@ function computeIncomingPlan(denoms, target, strategy, order = ORDER_LARGEST_FIR
 
 const STORAGE_KEY = 'kontana_state_v1';
     const MAX_WALLETS = 4;
-    const RETENTION_DAYS = 30;
 
     const SUPPORTED_CURRENCIES = [
       'EUR', 'USD', 'GBP', 'CLP',
       'SEK', 'CHF', 'HUF', 'DKK', 'NOK', 'PLN', 'CAD',
       'ARS', 'PEN', 'BRL', 'MXN',
       'CZK', 'RON', 'CNY', 'JPY', 'INR', 'SGD', 'KRW',
-      'EGP', 'ZAR', 'NGN', 'XOF', 'AUD', 'NZD', 'ILS', 'TRY', 'VND', 'UYU', 'AOA', 'ALL', 'AZN', 'BHD', 'BIF', 'BND', 'COP', 'CRC', 'CUP', 'GEL', 'HKD', 'HNL', 'IDR', 'JOD', 'KES', 'IQD', 'ISK', 'JMD', 'IRR', 'XAF', 'BWP', 'DJF', 'DZD', 'ETB', 'GMD', 'GHS', 'GNF', 'GYD', 'CDF', 'KWD', 'LAK', 'LRD', 'LYD', 'MAD', 'MGA', 'MKD', 'MMK', 'MRU', 'MUR', 'MVR', 'NAD', 'NPR',
-      'PGK', 'PHP', 'PKR', 'QAR', 'RUB', 'RWF', 'SCR', 'SLL', 'SOS', 'SRD', 'SSP', 'STN', 'SYP', 'THB', 'TJS', 'TOP', 'TND', 'TTD', 'TWD', 'TZS', 'UAH', 'UZS', 'VES', 'WST', 'YER', 'KPW', 'BSD', 'AED', 'AMD',
+      'EGP', 'ZAR', 'NGN', 'XOF', 'AUD', 'NZD',
     ];
 
     const CURRENCY_FLAGS = {
@@ -705,6 +710,18 @@ const STORAGE_KEY = 'kontana_state_v1';
     };
 
     const WALLET_NAME_MAX = 18;
+    const PAYMENT_CATEGORIES = [
+      'uncategorized',
+      'groceries',
+      'transport',
+      'dining',
+      'bills',
+      'health',
+      'entertainment',
+      'shopping',
+      'income',
+      'other',
+    ];
     const I18N = {
       en: {
         'tab.cash': 'Cash',
@@ -730,6 +747,7 @@ const STORAGE_KEY = 'kontana_state_v1';
         'common.wallet': 'Wallet',
         'common.amount': 'Amount',
         'common.note': 'Note',
+        'common.category': 'Category',
         'common.change': 'Change',
 
         'cash.no_wallets': 'No wallets yet. Create your first wallet to start tracking cash.',
@@ -799,6 +817,7 @@ const STORAGE_KEY = 'kontana_state_v1';
         'pay.selected_wallet': 'Selected wallet',
         'pay.amount_label': 'Amount',
         'pay.note_label': 'Note/Reference (optional)',
+        'pay.category_label': 'Category',
         'pay.note_limit': '{count}/30 characters{suffix}',
         'pay.note_limit_reached': ' — limit reached',
         'pay.enter_amount_to_allocate': 'Enter an amount to allocate denominations.',
@@ -841,6 +860,7 @@ const STORAGE_KEY = 'kontana_state_v1';
         'tx.detail.breakdown': 'Breakdown',
         'tx.detail.change': 'Change',
         'tx.detail.note': 'Note',
+        'tx.detail.category': 'Category',
 
         'settings.title': 'Settings',
         'settings.section.behaviour': 'Behaviour',
@@ -877,7 +897,7 @@ const STORAGE_KEY = 'kontana_state_v1';
         'settings.show_cents.title': 'Show cents',
         'settings.show_cents.body': 'When on, all currencies that use cents will always show .00. When off, .00 is hidden unless there are actual cents to display.',
         'settings.security.title': 'Security',
-        'settings.security.body': 'Lock the app with biometric authentication (fingerprint or face recognition).',
+        'settings.security.body': 'Biometric lock is available on mobile devices only.',
         'settings.appearance.title': 'Appearance',
         'settings.appearance.body': 'Match the app theme to the website.',
         'settings.appearance.aria': 'Theme',
@@ -896,6 +916,10 @@ const STORAGE_KEY = 'kontana_state_v1';
         'settings.language.body': 'Choose the app language.',
         'settings.language.english': 'English',
         'settings.language.spanish': 'Spanish',
+        'settings.build.title': 'Build info',
+        'settings.build.version': 'Version',
+        'settings.build.timestamp': 'Build time',
+        'settings.build.unknown': 'Unavailable',
 
         'currency.most_used': 'Most used',
         'currency.other': 'Other currencies',
@@ -903,15 +927,27 @@ const STORAGE_KEY = 'kontana_state_v1';
         'export.snapshot_title': 'Kontana Snapshot Report',
         'export.generated': 'Generated: {date}',
         'export.wallet_totals': 'Wallet Totals',
-        'export.transactions_last_30': 'Transactions (Last 30 Days)',
+        'export.transactions_history': 'Transactions',
+        'export.no_transactions': 'No transactions yet.',
+        'export.col.date': 'Date',
+        'export.col.wallet': 'Wallet',
+        'export.col.type': 'Type',
+        'export.col.category': 'Category',
+        'export.col.amount': 'Amount',
+        'export.col.paid': 'Paid',
+        'export.col.strategy': 'Strategy',
+        'export.col.note': 'Note',
 
         'alerts.popup_blocked': 'Popup blocked. Allow popups to export PDF report.',
+        'alerts.pdf_lib_unavailable': 'PDF export library is unavailable. Check your connection and try again.',
+        'alerts.pdf_generation_failed': 'Unable to generate PDF export. Please try again.',
         'alerts.max_wallets': 'You can have up to 4 wallets. Delete one to create another.',
         'alerts.finish_edit_before_nav': 'Finish or cancel Edit denominations before navigating.',
         'alerts.finish_edit_before_create_wallet': 'Finish or cancel the current allocation/edit before creating a wallet.',
         'alerts.finish_edit_disabled': 'Finish edit is disabled until allocated total matches expected total exactly.',
         'alerts.change_must_equal': 'Change must equal exactly {amount}.',
         'alerts.biometric_unavailable': 'Biometric authentication is not available on this device.',
+        'alerts.biometric_mobile_only': 'Biometric lock is only available on mobile devices.',
         'alerts.biometric_failed_enable': 'Biometric authentication failed. Biometric lock not enabled.',
         'alerts.auth_failed': 'Authentication failed. Please try again.',
         'alerts.launch_email_consent': 'Enter a valid email and provide explicit consent.',
@@ -923,6 +959,16 @@ const STORAGE_KEY = 'kontana_state_v1';
         'confirm.delete_all.mismatch': 'Confirmation text did not match.',
         'lock.unlock': 'Unlock with Biometrics',
         'biometric.unlock_reason': 'Authenticate to unlock the app',
+        'category.uncategorized': 'Uncategorized',
+        'category.groceries': 'Groceries',
+        'category.transport': 'Transport',
+        'category.dining': 'Dining',
+        'category.bills': 'Bills',
+        'category.health': 'Health',
+        'category.entertainment': 'Entertainment',
+        'category.shopping': 'Shopping',
+        'category.income': 'Income',
+        'category.other': 'Other',
       },
       es: {
         'tab.cash': 'Efectivo',
@@ -944,6 +990,12 @@ const STORAGE_KEY = 'kontana_state_v1';
         'common.confirm': 'Confirmar',
         'common.close': 'Cerrar',
         'common.total': 'Total',
+        'common.date': 'Fecha',
+        'common.wallet': 'Monedero',
+        'common.amount': 'Importe',
+        'common.note': 'Nota',
+        'common.category': 'Categoría',
+        'common.change': 'Cambio',
 
         'cash.no_wallets': 'Aún no hay monederos. Crea tu primer monedero para empezar a registrar efectivo.',
         'cash.create_wallet': 'Crear monedero',
@@ -992,6 +1044,7 @@ const STORAGE_KEY = 'kontana_state_v1';
         'pay.selected_wallet': 'Monedero seleccionado',
         'pay.amount_label': 'Importe',
         'pay.note_label': 'Nota/Referencia (opcional)',
+        'pay.category_label': 'Categoría',
         'pay.note_limit': '{count}/30 caracteres{suffix}',
         'pay.note_limit_reached': ' — límite alcanzado',
         'pay.enter_amount_to_allocate': 'Introduce un importe para asignar denominaciones.',
@@ -1049,6 +1102,7 @@ const STORAGE_KEY = 'kontana_state_v1';
         'tx.detail.breakdown': 'Desglose',
         'tx.detail.change': 'Cambio',
         'tx.detail.note': 'Nota',
+        'tx.detail.category': 'Categoría',
 
         'settings.title': 'Ajustes',
         'settings.section.behaviour': 'Comportamiento',
@@ -1085,7 +1139,7 @@ const STORAGE_KEY = 'kontana_state_v1';
         'settings.show_cents.title': 'Mostrar céntimos',
         'settings.show_cents.body': 'Si está en Sí, todas las divisas con céntimos siempre mostrarán .00. Si está en No, .00 se oculta salvo que haya céntimos reales.',
         'settings.security.title': 'Seguridad',
-        'settings.security.body': 'Bloquea la app con autenticación biométrica (huella o reconocimiento facial).',
+        'settings.security.body': 'El bloqueo biométrico está disponible solo en dispositivos móviles.',
         'settings.appearance.title': 'Apariencia',
         'settings.appearance.body': 'Iguala el tema de la app con el del sitio web.',
         'settings.appearance.aria': 'Tema',
@@ -1104,6 +1158,10 @@ const STORAGE_KEY = 'kontana_state_v1';
         'settings.language.body': 'Elige el idioma de la app.',
         'settings.language.english': 'Inglés',
         'settings.language.spanish': 'Español',
+        'settings.build.title': 'Info de compilacion',
+        'settings.build.version': 'Version',
+        'settings.build.timestamp': 'Fecha de compilacion',
+        'settings.build.unknown': 'No disponible',
 
         'currency.most_used': 'Más usadas',
         'currency.other': 'Otras divisas',
@@ -1111,15 +1169,27 @@ const STORAGE_KEY = 'kontana_state_v1';
         'export.snapshot_title': 'Informe de estado de Kontana',
         'export.generated': 'Generado: {date}',
         'export.wallet_totals': 'Totales por monedero',
-        'export.transactions_last_30': 'Movimientos (últimos 30 días)',
+        'export.transactions_history': 'Movimientos',
+        'export.no_transactions': 'Aun no hay movimientos.',
+        'export.col.date': 'Fecha',
+        'export.col.wallet': 'Monedero',
+        'export.col.type': 'Tipo',
+        'export.col.category': 'Categoria',
+        'export.col.amount': 'Importe',
+        'export.col.paid': 'Pagado',
+        'export.col.strategy': 'Estrategia',
+        'export.col.note': 'Nota',
 
         'alerts.popup_blocked': 'Ventana emergente bloqueada. Permite popups para exportar el informe PDF.',
+        'alerts.pdf_lib_unavailable': 'La libreria de exportacion PDF no esta disponible. Revisa tu conexion e intentalo de nuevo.',
+        'alerts.pdf_generation_failed': 'No se pudo generar el PDF. Intentalo de nuevo.',
         'alerts.max_wallets': 'Puedes tener hasta 4 monederos. Elimina uno para crear otro.',
         'alerts.finish_edit_before_nav': 'Finaliza o cancela Editar denominaciones antes de navegar.',
         'alerts.finish_edit_before_create_wallet': 'Finaliza o cancela la asignación/edición actual antes de crear un monedero.',
         'alerts.finish_edit_disabled': 'Finalizar edición está desactivado hasta que el total asignado coincida exactamente con el total esperado.',
         'alerts.change_must_equal': 'El cambio debe ser exactamente {amount}.',
         'alerts.biometric_unavailable': 'La autenticación biométrica no está disponible en este dispositivo.',
+        'alerts.biometric_mobile_only': 'El bloqueo biométrico solo está disponible en móviles.',
         'alerts.biometric_failed_enable': 'Falló la autenticación biométrica. No se activó el bloqueo biométrico.',
         'alerts.auth_failed': 'Falló la autenticación. Inténtalo de nuevo.',
         'alerts.launch_email_consent': 'Introduce un email válido y proporciona consentimiento explícito.',
@@ -1132,6 +1202,16 @@ const STORAGE_KEY = 'kontana_state_v1';
 
         'lock.title': 'Bloqueado',
         'lock.body': 'Desbloquea la app para continuar.',
+        'category.uncategorized': 'Sin categoría',
+        'category.groceries': 'Supermercado',
+        'category.transport': 'Transporte',
+        'category.dining': 'Comida fuera',
+        'category.bills': 'Facturas',
+        'category.health': 'Salud',
+        'category.entertainment': 'Ocio',
+        'category.shopping': 'Compras',
+        'category.income': 'Ingreso',
+        'category.other': 'Otro',
       },
     };
 
@@ -1142,6 +1222,34 @@ const STORAGE_KEY = 'kontana_state_v1';
       if (!vars) return raw;
       return String(raw).replace(/\{(\w+)\}/g, (_, name) => (vars[name] ?? `{${name}}`));
     }
+
+    function getMetaContent(name) {
+      const tag = document.querySelector(`meta[name="${name}"]`);
+      const content = tag?.getAttribute('content');
+      return content ? content.trim() : '';
+    }
+
+    function getBuildInfo() {
+      const version = getMetaContent('kontana-app-version') || APP_VERSION;
+      const buildTimestamp = getMetaContent('kontana-build-timestamp');
+      return { version, buildTimestamp };
+    }
+
+    function formatBuildTimestamp(value) {
+      if (!value) return t('settings.build.unknown');
+      const parsed = new Date(value);
+      if (Number.isNaN(parsed.getTime())) return value;
+      return new Intl.DateTimeFormat(getUserLocale(), {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      }).format(parsed);
+    }
+
+    const APP_BUILD_INFO = getBuildInfo();
 
     const PAGE_META = {
       cash: { titleKey: 'tab.cash' },
@@ -1232,8 +1340,17 @@ const STORAGE_KEY = 'kontana_state_v1';
       return names[key] || key || '-';
     }
 
+    function getUserLocale() {
+      return navigator.language || 'en-US';
+    }
+
+    function getDecimalSeparator() {
+      const sample = new Intl.NumberFormat(getUserLocale()).formatToParts(1.1);
+      return sample.find((part) => part.type === 'decimal')?.value || '.';
+    }
+
     function formatDateTimeEU(isoString) {
-      return new Intl.DateTimeFormat('en-GB', {
+      return new Intl.DateTimeFormat(getUserLocale(), {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -1244,7 +1361,7 @@ const STORAGE_KEY = 'kontana_state_v1';
     }
 
     function formatDateEU(isoString) {
-      return new Intl.DateTimeFormat('en-GB', {
+      return new Intl.DateTimeFormat(getUserLocale(), {
         day: 'numeric',
         month: 'short',
         year: 'numeric',
@@ -1252,11 +1369,22 @@ const STORAGE_KEY = 'kontana_state_v1';
     }
 
     function formatTimeEU(isoString) {
-      return new Intl.DateTimeFormat('en-GB', {
+      return new Intl.DateTimeFormat(getUserLocale(), {
         hour: '2-digit',
         minute: '2-digit',
         hour12: false,
       }).format(new Date(isoString));
+    }
+
+    function categoryLabel(category) {
+      const key = PAYMENT_CATEGORIES.includes(category) ? category : 'uncategorized';
+      return t(`category.${key}`);
+    }
+
+    function renderCategoryOptions(selected = 'uncategorized') {
+      return PAYMENT_CATEGORIES.map((category) => (
+        `<option value="${category}" ${selected === category ? 'selected' : ''}>${categoryLabel(category)}</option>`
+      )).join('');
     }
 
     function dayKey(isoString) {
@@ -1298,7 +1426,7 @@ const STORAGE_KEY = 'kontana_state_v1';
     }
 
     function getCurrencyOrder() {
-      const priority = ['CHF', 'CNY', 'EUR', 'GBP', 'JPY', 'USD'];
+      const priority = ['CHF', 'CNY', 'EUR', 'GBP', 'JPY', 'USD'].filter((code) => SUPPORTED_CURRENCIES.includes(code));
       const rest = SUPPORTED_CURRENCIES
         .filter((code) => !priority.includes(code))
         .sort((a, b) => a.localeCompare(b));
@@ -1318,50 +1446,10 @@ const STORAGE_KEY = 'kontana_state_v1';
       `;
     }
 
-    function ageDays(iso) {
-      const diffMs = Date.now() - new Date(iso).getTime();
-      return Math.floor(diffMs / 86400000);
-    }
-
-    function purgeRetention(state) {
-      const kept = [];
-      const removed = [];
-      state.transactions.forEach((tx) => {
-        if (ageDays(tx.created_at) < RETENTION_DAYS) kept.push(tx);
-        else removed.push(tx);
-      });
-      state.transactions = kept;
-      if (removed.length === 0) return;
-
-      const rolloverByWallet = new Map();
-      removed.forEach((tx) => {
-        const delta = Number.isFinite(tx.delta_minor) ? tx.delta_minor : 0;
-        if (!rolloverByWallet.has(tx.wallet_id)) {
-          rolloverByWallet.set(tx.wallet_id, {
-            wallet_id: tx.wallet_id,
-            wallet_name: tx.wallet_name,
-            currency: tx.currency,
-            delta_minor: 0,
-          });
-        }
-        rolloverByWallet.get(tx.wallet_id).delta_minor += delta;
-      });
-
-      rolloverByWallet.forEach((roll) => {
-        if (roll.delta_minor === 0) return;
-        state.transactions.push({
-          id: uid('tx'),
-          created_at: nowIso(),
-          wallet_id: roll.wallet_id,
-          wallet_name: roll.wallet_name,
-          currency: roll.currency,
-          type: 'adjustment',
-          amount_minor: 0,
-          delta_minor: roll.delta_minor,
-          tag: 'Adjustment',
-          note: 'Retention rollover',
-        });
-      });
+    function isMobileDevice() {
+      const ua = navigator.userAgent || '';
+      const coarsePointer = window.matchMedia?.('(pointer: coarse)')?.matches ?? false;
+      return /Android|iPhone|iPad|iPod/i.test(ua) || coarsePointer;
     }
 
     function getVisibleWallets(state) {
@@ -1452,27 +1540,71 @@ const STORAGE_KEY = 'kontana_state_v1';
     function parseAmountToMinor(input, currency) {
       if (!input || !input.trim()) return null;
       const scale = getMinorScale(currency);
-      const stripped = input.trim().replace(/[^0-9.,]/g, '').replace(/,/g, '');
-      if (!stripped) return null;
-      const n = Number(stripped);
+      const raw = input.trim().replace(/[^0-9.,]/g, '');
+      if (!raw) return null;
+
+      const lastDot = raw.lastIndexOf('.');
+      const lastComma = raw.lastIndexOf(',');
+      const lastSeparatorIdx = Math.max(lastDot, lastComma);
+      const hasDot = raw.includes('.');
+      const hasComma = raw.includes(',');
+      const separatorsMixed = hasDot && hasComma;
+      const decimalIdx = (() => {
+        if (lastSeparatorIdx < 0) return -1;
+        if (separatorsMixed) return lastSeparatorIdx;
+        const fracLen = raw.length - lastSeparatorIdx - 1;
+        if (scale === 100 && fracLen <= 2) return lastSeparatorIdx;
+        return -1;
+      })();
+      let intPartRaw = raw;
+      let fracPartRaw = '';
+
+      if (decimalIdx >= 0) {
+        intPartRaw = raw.slice(0, decimalIdx);
+        fracPartRaw = raw.slice(decimalIdx + 1);
+      }
+
+      const intDigits = intPartRaw.replace(/[.,]/g, '');
+      const fracDigits = fracPartRaw.replace(/[.,]/g, '');
+      if (!intDigits && !fracDigits) return null;
+      if (scale === 1 && fracDigits.length > 0) return null;
+      if (scale === 100 && fracDigits.length > 2) return null;
+
+      const normalized = fracDigits ? `${intDigits || '0'}.${fracDigits}` : (intDigits || '0');
+      const n = Number(normalized);
       if (!Number.isFinite(n) || n <= 0) return null;
-      const decimals = stripped.includes('.') ? stripped.split('.')[1].length : 0;
-      if (scale === 1 && decimals > 0) return null;
-      if (scale === 100 && decimals > 2) return null;
       return Math.round(n * scale);
     }
 
     function formatAmountDisplay(rawInput, currency) {
-      const stripped = rawInput.replace(/[^0-9.]/g, '');
+      const stripped = rawInput.replace(/[^0-9.,]/g, '');
       if (!stripped) return '';
-      const parts = stripped.split('.');
-      const intPart = parts[0] || '';
-      const decPart = parts.length > 1 ? parts[1] : null;
-      const formatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
       const scale = getMinorScale(currency);
+      const lastDot = stripped.lastIndexOf('.');
+      const lastComma = stripped.lastIndexOf(',');
+      const lastSeparatorIdx = Math.max(lastDot, lastComma);
+      const hasDot = stripped.includes('.');
+      const hasComma = stripped.includes(',');
+      const separatorsMixed = hasDot && hasComma;
+      const decimalIdx = (() => {
+        if (lastSeparatorIdx < 0) return -1;
+        if (separatorsMixed) return lastSeparatorIdx;
+        const fracLen = stripped.length - lastSeparatorIdx - 1;
+        if (scale === 100 && fracLen <= 2) return lastSeparatorIdx;
+        return -1;
+      })();
+      const intPartRaw = decimalIdx >= 0 ? stripped.slice(0, decimalIdx) : stripped;
+      const decPartRaw = decimalIdx >= 0 ? stripped.slice(decimalIdx + 1) : '';
+      const intPart = intPartRaw.replace(/[.,]/g, '');
+      const decPart = decPartRaw.replace(/[.,]/g, '');
+      const formatted = new Intl.NumberFormat(getUserLocale(), {
+        maximumFractionDigits: 0,
+      }).format(Number(intPart || '0'));
+      const decimalSep = getDecimalSeparator();
       const sym = getCurrencySymbol(currency);
-      if (decPart !== null) {
-        return `${sym}${formatted}.${decPart.slice(0, scale === 1 ? 0 : 2)}`;
+      if (decPart) {
+        if (scale === 1) return `${sym}${formatted}`;
+        return `${sym}${formatted}${decimalSep}${decPart.slice(0, scale === 1 ? 0 : 2)}`;
       }
       return `${sym}${formatted}`;
     }
@@ -1502,39 +1634,318 @@ const STORAGE_KEY = 'kontana_state_v1';
       URL.revokeObjectURL(url);
     }
 
+    function downloadBinaryFile(bytes, filename, mime = 'application/octet-stream') {
+      const blob = new Blob([bytes], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+
+      let clicked = false;
+      try {
+        a.click();
+        clicked = true;
+      } catch {}
+      a.remove();
+
+      const ua = navigator.userAgent || '';
+      const isIos = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const supportsDownload = typeof HTMLAnchorElement !== 'undefined'
+        && ('download' in HTMLAnchorElement.prototype);
+
+      if (!clicked || isIos || !supportsDownload) {
+        const popup = window.open(url, '_blank', 'noopener');
+        if (!popup) {
+          modalAlert(t('alerts.popup_blocked'));
+        }
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+        return;
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    let pdfLibLoadPromise = null;
+    async function ensurePdfLibLoaded() {
+      if (window.PDFLib) return true;
+      if (pdfLibLoadPromise) return pdfLibLoadPromise;
+
+      const loadScript = (src) => new Promise((resolve) => {
+        const existing = document.querySelector(`script[data-kontana-pdf-lib-src="${src}"]`);
+        if (existing) {
+          existing.addEventListener('load', () => resolve(Boolean(window.PDFLib)), { once: true });
+          existing.addEventListener('error', () => resolve(false), { once: true });
+          return;
+        }
+        const script = document.createElement('script');
+        script.src = src;
+        script.async = true;
+        script.dataset.kontanaPdfLib = 'true';
+        script.dataset.kontanaPdfLibSrc = src;
+        script.onload = () => resolve(Boolean(window.PDFLib));
+        script.onerror = () => resolve(false);
+        document.head.appendChild(script);
+      });
+
+      pdfLibLoadPromise = (async () => {
+        const primary = await loadScript('/lib/pdf-lib.min.js');
+        if (primary || window.PDFLib) return true;
+        const fallback = await loadScript('https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js');
+        return Boolean(fallback || window.PDFLib);
+      })();
+
+      const loaded = await pdfLibLoadPromise;
+      if (!loaded) pdfLibLoadPromise = null;
+      return loaded;
+    }
+
     function exportJson(state) {
       const date = new Date().toISOString().slice(0, 10);
       downloadTextFile(JSON.stringify(state, null, 2), `kontana-export-${date}.json`, 'application/json');
     }
 
-    function openPdfReport(state) {
-      const date = new Date().toISOString().slice(0, 10);
-      const lines = [];
-      lines.push(t('export.snapshot_title'));
-      lines.push(t('export.generated', { date: new Date().toLocaleString() }));
-      lines.push('');
-      lines.push(t('export.wallet_totals'));
-      for (const wallet of Object.values(state.wallets)) {
-        lines.push(`- ${toWalletLabel(wallet)}: ${formatMoney(getWalletTotal(wallet), wallet.currency)}`);
-      }
-      lines.push('');
-      lines.push(t('export.transactions_last_30'));
-      const txs = [...state.transactions].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      for (const tx of txs) {
-        const amountMinor = Number.isFinite(tx.requested_amount_minor) ? tx.requested_amount_minor : (tx.amount_minor || 0);
-        const paidMinor = Number.isFinite(tx.paid_amount_minor) ? tx.paid_amount_minor : 0;
-        lines.push(`- ${new Date(tx.created_at).toLocaleString()} | ${tx.wallet_name} | ${tx.type || 'outgoing'} ${formatMoney(amountMinor, tx.currency)} | paid ${formatMoney(paidMinor, tx.currency)} | strategy ${strategyDisplayName(tx.strategy)}`);
-      }
-
-      const w = window.open('', '_blank');
-      if (!w) {
-        modalAlert(t('alerts.popup_blocked'));
+    async function openPdfReport(state) {
+      const libReady = await ensurePdfLibLoaded();
+      if (!libReady || !window.PDFLib) {
+        await modalAlert(t('alerts.pdf_lib_unavailable'));
         return;
       }
-      w.document.write(`<!doctype html><html><head><title>kontana-report-${date}.pdf</title><style>body{font-family:ui-sans-serif,system-ui;padding:24px;white-space:pre-wrap;line-height:1.45}</style></head><body>${lines.join('\n').replace(/</g, '&lt;')}</body></html>`);
-      w.document.close();
-      w.focus();
-      w.print();
+      const date = new Date().toISOString().slice(0, 10);
+      const txs = [...state.transactions].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      const wallets = Object.values(state.wallets || {});
+      try {
+        const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
+        const pdf = await PDFDocument.create();
+        const regular = await pdf.embedFont(StandardFonts.Helvetica);
+        const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+
+        const pageWidth = 595.28;
+        const pageHeight = 841.89;
+        const margin = 34;
+        const bodySize = 9;
+        const titleSize = 16;
+        const contentWidth = pageWidth - margin * 2;
+        const lineHeight = 12;
+        const headerBg = rgb(0.92, 0.95, 0.98);
+        const rowAltBg = rgb(0.97, 0.98, 1.0);
+        const border = rgb(0.85, 0.89, 0.93);
+        const text = rgb(0.08, 0.12, 0.18);
+
+        let page = pdf.addPage([pageWidth, pageHeight]);
+        let y = pageHeight - margin;
+
+        const ensureSpace = (needed, onPageBreak) => {
+          if (y - needed < margin) {
+            page = pdf.addPage([pageWidth, pageHeight]);
+            y = pageHeight - margin;
+            if (onPageBreak) onPageBreak();
+          }
+        };
+
+        const sanitizePdfText = (value) => {
+          const noTags = String(value ?? '')
+            .replace(/<[^>]*>/g, ' ')
+            .replace(/&nbsp;/gi, ' ')
+            .replace(/&amp;/gi, '&')
+            .replace(/&lt;/gi, '<')
+            .replace(/&gt;/gi, '>')
+            .replace(/&quot;/gi, '"')
+            .replace(/&#39;/gi, "'");
+          const raw = noTags.replace(/\s+/g, ' ').trim();
+          if (!raw) return '-';
+          return Array.from(raw).map((ch) => {
+            const cp = ch.codePointAt(0);
+            if (cp === 0x00A0 || cp === 0x202F || cp === 0x2009) return ' ';
+            if (cp === 0x2018 || cp === 0x2019) return "'";
+            if (cp === 0x201C || cp === 0x201D) return '"';
+            if (cp === 0x2013 || cp === 0x2014) return '-';
+            if ((cp >= 32 && cp <= 126) || (cp >= 160 && cp <= 255)) return ch;
+            return '?';
+          }).join('');
+        };
+
+        const walletLabelForPdf = (wallet) => `${CURRENCY_NAMES[wallet.currency] || wallet.currency} - ${wallet.name || '-'}`;
+
+        const wrapCellText = (value, width, maxLines) => {
+          const raw = sanitizePdfText(value);
+          const words = raw.split(' ');
+          const out = [];
+          let current = '';
+          words.forEach((word, idx) => {
+            const candidate = current ? `${current} ${word}` : word;
+            const candidateWidth = regular.widthOfTextAtSize(candidate, bodySize);
+            if (candidateWidth <= width || !current) {
+              current = candidate;
+            } else {
+              out.push(current);
+              current = word;
+            }
+            if (idx === words.length - 1 && current) out.push(current);
+          });
+          if (out.length > maxLines) {
+            const clipped = out.slice(0, maxLines);
+            const last = clipped[maxLines - 1];
+            clipped[maxLines - 1] = last.length > 2 ? `${last.slice(0, Math.max(1, last.length - 2))}..` : last;
+            return clipped;
+          }
+          return out;
+        };
+
+        const drawTextLine = (value, x, baselineY, opts = {}) => {
+          page.drawText(sanitizePdfText(value), {
+            x,
+            y: baselineY,
+            size: opts.size || bodySize,
+            font: opts.bold ? bold : regular,
+            color: opts.color || text,
+          });
+        };
+
+        const drawSectionTitle = (label) => {
+          ensureSpace(20);
+          drawTextLine(label, margin, y - 2, { size: 11, bold: true });
+          y -= 16;
+        };
+
+        const drawTableRowBackground = (height, fillColor) => {
+          page.drawRectangle({
+            x: margin,
+            y: y - height,
+            width: contentWidth,
+            height,
+            color: fillColor,
+            borderColor: border,
+            borderWidth: 0.5,
+          });
+        };
+
+        drawTextLine(t('export.snapshot_title'), margin, y, { size: titleSize, bold: true });
+        y -= 18;
+        drawTextLine(t('export.generated', { date: new Date().toLocaleString() }), margin, y, { size: 9, color: rgb(0.32, 0.38, 0.44) });
+        y -= 12;
+        drawTextLine(`Build ${APP_BUILD_INFO.version}`, margin, y, { size: 9, color: rgb(0.32, 0.38, 0.44) });
+        y -= 12;
+        page.drawLine({
+          start: { x: margin, y },
+          end: { x: pageWidth - margin, y },
+          thickness: 1,
+          color: border,
+        });
+        y -= 16;
+
+        drawSectionTitle(t('export.wallet_totals'));
+        const walletCols = [
+          { key: 'wallet', label: t('common.wallet'), width: contentWidth * 0.66 },
+          { key: 'total', label: t('common.total'), width: contentWidth * 0.34, align: 'right' },
+        ];
+        const walletColX = [
+          margin,
+          margin + walletCols[0].width,
+        ];
+        drawTableRowBackground(18, headerBg);
+        drawTextLine(walletCols[0].label, walletColX[0] + 6, y - 12, { bold: true });
+        drawTextLine(walletCols[1].label, walletColX[1] + walletCols[1].width - 6 - bold.widthOfTextAtSize(walletCols[1].label, bodySize), y - 12, { bold: true });
+        y -= 18;
+        if (wallets.length === 0) {
+          ensureSpace(16);
+          drawTableRowBackground(16, rgb(1, 1, 1));
+          drawTextLine('-', margin + 6, y - 11);
+          y -= 16;
+        } else {
+          wallets.forEach((wallet, idx) => {
+            ensureSpace(16);
+            drawTableRowBackground(16, idx % 2 ? rowAltBg : rgb(1, 1, 1));
+            const walletName = wrapCellText(walletLabelForPdf(wallet), walletCols[0].width - 12, 1)[0];
+            const totalText = formatMoney(getWalletTotal(wallet), wallet.currency);
+            drawTextLine(walletName, walletColX[0] + 6, y - 11);
+            drawTextLine(totalText, walletColX[1] + walletCols[1].width - 6 - regular.widthOfTextAtSize(totalText, bodySize), y - 11);
+            y -= 16;
+          });
+        }
+
+        y -= 12;
+        drawSectionTitle(t('export.transactions_history'));
+
+        const txCols = [
+          { key: 'date', label: t('export.col.date'), width: 72 },
+          { key: 'wallet', label: t('export.col.wallet'), width: 66 },
+          { key: 'type', label: t('export.col.type'), width: 48 },
+          { key: 'category', label: t('export.col.category'), width: 68 },
+          { key: 'amount', label: t('export.col.amount'), width: 56, align: 'right' },
+          { key: 'paid', label: t('export.col.paid'), width: 56, align: 'right' },
+          { key: 'strategy', label: t('export.col.strategy'), width: 62 },
+          { key: 'note', label: t('export.col.note'), width: contentWidth - (72 + 66 + 48 + 68 + 56 + 56 + 62) },
+        ];
+        const txColX = [];
+        let runningX = margin;
+        txCols.forEach((col) => {
+          txColX.push(runningX);
+          runningX += col.width;
+        });
+
+        const drawTxHeader = () => {
+          ensureSpace(18);
+          drawTableRowBackground(18, headerBg);
+          txCols.forEach((col, idx) => {
+            const labelWidth = bold.widthOfTextAtSize(col.label, bodySize);
+            const x = col.align === 'right'
+              ? (txColX[idx] + col.width - 6 - labelWidth)
+              : (txColX[idx] + 4);
+            drawTextLine(col.label, x, y - 12, { bold: true });
+          });
+          y -= 18;
+        };
+
+        drawTxHeader();
+        if (txs.length === 0) {
+          ensureSpace(18);
+          drawTableRowBackground(18, rgb(1, 1, 1));
+          drawTextLine(t('export.no_transactions'), margin + 6, y - 12);
+          y -= 18;
+        } else {
+          txs.forEach((tx, idx) => {
+            const amountMinor = Number.isFinite(tx.requested_amount_minor) ? tx.requested_amount_minor : (tx.amount_minor || 0);
+            const paidMinor = Number.isFinite(tx.paid_amount_minor) ? tx.paid_amount_minor : 0;
+            const txTypeKey = tx.type === 'incoming' ? 'incoming' : 'outgoing';
+            const cells = {
+              date: formatDateTimeEU(tx.created_at),
+              wallet: tx.wallet_name || '-',
+              type: t(`tx.type.${txTypeKey}`),
+              category: categoryLabel(tx.category || 'uncategorized'),
+              amount: formatMoney(amountMinor, tx.currency),
+              paid: formatMoney(paidMinor, tx.currency),
+              strategy: strategyDisplayName(tx.strategy),
+              note: tx.note || '-',
+            };
+
+            const wrapped = txCols.map((col) => wrapCellText(cells[col.key], col.width - 8, col.key === 'note' ? 3 : 2));
+            const maxLines = wrapped.reduce((acc, rows) => Math.max(acc, rows.length), 1);
+            const rowHeight = 6 + (maxLines * lineHeight);
+            ensureSpace(rowHeight, drawTxHeader);
+            drawTableRowBackground(rowHeight, idx % 2 ? rowAltBg : rgb(1, 1, 1));
+            txCols.forEach((col, colIdx) => {
+              const lines = wrapped[colIdx];
+              lines.forEach((line, lineIdx) => {
+                const lineWidth = regular.widthOfTextAtSize(line, bodySize);
+                const x = col.align === 'right'
+                  ? (txColX[colIdx] + col.width - 6 - lineWidth)
+                  : (txColX[colIdx] + 4);
+                drawTextLine(line, x, y - 12 - (lineIdx * lineHeight));
+              });
+            });
+            y -= rowHeight;
+          });
+        }
+
+        const pdfBytes = await pdf.save();
+        downloadBinaryFile(pdfBytes, `kontana-report-${date}.pdf`, 'application/pdf');
+      } catch (error) {
+        const detail = (error && typeof error.message === 'string')
+          ? ` (${error.message.slice(0, 120)})`
+          : '';
+        await modalAlert(`${t('alerts.pdf_generation_failed')}${detail}`);
+      }
     }
 
     function createWallet(state, name, currency) {
@@ -1619,6 +2030,9 @@ const STORAGE_KEY = 'kontana_state_v1';
         if (typeof merged.settings.biometric_lock !== 'boolean') {
           merged.settings.biometric_lock = false;
         }
+        if (merged.settings.biometric_lock && !isMobileDevice()) {
+          merged.settings.biometric_lock = false;
+        }
         if (typeof merged.settings.single_cover !== 'boolean') {
           merged.settings.single_cover = true;
         }
@@ -1638,15 +2052,16 @@ const STORAGE_KEY = 'kontana_state_v1';
         merged.transactions = Array.isArray(parsed.transactions) ? parsed.transactions : [];
         merged.transactions = merged.transactions.map((tx) => {
           const type = tx.type === 'payment' ? 'outgoing' : tx.type;
-          if (Number.isFinite(tx.delta_minor)) return tx;
-          if (type === 'adjustment') return { ...tx, type, delta_minor: 0 };
-          if (type === 'incoming') return { ...tx, type, delta_minor: tx.amount_minor || 0 };
-          if (type === 'outgoing') return { ...tx, type, delta_minor: -(tx.amount_minor || 0) };
+          const category = PAYMENT_CATEGORIES.includes(tx.category) ? tx.category : 'uncategorized';
+          if (Number.isFinite(tx.delta_minor)) return { ...tx, type, category };
+          if (type === 'adjustment') return { ...tx, type, category, delta_minor: 0 };
+          if (type === 'incoming') return { ...tx, type, category, delta_minor: tx.amount_minor || 0 };
+          if (type === 'outgoing') return { ...tx, type, category, delta_minor: -(tx.amount_minor || 0) };
           if (Number.isFinite(tx.requested_amount_minor)) {
             const change = Number.isFinite(tx.change_received_minor) ? tx.change_received_minor : 0;
-            return { ...tx, delta_minor: -tx.requested_amount_minor + change, type: 'outgoing', amount_minor: tx.requested_amount_minor };
+            return { ...tx, category, delta_minor: -tx.requested_amount_minor + change, type: 'outgoing', amount_minor: tx.requested_amount_minor };
           }
-          return { ...tx, type: type || 'adjustment', delta_minor: 0 };
+          return { ...tx, category, type: type || 'adjustment', delta_minor: 0 };
         });
         const walletIds = Object.keys(merged.wallets);
         const normalizedOrder = [];
@@ -1677,6 +2092,7 @@ const STORAGE_KEY = 'kontana_state_v1';
             delta_minor: total,
             tag: 'Adjustment',
             note: 'Initial balance migration',
+            category: 'uncategorized',
             breakdown: wallet.denominations.filter((d) => d.count > 0).map((d) => ({ value_minor: d.value_minor, count: d.count })),
           });
         });
@@ -1701,6 +2117,7 @@ const STORAGE_KEY = 'kontana_state_v1';
         strategy: 'greedy',
         mode: 'outgoing',
         note: '',
+        category: 'uncategorized',
         allocation: {},
         manualEntry: false,
         startedAllocation: false,
@@ -1751,6 +2168,7 @@ const STORAGE_KEY = 'kontana_state_v1';
         currency: tx.currency,
         amount_minor: Number.isFinite(tx.amount_minor) ? tx.amount_minor : Math.abs(tx.delta_minor || 0),
         note: tx.note || '',
+        category: tx.category || 'uncategorized',
         change_expected_minor: Number.isFinite(tx.change_expected_minor) ? tx.change_expected_minor : 0,
         change_received_minor: Number.isFinite(tx.change_received_minor) ? tx.change_received_minor : 0,
       };
@@ -2653,6 +3071,7 @@ const STORAGE_KEY = 'kontana_state_v1';
             amount_minor: 0,
             delta_minor: 0,
             tag: 'denominations edited',
+            category: 'uncategorized',
             prior_breakdown: priorBreakdown,
             breakdown: newBreakdown,
           });
@@ -2737,6 +3156,7 @@ const STORAGE_KEY = 'kontana_state_v1';
       const hasEntry = Boolean(
         app.paymentDraft.amountInput.trim()
         || app.paymentDraft.note.trim()
+        || (app.paymentDraft.category && app.paymentDraft.category !== 'uncategorized')
         || Object.keys(app.paymentDraft.allocation || {}).length > 0
         || app.paymentDraft.manualEntry
         || app.paymentDraft.startedAllocation
@@ -2793,6 +3213,7 @@ const STORAGE_KEY = 'kontana_state_v1';
       if (!wallets.some((w) => w.id === app.paymentDraft.walletId)) app.paymentDraft.walletId = wallets[0].id;
       app.paymentDraft.strategy = app.state.settings.default_strategy || 'greedy';
       if (!['incoming', 'outgoing'].includes(app.paymentDraft.mode)) app.paymentDraft.mode = 'outgoing';
+      if (!PAYMENT_CATEGORIES.includes(app.paymentDraft.category)) app.paymentDraft.category = 'uncategorized';
       if (!app.paymentDraft.allocation || typeof app.paymentDraft.allocation !== 'object') {
         app.paymentDraft.allocation = {};
       }
@@ -2906,6 +3327,7 @@ const STORAGE_KEY = 'kontana_state_v1';
             delta_minor: -pending.requestedAmountMinor,
             strategy: pending.strategy,
             note: pending.note,
+            category: pending.category || 'uncategorized',
             breakdown: paidBreakdown,
             change_expected_minor: pending.expectedChangeMinor,
             change_received_minor: pending.expectedChangeMinor,
@@ -2915,6 +3337,7 @@ const STORAGE_KEY = 'kontana_state_v1';
           app.pendingOutgoingChange = null;
           setPaymentSuccess(tx);
           app.paymentDraft.note = '';
+          app.paymentDraft.category = 'uncategorized';
           app.paymentDraft.amountInput = '';
           app.paymentDraft.allocation = {};
           app.paymentDraft.manualEntry = false;
@@ -2931,6 +3354,7 @@ const STORAGE_KEY = 'kontana_state_v1';
       const zeroWalletHint = walletTotalForHint === 0 ? t('pay.wallet_empty_hint') : '';
       const amountMinor = parseAmountToMinor(app.paymentDraft.amountInput, wallet.currency);
       const noteText = app.paymentDraft.note.trim().slice(0, 30);
+      const category = PAYMENT_CATEGORIES.includes(app.paymentDraft.category) ? app.paymentDraft.category : 'uncategorized';
       const draftAllocated = getDraftAllocationTotal();
       const validAmount = amountMinor !== null && amountMinor > 0;
       const { bills, coins } = getWalletDenomGroups(wallet);
@@ -2975,6 +3399,7 @@ const STORAGE_KEY = 'kontana_state_v1';
       const hasDraftEntry = Boolean(
         app.paymentDraft.amountInput.trim()
         || app.paymentDraft.note.trim()
+        || category !== 'uncategorized'
         || Object.keys(app.paymentDraft.allocation || {}).length > 0
         || app.paymentDraft.manualEntry
       );
@@ -3127,6 +3552,7 @@ const STORAGE_KEY = 'kontana_state_v1';
                 <div class="tx-success-row"><span>${t('common.wallet')}</span><span>${successSummary.wallet_name}</span></div>
                 <div class="tx-success-row"><span>${t('common.amount')}</span><span class="tx-amount ${successSummary.type === 'incoming' ? 'incoming' : 'outgoing'}">${successAmountLabel}</span></div>
                 <div class="tx-success-row"><span>${t('common.note')}</span><span>${truncateNote(successSummary.note || '', 30) || '-'}</span></div>
+                <div class="tx-success-row"><span>${t('common.category')}</span><span>${categoryLabel(successSummary.category)}</span></div>
                 ${successSummary.change_expected_minor > 0 ? `<div class="tx-success-row"><span>${t('common.change')}</span><span>${formatMoney(successSummary.change_expected_minor, successSummary.currency)} / ${formatMoney(successSummary.change_received_minor, successSummary.currency)}</span></div>` : ''}
               </div>
               <div class="inline-actions">
@@ -3148,6 +3574,9 @@ const STORAGE_KEY = 'kontana_state_v1';
                 ` : ''}
                 <label>${t('pay.note_label')}
                   <input id="payment-note" type="text" maxlength="30" value="${app.paymentDraft.note}" />
+                </label>
+                <label>${t('pay.category_label')}
+                  <select id="payment-category">${renderCategoryOptions(category)}</select>
                 </label>
                 ${app.paymentDraft.note.length >= 25 ? `<p class="muted note-limit-hint">${t('pay.note_limit', { count: app.paymentDraft.note.length, suffix: app.paymentDraft.note.length >= 30 ? t('pay.note_limit_reached') : '' })}</p>` : ''}
               </div>
@@ -3174,6 +3603,9 @@ const STORAGE_KEY = 'kontana_state_v1';
                 </label>
                 <label>${t('pay.note_label')}
                   <input id="payment-note" type="text" maxlength="30" value="${app.paymentDraft.note}" />
+                </label>
+                <label>${t('pay.category_label')}
+                  <select id="payment-category">${renderCategoryOptions(category)}</select>
                 </label>
                 ${app.paymentDraft.note.length >= 25 ? `<p class="muted note-limit-hint">${t('pay.note_limit', { count: app.paymentDraft.note.length, suffix: app.paymentDraft.note.length >= 30 ? t('pay.note_limit_reached') : '' })}</p>` : ''}
               </div>
@@ -3253,6 +3685,7 @@ const STORAGE_KEY = 'kontana_state_v1';
           app.paymentDraft.amountInput = '';
           app.paymentDraft.amountDisplay = '';
           app.paymentDraft.note = '';
+          app.paymentDraft.category = 'uncategorized';
           app.paymentDraft.allocation = {};
           app.paymentDraft.manualEntry = false;
           app.paymentDraft.startedAllocation = false;
@@ -3302,6 +3735,7 @@ const STORAGE_KEY = 'kontana_state_v1';
           app.paymentDraft.amountInput = '';
           app.paymentDraft.amountDisplay = '';
           app.paymentDraft.note = '';
+          app.paymentDraft.category = 'uncategorized';
           app.paymentDraft.allocation = {};
           app.paymentDraft.manualEntry = false;
           app.paymentDraft.startedAllocation = false;
@@ -3317,6 +3751,7 @@ const STORAGE_KEY = 'kontana_state_v1';
           app.paymentDraft.amountInput = '';
           app.paymentDraft.amountDisplay = '';
           app.paymentDraft.note = '';
+          app.paymentDraft.category = 'uncategorized';
           app.paymentDraft.allocation = {};
           app.paymentDraft.manualEntry = false;
           app.paymentDraft.startedAllocation = false;
@@ -3357,8 +3792,7 @@ const STORAGE_KEY = 'kontana_state_v1';
       const paymentAmountEl = document.getElementById('payment-amount');
       if (paymentAmountEl) {
         paymentAmountEl.addEventListener('input', (e) => {
-          const raw = e.target.value.replace(/[^0-9.]/g, '');
-          const prevDisplay = app.paymentDraft.amountDisplay || '';
+          const raw = e.target.value.replace(/[^0-9.,]/g, '');
           app.paymentDraft.amountInput = raw;
           const formatted = formatAmountDisplay(raw, wallet.currency);
           app.paymentDraft.amountDisplay = formatted;
@@ -3400,6 +3834,16 @@ const STORAGE_KEY = 'kontana_state_v1';
           }
         });
       }
+      const paymentCategoryEl = document.getElementById('payment-category');
+      if (paymentCategoryEl) {
+        paymentCategoryEl.addEventListener('change', (e) => {
+          const next = PAYMENT_CATEGORIES.includes(e.target.value) ? e.target.value : 'uncategorized';
+          app.paymentDraft.category = next;
+          app.paymentSuccessMessage = '';
+          app.paymentSuccessSummary = null;
+          rerenderPayment();
+        });
+      }
       const paymentBills = document.getElementById('payment-bills');
       const paymentCoins = document.getElementById('payment-coins');
       if (paymentBills) {
@@ -3438,11 +3882,13 @@ const STORAGE_KEY = 'kontana_state_v1';
                 amount_minor: amountMinor,
                 delta_minor: amountMinor,
                 note: noteText || undefined,
+                category,
                 breakdown,
               };
               app.state.transactions.push(tx);
               setPaymentSuccess(tx);
               app.paymentDraft.note = '';
+              app.paymentDraft.category = 'uncategorized';
               app.paymentDraft.amountInput = '';
               app.paymentDraft.allocation = {};
               app.paymentDraft.manualEntry = false;
@@ -3476,6 +3922,7 @@ const STORAGE_KEY = 'kontana_state_v1';
           app.paymentDraft.amountInput = '';
           app.paymentDraft.amountDisplay = '';
           app.paymentDraft.note = '';
+          app.paymentDraft.category = 'uncategorized';
           app.paymentDraft.allocation = {};
           app.paymentDraft.manualEntry = false;
           app.paymentDraft.startedAllocation = false;
@@ -3518,6 +3965,7 @@ const STORAGE_KEY = 'kontana_state_v1';
               delta_minor: -amountMinor,
               strategy: app.paymentDraft.strategy,
               note: noteText,
+              category,
               breakdown,
               change_expected_minor: changeExpectedMinor,
               change_received_minor: changeExpectedMinor,
@@ -3526,6 +3974,7 @@ const STORAGE_KEY = 'kontana_state_v1';
             app.state.transactions.push(tx);
             setPaymentSuccess(tx);
             app.paymentDraft.note = '';
+            app.paymentDraft.category = 'uncategorized';
             app.paymentDraft.amountInput = '';
             app.paymentDraft.allocation = {};
             app.paymentDraft.manualEntry = false;
@@ -3562,6 +4011,7 @@ const STORAGE_KEY = 'kontana_state_v1';
               delta_minor: -amountMinor,
               strategy: app.paymentDraft.strategy,
               note: noteText,
+              category,
               breakdown,
               change_expected_minor: changeExpectedMinor,
               change_received_minor: changeExpectedMinor,
@@ -3570,6 +4020,7 @@ const STORAGE_KEY = 'kontana_state_v1';
             app.state.transactions.push(tx);
             setPaymentSuccess(tx);
             app.paymentDraft.note = '';
+            app.paymentDraft.category = 'uncategorized';
             app.paymentDraft.amountInput = '';
             app.paymentDraft.allocation = {};
             app.paymentDraft.manualEntry = false;
@@ -3597,6 +4048,7 @@ const STORAGE_KEY = 'kontana_state_v1';
               delta_minor: -amountMinor,
               strategy: app.paymentDraft.strategy,
               note: noteText,
+              category,
               breakdown,
               change_expected_minor: changeExpectedMinor,
               change_received_minor: changeExpectedMinor,
@@ -3605,6 +4057,7 @@ const STORAGE_KEY = 'kontana_state_v1';
             app.state.transactions.push(tx);
             setPaymentSuccess(tx);
             app.paymentDraft.note = '';
+            app.paymentDraft.category = 'uncategorized';
             app.paymentDraft.amountInput = '';
             app.paymentDraft.allocation = {};
             app.paymentDraft.manualEntry = false;
@@ -3627,11 +4080,13 @@ const STORAGE_KEY = 'kontana_state_v1';
           delta_minor: -amountMinor,
           strategy: app.paymentDraft.strategy,
           note: noteText,
+          category,
           breakdown,
         };
         app.state.transactions.push(tx);
         setPaymentSuccess(tx);
         app.paymentDraft.note = '';
+        app.paymentDraft.category = 'uncategorized';
         app.paymentDraft.amountInput = '';
         app.paymentDraft.allocation = {};
         app.paymentDraft.manualEntry = false;
@@ -3669,11 +4124,13 @@ const STORAGE_KEY = 'kontana_state_v1';
           delta_minor: finalAmountMinor,
           strategy: undefined,
           note: noteText,
+          category,
           breakdown,
         };
         app.state.transactions.push(tx);
         setPaymentSuccess(tx);
         app.paymentDraft.note = '';
+        app.paymentDraft.category = 'uncategorized';
         app.paymentDraft.amountInput = '';
         app.paymentDraft.allocation = {};
         app.paymentDraft.manualEntry = false;
@@ -3902,6 +4359,7 @@ const STORAGE_KEY = 'kontana_state_v1';
              <div class="tx-detail"><span>${t('tx.detail.breakdown')}</span><span>${detailPaid}</span></div>
              <div class="tx-detail"><span>${t('tx.detail.change')}</span><span>${changeSummary}</span></div>
              <div class="tx-detail"><span>${t('tx.detail.note')}</span><span>${noteText || '-'}</span></div>
+             <div class="tx-detail"><span>${t('tx.detail.category')}</span><span>${categoryLabel(tx.category || 'uncategorized')}</span></div>
              ${isLatestForWallet ? `<button type="button" class="btn-danger-soft tx-revert-btn" data-revert-tx-id="${tx.id}">${t('tx.revert_button')}</button>` : ''}`;
         return `
           ${groupHeader}
@@ -4105,6 +4563,7 @@ const STORAGE_KEY = 'kontana_state_v1';
       const coinsMode = coinsRule === 'avoid' ? 'avoid' : 'prefer';
       const strategiesEnabled = app.state.settings.payment_strategies;
       const changeSuggestionsEnabled = app.state.settings.change_suggestions;
+      const biometricMobile = isMobileDevice();
 
       const singleCoverEnabled = app.state.settings.single_cover;
       const showBillsCoins = app.state.settings.show_bills_coins;
@@ -4242,10 +4701,12 @@ const STORAGE_KEY = 'kontana_state_v1';
               <div class="settings-item">
                 <div class="settings-item-title">${t('settings.security.title')}</div>
                 <p class="muted">${t('settings.security.body')}</p>
-                <div class="segmented-control" role="group" aria-label="${t('settings.security.title')}">
-                  <button type="button" class="segment ${!app.state.settings.biometric_lock ? 'active' : ''}" data-biometric-toggle="off">${t('common.off')}</button>
-                  <button type="button" class="segment ${app.state.settings.biometric_lock ? 'active' : ''}" data-biometric-toggle="on">${t('common.on')}</button>
-                </div>
+                ${biometricMobile ? `
+                  <div class="segmented-control" role="group" aria-label="${t('settings.security.title')}">
+                    <button type="button" class="segment ${!app.state.settings.biometric_lock ? 'active' : ''}" data-biometric-toggle="off">${t('common.off')}</button>
+                    <button type="button" class="segment ${app.state.settings.biometric_lock ? 'active' : ''}" data-biometric-toggle="on">${t('common.on')}</button>
+                  </div>
+                ` : `<p class="muted">${t('alerts.biometric_mobile_only')}</p>`}
               </div>
             </section>
 
@@ -4276,7 +4737,13 @@ const STORAGE_KEY = 'kontana_state_v1';
               </form>
               ${app.launchSignupMessage ? `<p>${app.launchSignupMessage}</p>` : ''}
             </section>
-            <p class="muted app-version">Version ${APP_VERSION}</p>
+            <section class="settings-section">
+              <div class="settings-item">
+                <div class="settings-item-title">${t('settings.build.title')}</div>
+                <p class="muted app-version">${t('settings.build.version')}: ${APP_BUILD_INFO.version}</p>
+                <p class="muted app-version">${t('settings.build.timestamp')}: ${formatBuildTimestamp(APP_BUILD_INFO.buildTimestamp)}</p>
+              </div>
+            </section>
           </section>
         </div>
       `;
@@ -4324,6 +4791,10 @@ const STORAGE_KEY = 'kontana_state_v1';
         btn.addEventListener('click', async () => {
           const next = btn.dataset.biometricToggle === 'on';
           if (app.state.settings.biometric_lock === next) return;
+          if (next && !isMobileDevice()) {
+            await modalAlert(t('alerts.biometric_mobile_only'));
+            return;
+          }
           
           if (next) {
             // Enable biometric lock - first verify biometrics are available
@@ -4333,7 +4804,7 @@ const STORAGE_KEY = 'kontana_state_v1';
             }
             
             // Test biometric authentication before enabling
-            const success = await authenticateWithBiometrics('Test authentication to enable biometric lock');
+            const success = await authenticateWithBiometrics(t('biometric.unlock_reason'));
             if (!success) {
               await modalAlert(t('alerts.biometric_failed_enable'));
               return;
@@ -4469,6 +4940,7 @@ const STORAGE_KEY = 'kontana_state_v1';
           strategy: app.state.settings.default_strategy,
           mode: 'outgoing',
           note: '',
+          category: 'uncategorized',
           allocation: {},
           manualEntry: false,
           startedAllocation: false,
@@ -4577,38 +5049,39 @@ const STORAGE_KEY = 'kontana_state_v1';
 
     app.paymentDraft.walletId = getActiveWallet()?.id || null;
     app.paymentDraft.strategy = app.state.settings.default_strategy;
-    render();
+    if (!PAYMENT_CATEGORIES.includes(app.paymentDraft.category)) {
+      app.paymentDraft.category = 'uncategorized';
+    }
 
     // Biometric authentication functions
     async function checkBiometricAvailability() {
-      if (!navigator.credentials) return false;
-      
+      if (!isMobileDevice()) return false;
+      if (!window.PublicKeyCredential?.isUserVerifyingPlatformAuthenticatorAvailable) return false;
       try {
-        const available = await navigator.credentials?.preventSilentAccess?.();
-        return true;
-      } catch (error) {
-        // Check if WebAuthn is available
-        return !!(window.PublicKeyCredential && window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable);
+        return await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+      } catch {
+        return false;
       }
     }
 
     async function authenticateWithBiometrics(reason = 'Authenticate to access the app') {
+      if (!isMobileDevice()) return false;
       if (!navigator.credentials) return false;
       
       try {
-        // Create a simple biometric authentication request
+        const challenge = new Uint8Array(32);
+        crypto.getRandomValues(challenge);
         const credential = await navigator.credentials.get({
           publicKey: {
-            challenge: new Uint8Array(32),
+            challenge,
             allowCredentials: [],
             userVerification: 'required',
-            timeout: 60000
-          }
+            timeout: 60000,
+          },
         });
         
         return credential !== null;
-      } catch (error) {
-        console.error('Biometric authentication error:', error);
+      } catch {
         return false;
       }
     }
@@ -4620,7 +5093,7 @@ const STORAGE_KEY = 'kontana_state_v1';
     }
 
     async function unlockApp() {
-      if (!app.state.settings.biometric_lock) {
+      if (!app.state.settings.biometric_lock || !isMobileDevice()) {
         app.isLocked = false;
         app.lockedAt = null;
         render();
@@ -4645,7 +5118,7 @@ const STORAGE_KEY = 'kontana_state_v1';
         <div class="modal-backdrop lock-backdrop">
           <section class="lock-screen" role="dialog" aria-modal="true" aria-label="${t('lock.title')}">
             <div class="lock-content">
-              <img src="/kontana-logo.svg" alt="Kontana" class="lock-logo" />
+              <img src="/kontana-logo3.svg" alt="Kontana" class="lock-logo" />
               <h2>${t('lock.title')}</h2>
               <p class="muted">${t('lock.body')}</p>
               <button type="button" class="btn-primary" id="unlock-btn">
@@ -4664,6 +5137,13 @@ const STORAGE_KEY = 'kontana_state_v1';
 
     // Check if app should be locked on startup
     async function checkAppLockStatus() {
+      if (!isMobileDevice()) {
+        if (app.state.settings.biometric_lock) {
+          app.state.settings.biometric_lock = false;
+          saveState();
+        }
+        return;
+      }
       if (app.state.settings.biometric_lock && !app.isLocked) {
         // Auto-lock if app was closed and reopened
         const lastActivity = localStorage.getItem('kontana_last_activity');
@@ -4687,17 +5167,26 @@ const STORAGE_KEY = 'kontana_state_v1';
     document.addEventListener('keydown', updateLastActivity);
     document.addEventListener('touchstart', updateLastActivity);
 
-    // Initialize lock status
-    checkAppLockStatus();
+    async function registerServiceWorker() {
+      if (!('serviceWorker' in navigator)) return;
+      try {
+        await navigator.serviceWorker.register('/sw.js');
+      } catch {
+        // Ignore registration failures and keep app functional.
+      }
+    }
 
-    // Initialize the app when DOM is ready
-    console.log('Kontana app.js loaded, DOM state:', document.readyState);
+    async function initializeApp() {
+      await registerServiceWorker();
+      await checkAppLockStatus();
+      render();
+      if (app.isLocked) renderLockScreen();
+    }
+
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
-        console.log('DOMContentLoaded fired, initializing app');
-        render();
-      });
+        initializeApp();
+      }, { once: true });
     } else {
-      console.log('DOM already loaded, initializing app immediately');
-      render();
+      initializeApp();
     }
