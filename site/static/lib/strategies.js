@@ -301,3 +301,18 @@ export function computeIncomingPlan(denoms, target, strategy, order = ORDER_LARG
   if (!best) return { ok: false, breakdown: [] };
   return { ok: true, breakdown: countsToBreakdown(ordered, best.counts) };
 }
+
+const STRATEGIES_API = {
+  ORDER_LARGEST_FIRST,
+  ORDER_SMALLEST_FIRST,
+  countsToBreakdown,
+  greedyExact,
+  computeOutgoingPlan,
+  computeIncomingPlan,
+};
+
+if (typeof window !== 'undefined') {
+  window.KontanaStrategies = STRATEGIES_API;
+}
+
+export default STRATEGIES_API;

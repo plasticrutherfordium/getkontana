@@ -81,6 +81,14 @@ body {
   text-align: center;
 }
 
+.app-mode-pill {
+  min-height: 30px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
 .settings-icon-btn {
   justify-self: end;
   display: inline-flex;
@@ -181,6 +189,38 @@ body {
   background: var(--kt-danger);
   color: var(--kt-bg);
   border-color: var(--kt-danger);
+}
+
+.sw-update-toast {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1200;
+  border: 1px solid var(--kt-border);
+  background: var(--kt-surface);
+  color: var(--kt-text);
+  padding: 12px;
+  width: min(420px, calc(100vw - 32px));
+  display: grid;
+  gap: 10px;
+}
+
+.sw-update-toast__text {
+  font-weight: 600;
+}
+
+.sw-update-toast__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+  .sw-update-toast {
+    right: 10px;
+    bottom: 10px;
+    width: calc(100vw - 20px);
+  }
 }
 
 .app-tabs {
@@ -1257,6 +1297,40 @@ button:disabled {
   height: 1px;
   width: 100%;
   background: var(--kt-border);
+}
+
+.payment-advanced-divider {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--kt-text-muted);
+}
+
+.budget-envelope-list {
+  display: grid;
+  gap: 10px;
+}
+
+.budget-envelope-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--kt-border);
+  padding: 10px 12px;
+}
+
+.budget-envelope-name {
+  margin: 0;
+  font-weight: 700;
+}
+
+.budget-envelope-target {
+  margin: 0;
+  color: var(--kt-text-muted);
+  text-align: right;
 }
 
 .payment-wallet-selector {

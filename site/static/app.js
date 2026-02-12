@@ -276,315 +276,74 @@ function defaultDenominations(currency) {
 const ORDER_LARGEST_FIRST = 'largest_first';
 const ORDER_SMALLEST_FIRST = 'smallest_first';
 
-function orderDenoms(denoms, order) {
-  const sorted = [...denoms].map((d, idx) => ({ ...d, _idx: idx }));
-  sorted.sort((a, b) => {
-    if (order === ORDER_SMALLEST_FIRST) return a.value_minor - b.value_minor || a._idx - b._idx;
-    return b.value_minor - a.value_minor || a._idx - b._idx;
-  });
-  return sorted;
-}
+let strategiesLoadPromise = null;
 
-function lexPrefers(aCounts, bCounts) {
-  for (let i = 0; i < aCounts.length; i += 1) {
-    if (aCounts[i] !== bCounts[i]) {
-      return aCounts[i] > bCounts[i];
-    }
+async function ensureStrategiesLoaded() {
+  if (window.KontanaStrategies) return window.KontanaStrategies;
+  if (!strategiesLoadPromise) {
+    strategiesLoadPromise = import('/lib/strategies.js')
+      .then((mod) => {
+        const api = {
+          ORDER_LARGEST_FIRST: mod.ORDER_LARGEST_FIRST,
+          ORDER_SMALLEST_FIRST: mod.ORDER_SMALLEST_FIRST,
+          countsToBreakdown: mod.countsToBreakdown,
+          greedyExact: mod.greedyExact,
+          computeOutgoingPlan: mod.computeOutgoingPlan,
+          computeIncomingPlan: mod.computeIncomingPlan,
+        };
+        window.KontanaStrategies = api;
+        return api;
+      })
+      .catch(() => null);
   }
-  return false;
+  return strategiesLoadPromise;
 }
 
-function varianceCost(counts) {
-  const mean = counts.reduce((sum, c) => sum + c, 0) / (counts.length || 1);
-  return counts.reduce((sum, c) => {
-    const diff = c - mean;
-    return sum + diff * diff;
-  }, 0);
-}
-
-function remainingCounts(originalCounts, planCounts, direction) {
-  if (direction === 'incoming') {
-    return originalCounts.map((c, i) => c + planCounts[i]);
-  }
-  return originalCounts.map((c, i) => c - planCounts[i]);
-}
-
-function betterPlanSameSum(a, b, strategy, originalCounts, direction, coinMask = null) {
-  if (coinMask) {
-    if (a.coins !== b.coins) return a.coins < b.coins;
-  }
-  if (a.items !== b.items) return a.items < b.items;
-  if (strategy === 'equalisation') {
-    const costA = varianceCost(remainingCounts(originalCounts, a.counts, direction));
-    const costB = varianceCost(remainingCounts(originalCounts, b.counts, direction));
-    if (costA !== costB) return costA < costB;
-  }
-  return lexPrefers(a.counts, b.counts);
-}
-
-function buildBestPlansBySum(denomsOrdered, strategy, originalCounts, direction, coinMask = null) {
-  const n = denomsOrdered.length;
-  let map = new Map([[0, { counts: Array(n).fill(0), items: 0, coins: 0 }]]);
-
-  denomsOrdered.forEach((denom, idx) => {
-    const next = new Map(map);
-    for (const [sum, plan] of map.entries()) {
-      for (let k = 1; k <= denom.count; k += 1) {
-        const newSum = sum + k * denom.value_minor;
-        const newCounts = plan.counts.slice();
-        newCounts[idx] += k;
-        const coinAdd = coinMask ? (coinMask[idx] ? k : 0) : 0;
-        const newPlan = { counts: newCounts, items: plan.items + k, coins: plan.coins + coinAdd };
-        const existing = next.get(newSum);
-        if (!existing || betterPlanSameSum(newPlan, existing, strategy, originalCounts, direction, coinMask)) {
-          next.set(newSum, newPlan);
-        }
-      }
-    }
-    map = next;
-  });
-  return map;
-}
-
-function selectBestOverpayPlan(map, target, strategy, orderCounts, originalCounts, direction, allowOverpay, coinMask = null, coinFirstOverpay = false) {
-  let best = null;
-  for (const [sum, plan] of map.entries()) {
-    if (sum < target) continue;
-    const overpay = sum - target;
-    if (!allowOverpay && overpay > 0) continue;
-    if (!best) {
-      best = { sum, plan };
-      continue;
-    }
-    const bestOverpay = best.sum - target;
-    if (coinMask && coinFirstOverpay) {
-      if (plan.coins !== best.plan.coins) {
-        if (plan.coins < best.plan.coins) best = { sum, plan };
-        continue;
-      }
-    }
-    if (overpay !== bestOverpay) {
-      if (overpay < bestOverpay) best = { sum, plan };
-      continue;
-    }
-    if (plan.items !== best.plan.items) {
-      if (plan.items < best.plan.items) best = { sum, plan };
-      continue;
-    }
-    if (strategy === 'equalisation') {
-      const costA = varianceCost(remainingCounts(originalCounts, plan.counts, direction));
-      const costB = varianceCost(remainingCounts(originalCounts, best.plan.counts, direction));
-      if (costA !== costB) {
-        if (costA < costB) best = { sum, plan };
-        continue;
-      }
-    }
-    if (lexPrefers(plan.counts, best.plan.counts)) best = { sum, plan };
-  }
-  return best;
+function getStrategiesHelper() {
+  return window.KontanaStrategies || null;
 }
 
 function countsToBreakdown(denomsOrdered, counts) {
-  return counts
-    .map((count, idx) => ({
-      value_minor: denomsOrdered[idx].value_minor,
-      count,
-    }))
-    .filter((row) => row.count > 0)
-    .sort((a, b) => b.value_minor - a.value_minor);
+  const helper = getStrategiesHelper();
+  if (!helper) return [];
+  return helper.countsToBreakdown(denomsOrdered, counts);
 }
 
 function greedyExact(denoms, target, order = ORDER_LARGEST_FIRST) {
-  const ordered = orderDenoms(denoms, order);
-  let remaining = target;
-  const counts = Array(ordered.length).fill(0);
-  ordered.forEach((row, idx) => {
-    const take = Math.min(row.count, Math.floor(remaining / row.value_minor));
-    if (take > 0) {
-      counts[idx] = take;
-      remaining -= take * row.value_minor;
-    }
-  });
-  return {
-    ok: remaining === 0,
-    counts,
-    sum: target - remaining,
-    ordered,
-    remaining,
-  };
-}
-
-function greedyOverpay(denoms, target, order = ORDER_LARGEST_FIRST) {
-  const base = greedyExact(denoms, target, order);
-  if (base.ok) {
-    return { ok: true, counts: base.counts, sum: target, ordered: base.ordered };
-  }
-  const ordered = base.ordered;
-  const remaining = base.remaining;
-  const available = ordered.map((d, idx) => ({ ...d, count: d.count - base.counts[idx] }));
-  const originalCounts = available.map((d) => d.count);
-  const map = buildBestPlansBySum(available, 'lex', originalCounts, 'outgoing');
-  const bestExtra = selectBestOverpayPlan(map, remaining, 'lex', order, originalCounts, 'outgoing', true);
-  if (!bestExtra) return { ok: false };
-  const totalCounts = base.counts.map((c, idx) => c + bestExtra.plan.counts[idx]);
-  const sum = target - remaining + bestExtra.sum;
-  return { ok: true, counts: totalCounts, sum, ordered };
-}
-
-function optimalPlan(denoms, target, strategy, order = ORDER_LARGEST_FIRST, allowOverpay = true, direction = 'outgoing', originalCountsOverride = null, coinMask = null, coinFirstOverpay = false) {
-  const ordered = orderDenoms(denoms, order);
-  const originalCounts = originalCountsOverride || ordered.map((d) => d.count);
-  const map = buildBestPlansBySum(ordered, strategy, originalCounts, direction, coinMask);
-  const best = selectBestOverpayPlan(map, target, strategy, order, originalCounts, direction, allowOverpay, coinMask, coinFirstOverpay);
-  if (!best) return null;
-  return {
-    sum: best.sum,
-    counts: best.plan.counts,
-    ordered,
-  };
-}
-
-function computeOutgoingPlanBase(denoms, target, strategy, order = ORDER_LARGEST_FIRST, allowOverpay = true, coinMask = null, coinFirstOverpay = false) {
-  const effectiveOrder = order;
-  const total = denoms.reduce((sum, d) => sum + d.value_minor * d.count, 0);
-  if (total < target) {
-    return { status: 'insufficient', breakdown: null, paidMinor: null, overpay: null };
-  }
-
-  if (strategy === 'greedy') {
-    const exact = greedyExact(denoms, target, effectiveOrder);
-    if (exact.ok) {
-      return {
-        status: 'exact',
-        breakdown: countsToBreakdown(exact.ordered, exact.counts),
-        paidMinor: target,
-        overpay: 0,
-      };
-    }
-    if (!allowOverpay) return { status: 'insufficient', breakdown: null, paidMinor: null, overpay: null };
-    const over = greedyOverpay(denoms, target, effectiveOrder);
-    if (!over.ok) return { status: 'insufficient', breakdown: null, paidMinor: null, overpay: null };
+  const helper = getStrategiesHelper();
+  if (!helper) {
     return {
-      status: 'sufficient_not_exact',
-      breakdown: countsToBreakdown(over.ordered, over.counts),
-      paidMinor: over.sum,
-      overpay: Math.max(0, over.sum - target),
+      ok: false,
+      counts: [],
+      sum: 0,
+      ordered: [],
+      remaining: target,
     };
   }
-
-  if (strategy === 'lex' || strategy === 'equalisation') {
-    const plan = optimalPlan(denoms, target, strategy, effectiveOrder, allowOverpay, 'outgoing', null, coinMask, coinFirstOverpay);
-    if (!plan) return { status: 'insufficient', breakdown: null, paidMinor: null, overpay: null };
-    const overpay = Math.max(0, plan.sum - target);
-    return {
-      status: overpay === 0 ? 'exact' : 'sufficient_not_exact',
-      breakdown: countsToBreakdown(plan.ordered, plan.counts),
-      paidMinor: plan.sum,
-      overpay,
-    };
-  }
-
-  return { status: 'insufficient', breakdown: null, paidMinor: null, overpay: null };
+  return helper.greedyExact(denoms, target, order);
 }
 
 function computeOutgoingPlan(denoms, target, strategy, order = ORDER_LARGEST_FIRST, allowOverpay = true, coinsRule = 'off') {
-  if (coinsRule === 'off') return computeOutgoingPlanBase(denoms, target, strategy, order, allowOverpay);
-
-  const notesOnly = denoms.filter((d) => d.type !== 'coin');
-
-  if (coinsRule === 'avoid') {
-    return computeOutgoingPlanBase(notesOnly, target, strategy, order, allowOverpay);
-  }
-
-  const exactNotes = computeOutgoingPlanBase(notesOnly, target, strategy, order, false);
-  if (exactNotes.status === 'exact') return exactNotes;
-
-  const coinMask = denoms.map((d) => d.type === 'coin');
-  const exactAny = computeOutgoingPlanBase(denoms, target, strategy, order, false, coinMask);
-  if (exactAny.status === 'exact') return exactAny;
-
-  if (!allowOverpay) return { status: 'insufficient', breakdown: null, paidMinor: null, overpay: null };
-  return computeOutgoingPlanBase(denoms, target, 'lex', order, true, coinMask, true);
+  const helper = getStrategiesHelper();
+  if (!helper) return { status: 'insufficient', breakdown: null, paidMinor: null, overpay: null };
+  return helper.computeOutgoingPlan(denoms, target, strategy, order, allowOverpay, coinsRule);
 }
 
 function computeIncomingPlan(denoms, target, strategy, order = ORDER_LARGEST_FIRST, coinsRule = 'off') {
-  if (target <= 0) return { ok: false, breakdown: [] };
-  const ordered = orderDenoms(denoms, order);
-  const n = ordered.length;
-  const originalCounts = ordered.map((d) => d.count);
-
-  if (coinsRule !== 'off') {
-    const notesOnly = ordered.filter((d) => d.type !== 'coin');
-    const notesPlan = computeIncomingPlan(notesOnly, target, strategy, order, 'off');
-    if (notesPlan.ok || coinsRule === 'avoid') return notesPlan;
-  }
-
-  if (strategy === 'greedy') {
-    const unlimited = ordered.map((d) => ({
-      ...d,
-      count: Math.floor(target / d.value_minor),
-    }));
-    const exact = greedyExact(unlimited, target, order);
-    return exact.ok
-      ? { ok: true, breakdown: countsToBreakdown(exact.ordered, exact.counts) }
-      : { ok: false, breakdown: [] };
-  }
-
-  const dp = Array(target + 1).fill(null);
-  dp[0] = { items: 0, counts: Array(n).fill(0) };
-  const coinMask = coinsRule === 'prefer' ? ordered.map((d) => d.type === 'coin') : null;
-
-  for (let sum = 0; sum <= target; sum += 1) {
-    const plan = dp[sum];
-    if (!plan) continue;
-    for (let i = 0; i < n; i += 1) {
-      const value = ordered[i].value_minor;
-      const nextSum = sum + value;
-      if (nextSum > target) continue;
-      const counts = plan.counts.slice();
-      counts[i] += 1;
-      const coinAdd = coinMask ? (coinMask[i] ? 1 : 0) : 0;
-      const candidate = { items: plan.items + 1, counts, coins: (plan.coins || 0) + coinAdd };
-      const existing = dp[nextSum];
-      if (!existing) {
-        dp[nextSum] = candidate;
-        continue;
-      }
-      if (coinMask && candidate.coins !== existing.coins) {
-        if (candidate.coins < existing.coins) dp[nextSum] = candidate;
-        continue;
-      }
-      if (candidate.items !== existing.items) {
-        if (candidate.items < existing.items) dp[nextSum] = candidate;
-        continue;
-      }
-      if (strategy === 'equalisation') {
-        const costA = varianceCost(remainingCounts(originalCounts, candidate.counts, 'incoming'));
-        const costB = varianceCost(remainingCounts(originalCounts, existing.counts, 'incoming'));
-        if (costA !== costB) {
-          if (costA < costB) dp[nextSum] = candidate;
-          continue;
-        }
-      }
-      if (lexPrefers(candidate.counts, existing.counts)) {
-        dp[nextSum] = candidate;
-      }
-    }
-  }
-
-  const best = dp[target];
-  if (!best) return { ok: false, breakdown: [] };
-  return { ok: true, breakdown: countsToBreakdown(ordered, best.counts) };
+  const helper = getStrategiesHelper();
+  if (!helper) return { ok: false, breakdown: [] };
+  return helper.computeIncomingPlan(denoms, target, strategy, order, coinsRule);
 }
 
-    function computeChangeBreakdown(denoms, changeMinor) {
-      if (!changeMinor || changeMinor <= 0) return [];
-      const unlimited = denoms.map((d) => ({ ...d, count: Math.floor(changeMinor / d.value_minor) + 1 }));
-      const exact = greedyExact(unlimited, changeMinor, ORDER_LARGEST_FIRST);
-      return exact.ok ? countsToBreakdown(exact.ordered, exact.counts) : [];
-    }
+function computeChangeBreakdown(denoms, changeMinor) {
+  if (!changeMinor || changeMinor <= 0) return [];
+  const unlimited = denoms.map((d) => ({ ...d, count: Math.floor(changeMinor / d.value_minor) + 1 }));
+  const exact = greedyExact(unlimited, changeMinor, ORDER_LARGEST_FIRST);
+  return exact.ok ? countsToBreakdown(exact.ordered, exact.counts) : [];
+}
 
 const STORAGE_KEY = 'kontana_state_v1';
+const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
     const MAX_WALLETS = 4;
 
     const SUPPORTED_CURRENCIES = [
@@ -722,6 +481,8 @@ const STORAGE_KEY = 'kontana_state_v1';
       'income',
       'other',
     ];
+    const DRIFT_CATEGORIES = ['fees', 'food', 'misc', 'transfer', 'loss', 'unknown'];
+    const TX_CATEGORIES = [...PAYMENT_CATEGORIES, ...DRIFT_CATEGORIES];
     const I18N = {
       en: {
         'tab.cash': 'Cash',
@@ -766,6 +527,12 @@ const STORAGE_KEY = 'kontana_state_v1';
         'cash.denomination_type': 'Denomination type',
         'cash.decrease_count': 'Decrease count',
         'cash.increase_count': 'Increase count',
+        'cash.setup_envelopes_cta': 'Set up envelopes (2 minutes)',
+        'cash.denoms_not_counted': 'Total is accurate. Denoms not counted.',
+        'cash.denoms_stale_warning': 'Your total is accurate, but denomination counts may be out of date.',
+        'sw.update_available': 'Update available.',
+        'sw.update_reload': 'Reload',
+        'sw.update_dismiss': 'Later',
 
         'wallet.actions_title': 'Wallet actions',
         'wallet.manage': 'Manage {name}.',
@@ -810,6 +577,40 @@ const STORAGE_KEY = 'kontana_state_v1';
         'pay.no_auto_suggestion': 'No automatic suggestion',
         'pay.confirm_suggested': 'Confirm suggested',
         'pay.enter_manually': 'Enter manually',
+        'pay.advanced_divider': 'Advanced',
+        'pay.primary_actions': 'Budget actions',
+        'pay.quick_spend.cta': 'Quick spend',
+        'pay.quick_spend.title': 'Quick spend',
+        'pay.quick_spend.wallet': 'Wallet',
+        'pay.quick_spend.amount': 'Amount',
+        'pay.quick_spend.envelope': 'Envelope (optional)',
+        'pay.quick_spend.note': 'Note (optional)',
+        'pay.quick_spend.no_envelope': 'No envelope',
+        'pay.quick_spend.invalid_amount': 'Enter a valid spend amount above zero.',
+        'pay.quick_spend.saved': 'Quick spend saved.',
+        'pay.quick_spend.hint_below': 'Below your big-spend threshold ({amount}).',
+        'pay.quick_spend.hint_good': 'Good to log this (threshold {amount}).',
+        'pay.transfer.cta': 'Transfer',
+        'pay.transfer.title': 'Transfer cash',
+        'pay.transfer.to_wallet': 'To wallet',
+        'pay.transfer.amount': 'Amount',
+        'pay.transfer.note': 'Note (optional)',
+        'pay.transfer.no_target_wallet': 'Create another wallet to transfer cash.',
+        'pay.transfer.invalid_amount': 'Enter a valid transfer amount above zero.',
+        'pay.transfer.same_wallet': 'Choose a different destination wallet.',
+        'pay.transfer.currency_mismatch': 'Transfers require both wallets to use the same currency.',
+        'pay.transfer.insufficient_confirm': 'Source wallet is short by {amount}. Continue anyway?',
+        'pay.transfer.saved': 'Transfer saved.',
+        'pay.adjustment.cta': 'Loss / Adjustment',
+        'pay.adjustment.title': 'Loss / Adjustment',
+        'pay.adjustment.amount': 'Amount',
+        'pay.adjustment.direction': 'Direction',
+        'pay.adjustment.direction_decrease': 'I have less cash',
+        'pay.adjustment.direction_increase': 'I have more cash',
+        'pay.adjustment.category': 'Category',
+        'pay.adjustment.note': 'Note (optional)',
+        'pay.adjustment.invalid_amount': 'Enter a valid adjustment amount above zero.',
+        'pay.adjustment.saved': 'Adjustment saved.',
 
         'pay.mode_outgoing': 'Outgoing',
         'pay.mode_incoming': 'Incoming',
@@ -850,17 +651,34 @@ const STORAGE_KEY = 'kontana_state_v1';
         'tx.denoms_edited': 'Denominations edited',
         'tx.cash_in': 'Cash in',
         'tx.payment': 'Payment',
+        'tx.spend': 'Spend',
         'tx.adjustment': 'Adjustment',
+        'tx.adjustment_with_category': 'Adjustment ({category})',
+        'tx.adjustment_checkin': 'Check-in adjustment',
+        'tx.transfer_out': 'Transfer out',
+        'tx.transfer_in': 'Transfer in',
         'tx.detail.timestamp': 'Timestamp',
         'tx.detail.type': 'Type',
         'tx.detail.prior_denoms': 'Prior denominations',
         'tx.detail.new_denoms': 'New denominations',
         'tx.detail.direction': 'Direction',
+        'tx.detail.source': 'Source',
+        'tx.detail.checkin_id': 'Check-in ID',
+        'tx.detail.transfer_id': 'Transfer ID',
+        'tx.detail.from_wallet': 'From wallet',
+        'tx.detail.to_wallet': 'To wallet',
         'tx.detail.strategy': 'Strategy',
         'tx.detail.breakdown': 'Breakdown',
         'tx.detail.change': 'Change',
         'tx.detail.note': 'Note',
         'tx.detail.category': 'Category',
+        'tx.source.checkin': 'Budget check-in',
+        'tx.type.incoming': 'Incoming',
+        'tx.type.outgoing': 'Outgoing',
+        'tx.type.transfer_out': 'Transfer out',
+        'tx.type.transfer_in': 'Transfer in',
+        'tx.type.adjustment': 'Adjustment',
+        'tx.type.spend': 'Spend',
 
         'settings.title': 'Settings',
         'settings.section.behaviour': 'Behaviour',
@@ -868,6 +686,10 @@ const STORAGE_KEY = 'kontana_state_v1';
         'settings.section.security': 'Security',
         'settings.section.data': 'Data',
         'settings.behaviour.helper': 'These settings affect how payments and suggestions are calculated.',
+        'settings.app_mode.title': 'App mode',
+        'settings.app_mode.body': 'You can switch any time. Your data stays on this device.',
+        'settings.app_mode.precise': 'Precise (log everything)',
+        'settings.app_mode.budget': 'Budget (check-ins + envelopes)',
         'settings.suggestions.title': 'Suggestions',
         'settings.suggestions.body': 'Suggestions show recommended denominations; you still confirm or edit manually.',
         'settings.strategies.title': 'Strategies',
@@ -904,6 +726,8 @@ const STORAGE_KEY = 'kontana_state_v1';
         'settings.export.title': 'Export data',
         'settings.export.json': 'Export JSON',
         'settings.export.pdf': 'Export PDF',
+        'settings.import.title': 'Import data',
+        'settings.import.json': 'Import JSON',
         'settings.delete_all.title': 'Delete all data',
         'settings.delete_all.body': 'This removes wallets, denominations, transactions, and settings.',
         'settings.delete_all.action': 'Delete all data',
@@ -920,6 +744,82 @@ const STORAGE_KEY = 'kontana_state_v1';
         'settings.build.version': 'Version',
         'settings.build.timestamp': 'Build time',
         'settings.build.unknown': 'Unavailable',
+        'header.mode.precise': 'Precise mode',
+        'header.mode.budget': 'Budget mode',
+        'header.mode.open_settings': 'Open App mode settings',
+        'budget.envelopes.title': 'Budget envelopes',
+        'budget.envelopes.target': 'Target',
+        'budget.wizard.title': 'Budget setup',
+        'budget.wizard.step_wallet': 'Step 1 of 4 · Choose wallet',
+        'budget.wizard.step_cadence': 'Step 2 of 4 · Choose cadence',
+        'budget.wizard.step_envelopes': 'Step 3 of 4 · Set up envelopes',
+        'budget.wizard.step_tracking': 'Step 4 of 4 · Tracking level',
+        'budget.wizard.wallet_label': 'Wallet',
+        'budget.wizard.cadence_weekly': 'Weekly',
+        'budget.wizard.cadence_fortnightly': 'Fortnightly',
+        'budget.wizard.cadence_monthly': 'Monthly',
+        'budget.wizard.template_hint': 'Quick add templates',
+        'budget.wizard.add_custom': 'Add custom',
+        'budget.wizard.edit_envelope': 'Edit envelope',
+        'budget.wizard.remove_envelope': 'Remove envelope',
+        'budget.wizard.continue': 'Continue',
+        'budget.wizard.finish': 'Finish setup',
+        'budget.wizard.envelope_name': 'Envelope name',
+        'budget.wizard.envelope_target': 'Target amount',
+        'budget.wizard.pick_envelope': 'Choose envelope',
+        'budget.wizard.tracking_none': 'none',
+        'budget.wizard.tracking_big_only': 'big_only',
+        'budget.wizard.tracking_all': 'all',
+        'budget.wizard.big_threshold': 'Big spend threshold',
+        'budget.wizard.require_envelope': 'Add at least one envelope before continuing.',
+        'budget.wizard.invalid_name': 'Envelope name is required.',
+        'budget.wizard.invalid_target': 'Enter a valid amount (0 or more).',
+        'budget.wizard.money_helper_unavailable': 'Money helper unavailable. Reload and try again.',
+        'budget.wizard.completed': 'Budget setup saved for {wallet}.',
+        'budget.checkin.cta': 'Check in now',
+        'budget.checkin.due': 'Due',
+        'budget.checkin.title': 'Weekly check-in',
+        'budget.checkin.prompt': 'You should have about {amount} in cash. Do you?',
+        'budget.checkin.confirm': 'Yes',
+        'budget.checkin.more': 'I have more',
+        'budget.checkin.less': 'I have less',
+        'budget.checkin.skip': "I don't want to count",
+        'budget.checkin.actual': 'Actual total ({currency})',
+        'budget.checkin.actual_invalid': 'Enter a valid total amount (0 or more).',
+        'budget.checkin.more_requires_higher': 'For "I have more", actual total must be higher than expected.',
+        'budget.checkin.less_requires_lower': 'For "I have less", actual total must be lower than expected.',
+        'budget.checkin.category_title': 'What best explains the difference?',
+        'budget.checkin.category_label': 'Category',
+        'budget.checkin.note_label': 'Note (optional)',
+        'budget.checkin.saved': 'Check-in saved.',
+        'budget.checkin.recent_title': 'Recent check-ins',
+        'budget.checkin.none': 'No check-ins yet for this wallet.',
+        'budget.checkin.method.confirm': 'Confirmed',
+        'budget.checkin.method.skip': 'Skipped',
+        'budget.checkin.method.count_total': 'Counted total',
+        'budget.checkin.method.quick_reconcile': 'Quick reconcile',
+        'budget.quick_reconcile.cta': 'Quick reconcile',
+        'budget.quick_reconcile.title': 'Quick reconcile',
+        'budget.quick_reconcile.prompt': 'Set your wallet total to what you have right now.',
+        'budget.quick_reconcile.big_change': 'This is a big change ({amount}). Are you sure?',
+        'budget.quick_reconcile.saved': 'Quick reconcile saved.',
+        'budget.drift_alert.banner': 'Drift looks high this period.',
+        'budget.drift_alert.details': 'Drift {drift} vs threshold {threshold}.',
+        'budget.drift_alert.checkin': 'Check in now',
+        'budget.drift_alert.tracking': 'Turn on big-spend tracking',
+        'budget.drift_alert.adjust_targets': 'Adjust envelope targets',
+        'budget.drift_alert.snooze': 'Snooze for a week',
+        'budget.tx.this_period': 'This period',
+        'budget.tx.period_label': '{from} - {to} ({period})',
+        'budget.tx.planned_checkins': 'Planned check-ins',
+        'budget.tx.completed_checkins': 'Completed check-ins',
+        'budget.tx.net_drift': 'Net drift',
+        'budget.tx.drift_by_category': 'Drift by category',
+        'budget.tx.drift_none': 'No drift yet in this period.',
+        'budget.tx.top_spends': 'Top logged spends',
+        'budget.tx.top_spends_none': 'No quick spends in this period yet.',
+        'budget.tx.view_full_ledger': 'View full ledger',
+        'budget.tx.view_summary': 'Back to This period',
 
         'currency.most_used': 'Most used',
         'currency.other': 'Other currencies',
@@ -954,6 +854,25 @@ const STORAGE_KEY = 'kontana_state_v1';
         'alerts.launch_saved_local': 'Saved locally. Future sync is not configured yet.',
         'alerts.launch_saved_and_sent': 'Saved locally and sent to updates endpoint.',
         'alerts.launch_saved_sync_failed': 'Saved locally. Sync failed and can be retried later.',
+        'alerts.import_file_only_json': 'Please choose a local .json file.',
+        'alerts.import_read_failed': 'Could not read the selected file.',
+        'alerts.import_invalid': 'Import failed validation: {details}',
+        'alerts.import_migration_failed': 'Could not migrate imported v1 data to v2.',
+        'alerts.import_success': 'Imported successfully.',
+        'import.preview.title': 'Import preview',
+        'import.preview.version': 'Detected format: {version}',
+        'import.preview.wallets': 'Wallets: {count}',
+        'import.preview.transactions': 'Transactions: {count}',
+        'import.preview.checkins': 'Check-ins: {count}',
+        'import.preview.budgets': 'Budgets/envelopes present: {value}',
+        'import.preview.wallet_collisions': 'Wallet ID collisions on merge: {count}',
+        'import.preview.wallet_collisions_detail': 'Merge keeps local wallets and renames imported collisions with the suffix "-imported".',
+        'import.preview.yes': 'Yes',
+        'import.preview.no': 'No',
+        'import.action.replace': 'Replace all data',
+        'import.action.merge': 'Merge',
+        'import.replace.confirm_title': 'Replace all local data?',
+        'import.replace.confirm_body': 'This will overwrite all current local wallets, transactions, and check-ins on this device.',
         'confirm.delete_all.prompt': 'Type DELETE ALL DATA to confirm.',
         'confirm.delete_all.title': 'Delete All Data',
         'confirm.delete_all.mismatch': 'Confirmation text did not match.',
@@ -969,6 +888,12 @@ const STORAGE_KEY = 'kontana_state_v1';
         'category.shopping': 'Shopping',
         'category.income': 'Income',
         'category.other': 'Other',
+        'category.fees': 'Fees',
+        'category.food': 'Food',
+        'category.misc': 'Misc',
+        'category.transfer': 'Transfer',
+        'category.loss': 'Loss',
+        'category.unknown': 'Unknown',
       },
       es: {
         'tab.cash': 'Efectivo',
@@ -1013,6 +938,12 @@ const STORAGE_KEY = 'kontana_state_v1';
         'cash.denomination_type': 'Tipo de denominación',
         'cash.decrease_count': 'Disminuir cantidad',
         'cash.increase_count': 'Aumentar cantidad',
+        'cash.setup_envelopes_cta': 'Configurar sobres (2 minutos)',
+        'cash.denoms_not_counted': 'Total correcto. Denominaciones no contadas.',
+        'cash.denoms_stale_warning': 'Tu total es correcto, pero los recuentos por denominación pueden estar desactualizados.',
+        'sw.update_available': 'Actualización disponible.',
+        'sw.update_reload': 'Recargar',
+        'sw.update_dismiss': 'Después',
 
         'wallet.actions_title': 'Acciones del monedero',
         'wallet.manage': 'Gestionar {name}.',
@@ -1079,6 +1010,40 @@ const STORAGE_KEY = 'kontana_state_v1';
         'pay.no_auto_suggestion': 'Sin sugerencia automática',
         'pay.confirm_suggested': 'Confirmar sugerencia',
         'pay.enter_manually': 'Introducir manualmente',
+        'pay.advanced_divider': 'Avanzado',
+        'pay.primary_actions': 'Acciones de presupuesto',
+        'pay.quick_spend.cta': 'Gasto rápido',
+        'pay.quick_spend.title': 'Gasto rápido',
+        'pay.quick_spend.wallet': 'Monedero',
+        'pay.quick_spend.amount': 'Importe',
+        'pay.quick_spend.envelope': 'Sobre (opcional)',
+        'pay.quick_spend.note': 'Nota (opcional)',
+        'pay.quick_spend.no_envelope': 'Sin sobre',
+        'pay.quick_spend.invalid_amount': 'Introduce un importe de gasto válido y mayor que cero.',
+        'pay.quick_spend.saved': 'Gasto rápido guardado.',
+        'pay.quick_spend.hint_below': 'Por debajo de tu umbral de gasto grande ({amount}).',
+        'pay.quick_spend.hint_good': 'Buena idea registrarlo (umbral {amount}).',
+        'pay.transfer.cta': 'Transferir',
+        'pay.transfer.title': 'Transferir efectivo',
+        'pay.transfer.to_wallet': 'Monedero destino',
+        'pay.transfer.amount': 'Importe',
+        'pay.transfer.note': 'Nota (opcional)',
+        'pay.transfer.no_target_wallet': 'Crea otro monedero para transferir efectivo.',
+        'pay.transfer.invalid_amount': 'Introduce un importe de transferencia válido y mayor que cero.',
+        'pay.transfer.same_wallet': 'Elige un monedero destino distinto.',
+        'pay.transfer.currency_mismatch': 'Las transferencias requieren que ambos monederos usen la misma divisa.',
+        'pay.transfer.insufficient_confirm': 'Al monedero origen le faltan {amount}. ¿Continuar de todos modos?',
+        'pay.transfer.saved': 'Transferencia guardada.',
+        'pay.adjustment.cta': 'Pérdida / Ajuste',
+        'pay.adjustment.title': 'Pérdida / Ajuste',
+        'pay.adjustment.amount': 'Importe',
+        'pay.adjustment.direction': 'Dirección',
+        'pay.adjustment.direction_decrease': 'Tengo menos efectivo',
+        'pay.adjustment.direction_increase': 'Tengo más efectivo',
+        'pay.adjustment.category': 'Categoría',
+        'pay.adjustment.note': 'Nota (opcional)',
+        'pay.adjustment.invalid_amount': 'Introduce un importe de ajuste válido y mayor que cero.',
+        'pay.adjustment.saved': 'Ajuste guardado.',
 
         'tx.none': 'Aún no hay movimientos.',
         'tx.table.description': 'Descripción',
@@ -1092,17 +1057,34 @@ const STORAGE_KEY = 'kontana_state_v1';
         'tx.denoms_edited': 'Denominaciones editadas',
         'tx.cash_in': 'Ingreso',
         'tx.payment': 'Pago',
+        'tx.spend': 'Gasto',
         'tx.adjustment': 'Ajuste',
+        'tx.adjustment_with_category': 'Ajuste ({category})',
+        'tx.adjustment_checkin': 'Ajuste de check-in',
+        'tx.transfer_out': 'Transferencia salida',
+        'tx.transfer_in': 'Transferencia entrada',
         'tx.detail.timestamp': 'Fecha y hora',
         'tx.detail.type': 'Tipo',
         'tx.detail.prior_denoms': 'Denominaciones anteriores',
         'tx.detail.new_denoms': 'Denominaciones nuevas',
         'tx.detail.direction': 'Dirección',
+        'tx.detail.source': 'Origen',
+        'tx.detail.checkin_id': 'ID de check-in',
+        'tx.detail.transfer_id': 'ID de transferencia',
+        'tx.detail.from_wallet': 'Monedero origen',
+        'tx.detail.to_wallet': 'Monedero destino',
         'tx.detail.strategy': 'Estrategia',
         'tx.detail.breakdown': 'Desglose',
         'tx.detail.change': 'Cambio',
         'tx.detail.note': 'Nota',
         'tx.detail.category': 'Categoría',
+        'tx.source.checkin': 'Check-in de presupuesto',
+        'tx.type.incoming': 'Entrada',
+        'tx.type.outgoing': 'Salida',
+        'tx.type.transfer_out': 'Transferencia salida',
+        'tx.type.transfer_in': 'Transferencia entrada',
+        'tx.type.adjustment': 'Ajuste',
+        'tx.type.spend': 'Gasto',
 
         'settings.title': 'Ajustes',
         'settings.section.behaviour': 'Comportamiento',
@@ -1110,6 +1092,10 @@ const STORAGE_KEY = 'kontana_state_v1';
         'settings.section.security': 'Seguridad',
         'settings.section.data': 'Datos',
         'settings.behaviour.helper': 'Estos ajustes afectan cómo se calculan los pagos y las sugerencias.',
+        'settings.app_mode.title': 'Modo de la app',
+        'settings.app_mode.body': 'Puedes cambiarlo en cualquier momento. Tus datos se quedan en este dispositivo.',
+        'settings.app_mode.precise': 'Preciso (registrar todo)',
+        'settings.app_mode.budget': 'Presupuesto (check-ins + sobres)',
         'settings.suggestions.title': 'Sugerencias',
         'settings.suggestions.body': 'Las sugerencias muestran denominaciones recomendadas; aún confirmas o editas manualmente.',
         'settings.strategies.title': 'Estrategias',
@@ -1146,6 +1132,8 @@ const STORAGE_KEY = 'kontana_state_v1';
         'settings.export.title': 'Exportar datos',
         'settings.export.json': 'Exportar JSON',
         'settings.export.pdf': 'Exportar PDF',
+        'settings.import.title': 'Importar datos',
+        'settings.import.json': 'Importar JSON',
         'settings.delete_all.title': 'Eliminar todos los datos',
         'settings.delete_all.body': 'Esto elimina monederos, denominaciones, movimientos y ajustes.',
         'settings.delete_all.action': 'Eliminar todos los datos',
@@ -1162,6 +1150,82 @@ const STORAGE_KEY = 'kontana_state_v1';
         'settings.build.version': 'Version',
         'settings.build.timestamp': 'Fecha de compilacion',
         'settings.build.unknown': 'No disponible',
+        'header.mode.precise': 'Modo preciso',
+        'header.mode.budget': 'Modo presupuesto',
+        'header.mode.open_settings': 'Abrir ajustes de modo',
+        'budget.envelopes.title': 'Sobres de presupuesto',
+        'budget.envelopes.target': 'Objetivo',
+        'budget.wizard.title': 'Configuración de presupuesto',
+        'budget.wizard.step_wallet': 'Paso 1 de 4 · Elegir monedero',
+        'budget.wizard.step_cadence': 'Paso 2 de 4 · Elegir cadencia',
+        'budget.wizard.step_envelopes': 'Paso 3 de 4 · Configurar sobres',
+        'budget.wizard.step_tracking': 'Paso 4 de 4 · Nivel de seguimiento',
+        'budget.wizard.wallet_label': 'Monedero',
+        'budget.wizard.cadence_weekly': 'Semanal',
+        'budget.wizard.cadence_fortnightly': 'Quincenal',
+        'budget.wizard.cadence_monthly': 'Mensual',
+        'budget.wizard.template_hint': 'Plantillas rápidas',
+        'budget.wizard.add_custom': 'Añadir personalizado',
+        'budget.wizard.edit_envelope': 'Editar sobre',
+        'budget.wizard.remove_envelope': 'Eliminar sobre',
+        'budget.wizard.continue': 'Continuar',
+        'budget.wizard.finish': 'Finalizar configuración',
+        'budget.wizard.envelope_name': 'Nombre del sobre',
+        'budget.wizard.envelope_target': 'Importe objetivo',
+        'budget.wizard.pick_envelope': 'Elegir sobre',
+        'budget.wizard.tracking_none': 'none',
+        'budget.wizard.tracking_big_only': 'big_only',
+        'budget.wizard.tracking_all': 'all',
+        'budget.wizard.big_threshold': 'Umbral de gasto grande',
+        'budget.wizard.require_envelope': 'Añade al menos un sobre antes de continuar.',
+        'budget.wizard.invalid_name': 'El nombre del sobre es obligatorio.',
+        'budget.wizard.invalid_target': 'Introduce un importe válido (0 o superior).',
+        'budget.wizard.money_helper_unavailable': 'El helper de importes no está disponible. Recarga e inténtalo de nuevo.',
+        'budget.wizard.completed': 'Configuración guardada para {wallet}.',
+        'budget.checkin.cta': 'Hacer check-in ahora',
+        'budget.checkin.due': 'Pendiente',
+        'budget.checkin.title': 'Check-in semanal',
+        'budget.checkin.prompt': 'Deberías tener cerca de {amount} en efectivo. ¿Lo tienes?',
+        'budget.checkin.confirm': 'Sí',
+        'budget.checkin.more': 'Tengo más',
+        'budget.checkin.less': 'Tengo menos',
+        'budget.checkin.skip': 'No quiero contar',
+        'budget.checkin.actual': 'Total real ({currency})',
+        'budget.checkin.actual_invalid': 'Introduce un total válido (0 o superior).',
+        'budget.checkin.more_requires_higher': 'Para "Tengo más", el total real debe ser mayor que el esperado.',
+        'budget.checkin.less_requires_lower': 'Para "Tengo menos", el total real debe ser menor que el esperado.',
+        'budget.checkin.category_title': '¿Qué explica mejor la diferencia?',
+        'budget.checkin.category_label': 'Categoría',
+        'budget.checkin.note_label': 'Nota (opcional)',
+        'budget.checkin.saved': 'Check-in guardado.',
+        'budget.checkin.recent_title': 'Check-ins recientes',
+        'budget.checkin.none': 'Aún no hay check-ins para este monedero.',
+        'budget.checkin.method.confirm': 'Confirmado',
+        'budget.checkin.method.skip': 'Omitido',
+        'budget.checkin.method.count_total': 'Conteo total',
+        'budget.checkin.method.quick_reconcile': 'Reconciliación rápida',
+        'budget.quick_reconcile.cta': 'Reconciliación rápida',
+        'budget.quick_reconcile.title': 'Reconciliación rápida',
+        'budget.quick_reconcile.prompt': 'Ajusta el total del monedero a lo que tienes ahora mismo.',
+        'budget.quick_reconcile.big_change': 'Este es un cambio grande ({amount}). ¿Seguro?',
+        'budget.quick_reconcile.saved': 'Reconciliación rápida guardada.',
+        'budget.drift_alert.banner': 'La deriva parece alta en este periodo.',
+        'budget.drift_alert.details': 'Deriva {drift} frente al umbral {threshold}.',
+        'budget.drift_alert.checkin': 'Hacer check-in ahora',
+        'budget.drift_alert.tracking': 'Activar seguimiento de gasto grande',
+        'budget.drift_alert.adjust_targets': 'Ajustar objetivos de sobres',
+        'budget.drift_alert.snooze': 'Posponer una semana',
+        'budget.tx.this_period': 'Este periodo',
+        'budget.tx.period_label': '{from} - {to} ({period})',
+        'budget.tx.planned_checkins': 'Check-ins planificados',
+        'budget.tx.completed_checkins': 'Check-ins completados',
+        'budget.tx.net_drift': 'Deriva neta',
+        'budget.tx.drift_by_category': 'Deriva por categoría',
+        'budget.tx.drift_none': 'Aún no hay deriva en este periodo.',
+        'budget.tx.top_spends': 'Gastos registrados principales',
+        'budget.tx.top_spends_none': 'Aún no hay gastos rápidos en este periodo.',
+        'budget.tx.view_full_ledger': 'Ver libro completo',
+        'budget.tx.view_summary': 'Volver a Este periodo',
 
         'currency.most_used': 'Más usadas',
         'currency.other': 'Otras divisas',
@@ -1196,6 +1260,25 @@ const STORAGE_KEY = 'kontana_state_v1';
         'alerts.launch_saved_local': 'Guardado localmente. La sincronización futura aún no está configurada.',
         'alerts.launch_saved_and_sent': 'Guardado localmente y enviado al endpoint de actualizaciones.',
         'alerts.launch_saved_sync_failed': 'Guardado localmente. La sincronización falló y se puede reintentar más tarde.',
+        'alerts.import_file_only_json': 'Selecciona un archivo local .json.',
+        'alerts.import_read_failed': 'No se pudo leer el archivo seleccionado.',
+        'alerts.import_invalid': 'La importación falló la validación: {details}',
+        'alerts.import_migration_failed': 'No se pudo migrar el JSON v1 importado a v2.',
+        'alerts.import_success': 'Importación completada.',
+        'import.preview.title': 'Vista previa de importación',
+        'import.preview.version': 'Formato detectado: {version}',
+        'import.preview.wallets': 'Monederos: {count}',
+        'import.preview.transactions': 'Movimientos: {count}',
+        'import.preview.checkins': 'Check-ins: {count}',
+        'import.preview.budgets': 'Hay presupuestos/sobres: {value}',
+        'import.preview.wallet_collisions': 'Colisiones de ID de monedero al combinar: {count}',
+        'import.preview.wallet_collisions_detail': 'Combinar mantiene los monederos locales y renombra los importados en conflicto con el sufijo "-imported".',
+        'import.preview.yes': 'Sí',
+        'import.preview.no': 'No',
+        'import.action.replace': 'Reemplazar todos los datos',
+        'import.action.merge': 'Combinar',
+        'import.replace.confirm_title': '¿Reemplazar todos los datos locales?',
+        'import.replace.confirm_body': 'Esto sobrescribirá monederos, movimientos y check-ins locales en este dispositivo.',
         'confirm.delete_all.prompt': 'Escribe DELETE ALL DATA para confirmar.',
         'confirm.delete_all.title': 'Eliminar todos los datos',
         'confirm.delete_all.mismatch': 'El texto de confirmación no coincide.',
@@ -1212,6 +1295,12 @@ const STORAGE_KEY = 'kontana_state_v1';
         'category.shopping': 'Compras',
         'category.income': 'Ingreso',
         'category.other': 'Otro',
+        'category.fees': 'Comisiones',
+        'category.food': 'Comida',
+        'category.misc': 'Varios',
+        'category.transfer': 'Transferencia',
+        'category.loss': 'Pérdida',
+        'category.unknown': 'Desconocido',
       },
     };
 
@@ -1267,8 +1356,21 @@ const STORAGE_KEY = 'kontana_state_v1';
 
     function makeDefaultState() {
       return {
+        schema_version: 2,
         version: 1,
         settings: {
+          app_mode: 'precise',
+          budget: {
+            default_cadence: 'weekly',
+            week_start: 'mon',
+            drift_alerts: {
+              enabled: true,
+              abs_minor: 2000,
+              pct: 0.1,
+            },
+            default_tracking_level: 'big_only',
+            default_big_spend_threshold_minor: 2000,
+          },
           language: 'en',
           payment_strategies: true,
           change_suggestions: true,
@@ -1294,6 +1396,7 @@ const STORAGE_KEY = 'kontana_state_v1';
         wallet_order: [],
         wallets: {},
         transactions: [],
+        checkins: [],
       };
     }
 
@@ -1306,6 +1409,20 @@ const STORAGE_KEY = 'kontana_state_v1';
     }
 
     function formatMoney(minor, currency) {
+      const helper = window.KontanaMoney;
+      const showCents = app?.state?.settings?.show_cents ?? false;
+      if (helper?.fromMinor) {
+        try {
+          return helper.fromMinor(minor, {
+            currency,
+            showCents,
+            symbol: getCurrencySymbol(currency),
+            scale: getMinorScale(currency),
+          });
+        } catch {
+          // Fall through to the local formatter.
+        }
+      }
       const scale = getMinorScale(currency);
       const amount = minor / scale;
       const sym = CURRENCY_SYMBOLS[currency] || currency;
@@ -1317,7 +1434,6 @@ const STORAGE_KEY = 'kontana_state_v1';
         }).format(Math.abs(amount));
         return `${sign}${sym}${numStr}`;
       }
-      const showCents = app?.state?.settings?.show_cents ?? false;
       const hasCents = Math.abs(minor) % scale !== 0;
       const digits = (showCents || hasCents) ? 2 : 0;
       const numStr = new Intl.NumberFormat(undefined, {
@@ -1377,7 +1493,7 @@ const STORAGE_KEY = 'kontana_state_v1';
     }
 
     function categoryLabel(category) {
-      const key = PAYMENT_CATEGORIES.includes(category) ? category : 'uncategorized';
+      const key = TX_CATEGORIES.includes(category) ? category : 'uncategorized';
       return t(`category.${key}`);
     }
 
@@ -1471,7 +1587,24 @@ const STORAGE_KEY = 'kontana_state_v1';
     }
 
     function getWalletTotal(wallet) {
+      const helper = window.KontanaMoney;
+      if (helper?.sumDenomsToMinor) {
+        const total = helper.sumDenomsToMinor(wallet.denominations, wallet.currency);
+        if (Number.isFinite(total)) return total;
+      }
       return wallet.denominations.reduce((sum, row) => sum + row.value_minor * row.count, 0);
+    }
+
+    function getWalletDisplayTotal(wallet) {
+      if (Number.isFinite(Number(wallet?.balance_minor))) {
+        return Math.trunc(Number(wallet.balance_minor));
+      }
+      return getWalletTotal(wallet);
+    }
+
+    function syncWalletBalanceMinor(wallet) {
+      if (!wallet || typeof wallet !== 'object') return;
+      wallet.balance_minor = getWalletTotal(wallet);
     }
 
     function getExpectedWalletTotal(walletId) {
@@ -1528,6 +1661,1116 @@ const STORAGE_KEY = 'kontana_state_v1';
       return Boolean(app.editMode || app.pendingOutgoingChange);
     }
 
+    function getAppMode() {
+      return app?.state?.settings?.app_mode === 'budget' ? 'budget' : 'precise';
+    }
+
+    function getAppModePillLabel() {
+      return getAppMode() === 'budget'
+        ? t('header.mode.budget')
+        : t('header.mode.precise');
+    }
+
+    function openSettingsOverlay(focusTarget = null) {
+      app.settingsOpen = true;
+      app.settingsFocusTarget = focusTarget || null;
+      renderSettings();
+    }
+
+    function getBudgetHelper() {
+      return window.KontanaBudgetOnboarding || null;
+    }
+
+    function getBudgetCheckinsHelper() {
+      return window.KontanaBudgetCheckins || null;
+    }
+
+    function getBudgetInsightsHelper() {
+      return window.KontanaBudgetInsights || null;
+    }
+
+    function getLedgerTxHelper() {
+      return window.KontanaLedgerTx || null;
+    }
+
+    function formatBudgetInputFromMinor(minor) {
+      const safeMinor = Number.isFinite(Number(minor)) ? Math.trunc(Number(minor)) : 0;
+      const asMajor = (safeMinor / 100).toFixed(2);
+      return asMajor.replace(/\.00$/, '');
+    }
+
+    function escapeBudgetHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    async function promptBudgetWalletStep(wallets, selectedWalletId) {
+      const walletOptions = wallets.map((wallet) => (
+        `<option value="${wallet.id}" ${wallet.id === selectedWalletId ? 'selected' : ''}>${escapeBudgetHtml(wallet.name)} (${wallet.currency})</option>`
+      )).join('');
+      const choice = await showModal({
+        title: t('budget.wizard.title'),
+        message: t('budget.wizard.step_wallet'),
+        fields: [
+          {
+            id: 'wallet_id',
+            label: t('budget.wizard.wallet_label'),
+            type: 'select',
+            defaultValue: selectedWalletId,
+            optionsHtml: walletOptions,
+          },
+        ],
+        actions: [
+          { id: 'continue', label: t('budget.wizard.continue'), style: 'primary' },
+          { id: 'cancel', label: t('common.cancel'), style: 'secondary' },
+        ],
+      });
+      if (!choice || choice.id !== 'continue') return null;
+      const walletId = choice.values?.wallet_id;
+      return wallets.some((wallet) => wallet.id === walletId) ? walletId : (wallets[0]?.id || null);
+    }
+
+    async function promptBudgetCadenceStep(defaultCadence) {
+      const choice = await showModal({
+        title: t('budget.wizard.title'),
+        message: t('budget.wizard.step_cadence'),
+        actions: [
+          { id: 'weekly', label: t('budget.wizard.cadence_weekly'), style: defaultCadence === 'weekly' ? 'primary' : 'secondary' },
+          { id: 'fortnightly', label: t('budget.wizard.cadence_fortnightly'), style: defaultCadence === 'fortnightly' ? 'primary' : 'secondary' },
+          { id: 'monthly', label: t('budget.wizard.cadence_monthly'), style: defaultCadence === 'monthly' ? 'primary' : 'secondary' },
+          { id: 'cancel', label: t('common.cancel'), style: 'secondary' },
+        ],
+      });
+      if (['weekly', 'fortnightly', 'monthly'].includes(choice)) return choice;
+      return null;
+    }
+
+    async function promptBudgetEnvelopeEditor(wallet, initialEnvelope = null) {
+      const helper = getBudgetHelper();
+      if (!helper?.validateEnvelopeInput) {
+        await modalAlert(t('budget.wizard.money_helper_unavailable'));
+        return null;
+      }
+      let errorMessage = '';
+      while (true) {
+        const result = await showModal({
+          title: t('budget.wizard.step_envelopes'),
+          message: errorMessage || t('settings.app_mode.body'),
+          fields: [
+            {
+              id: 'name',
+              label: t('budget.wizard.envelope_name'),
+              type: 'text',
+              defaultValue: initialEnvelope?.name || '',
+              maxLength: 40,
+            },
+            {
+              id: 'target',
+              label: `${t('budget.wizard.envelope_target')} (${wallet.currency})`,
+              type: 'text',
+              defaultValue: formatBudgetInputFromMinor(initialEnvelope?.target_minor || 0),
+            },
+          ],
+          actions: [
+            { id: 'save', label: t('common.confirm'), style: 'primary' },
+            { id: 'cancel', label: t('common.cancel'), style: 'secondary' },
+          ],
+        });
+        if (!result || result.id !== 'save') return null;
+
+        const validated = helper.validateEnvelopeInput(
+          { name: result.values?.name, targetInput: result.values?.target },
+          { moneyHelper: window.KontanaMoney, currency: wallet.currency },
+        );
+        if (!validated.ok) {
+          if (validated.error === 'name_required') {
+            errorMessage = `<p class="status danger">${t('budget.wizard.invalid_name')}</p>`;
+          } else if (validated.error === 'money_helper_unavailable') {
+            errorMessage = `<p class="status danger">${t('budget.wizard.money_helper_unavailable')}</p>`;
+          } else {
+            errorMessage = `<p class="status danger">${t('budget.wizard.invalid_target')}</p>`;
+          }
+          continue;
+        }
+
+        return {
+          id: initialEnvelope?.id || helper.makeEnvelopeId(() => uid('env')),
+          name: validated.value.name,
+          target_minor: validated.value.target_minor,
+        };
+      }
+    }
+
+    async function promptBudgetEnvelopePick(envelopes, titleKey, currency) {
+      if (!Array.isArray(envelopes) || envelopes.length === 0) return null;
+      const optionsHtml = envelopes.map((envelope, idx) => (
+        `<option value="${String(idx)}">${escapeBudgetHtml(envelope.name)} · ${formatMoney(envelope.target_minor || 0, currency || 'EUR')}</option>`
+      )).join('');
+      const picked = await showModal({
+        title: t('budget.wizard.title'),
+        message: t(titleKey),
+        fields: [
+          {
+            id: 'index',
+            label: t('budget.wizard.pick_envelope'),
+            type: 'select',
+            defaultValue: '0',
+            optionsHtml,
+          },
+        ],
+        actions: [
+          { id: 'confirm', label: t('common.confirm'), style: 'primary' },
+          { id: 'cancel', label: t('common.cancel'), style: 'secondary' },
+        ],
+      });
+      if (!picked || picked.id !== 'confirm') return null;
+      const index = Number.parseInt(picked.values?.index || '', 10);
+      if (!Number.isFinite(index) || index < 0 || index >= envelopes.length) return null;
+      return index;
+    }
+
+    async function promptBudgetEnvelopesStep(wallet, initialEnvelopes) {
+      const helper = getBudgetHelper();
+      const templates = Array.isArray(helper?.TEMPLATE_ENVELOPES)
+        ? helper.TEMPLATE_ENVELOPES
+        : ['Food', 'Transport', 'Bills', 'Fun', 'Savings', 'Misc'];
+      const envelopes = Array.isArray(initialEnvelopes)
+        ? initialEnvelopes.map((row) => ({ ...row }))
+        : [];
+
+      while (true) {
+        const rowsHtml = envelopes.length > 0
+          ? `<div class="budget-envelope-list">${envelopes.map((row) => `
+              <article class="budget-envelope-row">
+                <p class="budget-envelope-name">${escapeBudgetHtml(row.name)}</p>
+                <p class="budget-envelope-target">${formatMoney(row.target_minor || 0, wallet.currency)}</p>
+              </article>
+            `).join('')}</div>`
+          : `<p class="muted">${t('budget.wizard.require_envelope')}</p>`;
+
+        const actions = [
+          ...templates.map((name) => ({ id: `template:${name}`, label: name, style: 'secondary' })),
+          { id: 'custom', label: t('budget.wizard.add_custom'), style: 'secondary' },
+        ];
+        if (envelopes.length > 0) {
+          actions.push(
+            { id: 'edit', label: t('budget.wizard.edit_envelope'), style: 'secondary' },
+            { id: 'remove', label: t('budget.wizard.remove_envelope'), style: 'secondary' },
+            { id: 'continue', label: t('budget.wizard.continue'), style: 'primary' },
+          );
+        }
+        actions.push({ id: 'cancel', label: t('common.cancel'), style: 'secondary' });
+
+        const choice = await showModal({
+          title: t('budget.wizard.title'),
+          message: `${t('budget.wizard.step_envelopes')}<br><br><p class="muted">${t('budget.wizard.template_hint')}</p>${rowsHtml}`,
+          actions,
+        });
+
+        if (choice === 'cancel' || !choice) return null;
+        if (choice === 'continue') return envelopes;
+
+        if (typeof choice === 'string' && choice.startsWith('template:')) {
+          const templateName = choice.slice('template:'.length).trim();
+          if (!templateName) continue;
+          envelopes.push({
+            id: helper?.makeEnvelopeId ? helper.makeEnvelopeId(() => uid('env')) : uid('env'),
+            name: templateName,
+            target_minor: 0,
+          });
+          continue;
+        }
+
+        if (choice === 'custom') {
+          const created = await promptBudgetEnvelopeEditor(wallet, null);
+          if (created) envelopes.push(created);
+          continue;
+        }
+
+        if (choice === 'edit') {
+          const editIndex = await promptBudgetEnvelopePick(envelopes, 'budget.wizard.edit_envelope', wallet.currency);
+          if (editIndex == null) continue;
+          const updated = await promptBudgetEnvelopeEditor(wallet, envelopes[editIndex]);
+          if (updated) envelopes[editIndex] = updated;
+          continue;
+        }
+
+        if (choice === 'remove') {
+          const removeIndex = await promptBudgetEnvelopePick(envelopes, 'budget.wizard.remove_envelope', wallet.currency);
+          if (removeIndex == null) continue;
+          envelopes.splice(removeIndex, 1);
+        }
+      }
+    }
+
+    async function promptBudgetTrackingStep(defaultTrackingLevel, defaultThresholdMinor, currency) {
+      const helper = getBudgetHelper();
+      const trackingChoice = await showModal({
+        title: t('budget.wizard.title'),
+        message: t('budget.wizard.step_tracking'),
+        actions: [
+          { id: 'none', label: t('budget.wizard.tracking_none'), style: defaultTrackingLevel === 'none' ? 'primary' : 'secondary' },
+          { id: 'big_only', label: t('budget.wizard.tracking_big_only'), style: defaultTrackingLevel === 'big_only' ? 'primary' : 'secondary' },
+          { id: 'all', label: t('budget.wizard.tracking_all'), style: defaultTrackingLevel === 'all' ? 'primary' : 'secondary' },
+          { id: 'cancel', label: t('common.cancel'), style: 'secondary' },
+        ],
+      });
+      if (!trackingChoice || trackingChoice === 'cancel') return null;
+      if (!['none', 'big_only', 'all'].includes(trackingChoice)) return null;
+
+      if (trackingChoice !== 'big_only') {
+        return {
+          trackingLevel: trackingChoice,
+          bigSpendThresholdMinor: Number.isFinite(Number(defaultThresholdMinor))
+            ? Math.max(0, Math.trunc(Number(defaultThresholdMinor)))
+            : 2000,
+        };
+      }
+
+      while (true) {
+        const thresholdResult = await showModal({
+          title: t('budget.wizard.title'),
+          message: t('budget.wizard.step_tracking'),
+          fields: [
+            {
+              id: 'threshold',
+              label: t('budget.wizard.big_threshold'),
+              type: 'text',
+              defaultValue: formatBudgetInputFromMinor(defaultThresholdMinor),
+            },
+          ],
+          actions: [
+            { id: 'finish', label: t('budget.wizard.finish'), style: 'primary' },
+            { id: 'cancel', label: t('common.cancel'), style: 'secondary' },
+          ],
+        });
+        if (!thresholdResult || thresholdResult.id !== 'finish') return null;
+        const parsed = helper?.parseTargetMinor
+          ? helper.parseTargetMinor(thresholdResult.values?.threshold, { moneyHelper: window.KontanaMoney, currency })
+          : { ok: false, error: 'money_helper_unavailable' };
+        if (!parsed.ok) {
+          if (parsed.error === 'money_helper_unavailable') {
+            await modalAlert(t('budget.wizard.money_helper_unavailable'));
+            return null;
+          }
+          await modalAlert(t('budget.wizard.invalid_target'));
+          continue;
+        }
+        return {
+          trackingLevel: 'big_only',
+          bigSpendThresholdMinor: parsed.value,
+        };
+      }
+    }
+
+    async function startBudgetOnboardingWizard(triggerWalletId = null) {
+      const helper = getBudgetHelper();
+      if (!helper?.buildWalletBudget || !helper?.normalizeCadence || !helper?.normalizeTrackingLevel) {
+        await modalAlert(t('budget.wizard.money_helper_unavailable'));
+        return;
+      }
+
+      const wallets = getWalletList();
+      if (wallets.length === 0) return;
+
+      let walletId = (typeof triggerWalletId === 'string' && triggerWalletId && app.state.wallets[triggerWalletId])
+        ? triggerWalletId
+        : (app.activeWalletId || wallets[0].id);
+
+      if (wallets.length > 1) {
+        const chosenWalletId = await promptBudgetWalletStep(wallets, walletId);
+        if (!chosenWalletId) return;
+        walletId = chosenWalletId;
+      }
+
+      const wallet = app.state.wallets[walletId];
+      if (!wallet) return;
+
+      const existingBudget = wallet.budget && typeof wallet.budget === 'object'
+        ? wallet.budget
+        : {};
+      const defaultCadence = helper.normalizeCadence(
+        existingBudget.cadence,
+        helper.normalizeCadence(app.state.settings?.budget?.default_cadence, 'weekly'),
+      );
+      const cadence = await promptBudgetCadenceStep(defaultCadence);
+      if (!cadence) return;
+
+      const initialEnvelopes = Array.isArray(existingBudget.envelopes)
+        ? existingBudget.envelopes.map((envelope) => ({
+            id: envelope?.id,
+            name: envelope?.name,
+            target_minor: Number.isFinite(Number(envelope?.target_minor))
+              ? Math.trunc(Number(envelope.target_minor))
+              : 0,
+          }))
+        : [];
+      const envelopes = await promptBudgetEnvelopesStep(wallet, initialEnvelopes);
+      if (!envelopes) return;
+      if (envelopes.length === 0) {
+        await modalAlert(t('budget.wizard.require_envelope'));
+        return;
+      }
+
+      const defaultTrackingLevel = helper.normalizeTrackingLevel(
+        existingBudget?.envelopes?.[0]?.tracking_level,
+        helper.normalizeTrackingLevel(app.state.settings?.budget?.default_tracking_level, 'big_only'),
+      );
+      const defaultThresholdMinor = Number.isFinite(Number(existingBudget?.envelopes?.[0]?.big_spend_threshold_minor))
+        ? Math.max(0, Math.trunc(Number(existingBudget.envelopes[0].big_spend_threshold_minor)))
+        : (
+            Number.isFinite(Number(app.state.settings?.budget?.default_big_spend_threshold_minor))
+              ? Math.max(0, Math.trunc(Number(app.state.settings.budget.default_big_spend_threshold_minor)))
+              : 2000
+          );
+      const trackingConfig = await promptBudgetTrackingStep(defaultTrackingLevel, defaultThresholdMinor, wallet.currency);
+      if (!trackingConfig) return;
+
+      const weekStart = (typeof app.state.settings?.budget?.week_start === 'string' && app.state.settings.budget.week_start)
+        ? app.state.settings.budget.week_start
+        : 'mon';
+      wallet.budget = helper.buildWalletBudget(existingBudget, {
+        cadence,
+        weekStart,
+        envelopes,
+        trackingLevel: trackingConfig.trackingLevel,
+        bigSpendThresholdMinor: trackingConfig.bigSpendThresholdMinor,
+        generateId: () => uid('env'),
+      });
+      wallet.updated_at = nowIso();
+      saveState();
+      render();
+      await modalAlert(t('budget.wizard.completed', { wallet: wallet.name }), t('budget.wizard.title'));
+    }
+
+    function getBudgetWeekStart() {
+      return (typeof app.state.settings?.budget?.week_start === 'string' && app.state.settings.budget.week_start)
+        ? app.state.settings.budget.week_start
+        : 'mon';
+    }
+
+    function getWalletBudgetCadence(wallet) {
+      if (wallet?.budget?.cadence === 'weekly' || wallet?.budget?.cadence === 'fortnightly' || wallet?.budget?.cadence === 'monthly') {
+        return wallet.budget.cadence;
+      }
+      return app.state.settings?.budget?.default_cadence || 'weekly';
+    }
+
+    function parseBudgetTotalToMinor(input, currency) {
+      const raw = String(input || '').trim();
+      if (!raw) return null;
+      const helper = window.KontanaMoney;
+      if (!helper?.toMinor) return null;
+      try {
+        const parsed = helper.toMinor(raw, { currency });
+        if (!Number.isFinite(parsed) || parsed < 0) return null;
+        return Math.trunc(parsed);
+      } catch {
+        return null;
+      }
+    }
+
+    function getWalletCheckins(walletId) {
+      const rows = Array.isArray(app.state.checkins) ? app.state.checkins : [];
+      return rows
+        .filter((row) => row && row.wallet_id === walletId)
+        .sort((a, b) => Number(b.ts || 0) - Number(a.ts || 0));
+    }
+
+    function isWalletCheckinDue(wallet) {
+      const helper = getBudgetCheckinsHelper();
+      if (!helper?.isCheckinDue || !wallet?.id) return false;
+      return helper.isCheckinDue({
+        walletId: wallet.id,
+        checkins: app.state.checkins,
+        cadence: getWalletBudgetCadence(wallet),
+        weekStart: getBudgetWeekStart(),
+      });
+    }
+
+    function getDriftAlertAbsMinor() {
+      const configured = Number(app.state.settings?.budget?.drift_alerts?.abs_minor);
+      if (!Number.isFinite(configured) || configured < 0) return 2000;
+      return Math.trunc(configured);
+    }
+
+    function getDriftAlertPct() {
+      const configured = Number(app.state.settings?.budget?.drift_alerts?.pct);
+      if (!Number.isFinite(configured) || configured < 0) return 0.1;
+      return configured;
+    }
+
+    function getDefaultBigSpendThresholdMinor() {
+      const configured = Number(app.state.settings?.budget?.default_big_spend_threshold_minor);
+      if (!Number.isFinite(configured) || configured < 0) return 2000;
+      return Math.trunc(configured);
+    }
+
+    function getWalletDriftAlert(wallet) {
+      const helper = getBudgetInsightsHelper();
+      if (!helper?.computeDriftAlert || !wallet?.id) return null;
+      return helper.computeDriftAlert({
+        wallet,
+        walletId: wallet.id,
+        checkins: app.state.checkins,
+        cadence: getWalletBudgetCadence(wallet),
+        weekStart: getBudgetWeekStart(),
+        nowTs: Math.floor(Date.now() / 1000),
+        alerts: {
+          enabled: app.state.settings?.budget?.drift_alerts?.enabled !== false,
+          abs_minor: getDriftAlertAbsMinor(),
+          pct: getDriftAlertPct(),
+        },
+        snooze_until_ts: wallet?.budget?.drift_alert_snooze_until_ts,
+      });
+    }
+
+    function setWalletDriftAlertSnooze(wallet, nowTs = Math.floor(Date.now() / 1000)) {
+      if (!wallet || typeof wallet !== 'object') return;
+      if (!wallet.budget || typeof wallet.budget !== 'object') wallet.budget = {};
+      wallet.budget.drift_alert_snooze_until_ts = Math.max(0, Math.trunc(Number(nowTs) || 0)) + (7 * 24 * 60 * 60);
+      wallet.updated_at = nowIso();
+      saveState();
+    }
+
+    function enableWalletBigSpendTracking(wallet) {
+      if (!wallet || typeof wallet !== 'object') return;
+      if (!wallet.budget || typeof wallet.budget !== 'object') wallet.budget = {};
+      if (!app.state.settings?.budget || typeof app.state.settings.budget !== 'object') {
+        app.state.settings.budget = {};
+      }
+      const thresholdDefault = getDefaultBigSpendThresholdMinor();
+      const envelopes = Array.isArray(wallet.budget.envelopes) ? wallet.budget.envelopes : [];
+      let changed = false;
+      wallet.budget.envelopes = envelopes.map((row) => {
+        const next = { ...row };
+        if (next.tracking_level !== 'big_only') {
+          next.tracking_level = 'big_only';
+          changed = true;
+        }
+        const threshold = Number.isFinite(Number(next.big_spend_threshold_minor))
+          ? Math.max(0, Math.trunc(Number(next.big_spend_threshold_minor)))
+          : thresholdDefault;
+        if (next.big_spend_threshold_minor !== threshold) {
+          next.big_spend_threshold_minor = threshold;
+          changed = true;
+        }
+        return next;
+      });
+      if (app.state.settings?.budget?.default_tracking_level !== 'big_only') {
+        app.state.settings.budget.default_tracking_level = 'big_only';
+        changed = true;
+      }
+      if (changed) {
+        wallet.updated_at = nowIso();
+        saveState();
+      }
+    }
+
+    function isWalletDenomsStale(wallet) {
+      return wallet?.count_mode === 'total';
+    }
+
+    async function warnIfDenomsStale(wallet) {
+      if (!isWalletDenomsStale(wallet)) return;
+      await modalAlert(t('cash.denoms_stale_warning'), t('wallet.edit_denoms'));
+    }
+
+    async function promptBudgetCheckinActualTotal(wallet, expectedMinor, branch) {
+      while (true) {
+        const result = await showModal({
+          title: t('budget.checkin.title'),
+          message: t('budget.checkin.prompt', { amount: formatMoney(expectedMinor, wallet.currency) }),
+          fields: [
+            {
+              id: 'actual_total',
+              label: t('budget.checkin.actual', { currency: wallet.currency }),
+              type: 'text',
+              defaultValue: formatBudgetInputFromMinor(expectedMinor),
+            },
+          ],
+          actions: [
+            { id: 'confirm', label: t('common.confirm'), style: 'primary' },
+            { id: 'cancel', label: t('common.cancel'), style: 'secondary' },
+          ],
+        });
+        if (!result || result.id !== 'confirm') return null;
+
+        const actualMinor = parseBudgetTotalToMinor(result.values?.actual_total, wallet.currency);
+        if (actualMinor == null) {
+          await modalAlert(t('budget.checkin.actual_invalid'));
+          continue;
+        }
+        if (branch === 'more' && actualMinor <= expectedMinor) {
+          await modalAlert(t('budget.checkin.more_requires_higher'));
+          continue;
+        }
+        if (branch === 'less' && actualMinor >= expectedMinor) {
+          await modalAlert(t('budget.checkin.less_requires_lower'));
+          continue;
+        }
+        return actualMinor;
+      }
+    }
+
+    async function promptBudgetCheckinCategoryAndNote() {
+      const actions = DRIFT_CATEGORIES.map((category) => ({
+        id: category,
+        label: categoryLabel(category),
+        style: category === 'unknown' ? 'primary' : 'secondary',
+      }));
+      actions.push({ id: 'cancel', label: t('common.cancel'), style: 'secondary' });
+      const result = await showModal({
+        title: t('budget.checkin.title'),
+        message: t('budget.checkin.category_title'),
+        input: {
+          defaultValue: '',
+          placeholder: t('budget.checkin.note_label'),
+          maxLength: 80,
+        },
+        actions,
+      });
+      if (!result || result.id === 'cancel') return null;
+      const category = DRIFT_CATEGORIES.includes(result.id) ? result.id : 'unknown';
+      const note = String(result.value || '').trim();
+      return { category, note };
+    }
+
+    function getCheckinPrimaryCategory(checkin) {
+      const firstCategory = Array.isArray(checkin?.drift_breakdown) ? checkin.drift_breakdown[0]?.category : null;
+      if (DRIFT_CATEGORIES.includes(firstCategory)) return firstCategory;
+      if (TX_CATEGORIES.includes(checkin?.category)) return checkin.category;
+      return 'unknown';
+    }
+
+    function getCheckinMethodLabel(method) {
+      if (method === 'confirm') return t('budget.checkin.method.confirm');
+      if (method === 'skip') return t('budget.checkin.method.skip');
+      if (method === 'quick_reconcile') return t('budget.checkin.method.quick_reconcile');
+      return t('budget.checkin.method.count_total');
+    }
+
+    async function startBudgetCheckinFlow(walletId) {
+      const helper = getBudgetCheckinsHelper();
+      if (!helper?.buildCheckin || !helper?.buildAdjustmentTransaction || !helper?.resolveWalletBalanceMinor || !helper?.shouldUpdateWalletBalance) {
+        await modalAlert(t('budget.wizard.money_helper_unavailable'));
+        return;
+      }
+      const wallet = app.state.wallets[walletId];
+      if (!wallet) return;
+
+      const expectedMinor = Number.isFinite(Number(wallet.balance_minor))
+        ? Math.trunc(Number(wallet.balance_minor))
+        : getWalletTotal(wallet);
+
+      const checkinChoice = await showModal({
+        title: t('budget.checkin.title'),
+        message: t('budget.checkin.prompt', { amount: formatMoney(expectedMinor, wallet.currency) }),
+        actions: [
+          { id: 'confirm', label: t('budget.checkin.confirm'), style: 'primary' },
+          { id: 'more', label: t('budget.checkin.more'), style: 'secondary' },
+          { id: 'less', label: t('budget.checkin.less'), style: 'secondary' },
+          { id: 'skip', label: t('budget.checkin.skip'), style: 'secondary' },
+          { id: 'cancel', label: t('common.cancel'), style: 'secondary' },
+        ],
+      });
+      if (!checkinChoice || checkinChoice === 'cancel') return;
+
+      const ts = Math.floor(Date.now() / 1000);
+      const cadence = getWalletBudgetCadence(wallet);
+      const weekStart = getBudgetWeekStart();
+      const base = {
+        id: uid('checkin'),
+        wallet_id: wallet.id,
+        ts,
+        cadence,
+        week_start: weekStart,
+        expected_minor: expectedMinor,
+      };
+      let checkin = null;
+
+      if (checkinChoice === 'confirm') {
+        checkin = helper.buildCheckin({
+          ...base,
+          method: 'confirm',
+          actual_minor: expectedMinor,
+          drift_minor: 0,
+        });
+      } else if (checkinChoice === 'skip') {
+        checkin = helper.buildCheckin({
+          ...base,
+          method: 'skip',
+        });
+      } else if (checkinChoice === 'more' || checkinChoice === 'less') {
+        const actualMinor = await promptBudgetCheckinActualTotal(wallet, expectedMinor, checkinChoice);
+        if (actualMinor == null) return;
+        const categoryAndNote = await promptBudgetCheckinCategoryAndNote();
+        if (!categoryAndNote) return;
+        checkin = helper.buildCheckin({
+          ...base,
+          method: 'count_total',
+          actual_minor: actualMinor,
+          category: categoryAndNote.category,
+          note: categoryAndNote.note,
+        });
+      } else {
+        return;
+      }
+
+      if (!Array.isArray(app.state.checkins)) app.state.checkins = [];
+      app.state.checkins.push(checkin);
+
+      if (helper.shouldUpdateWalletBalance(checkin)) {
+        wallet.balance_minor = helper.resolveWalletBalanceMinor(wallet.balance_minor, checkin);
+        wallet.updated_at = nowIso();
+      }
+
+      const adjustmentTx = helper.buildAdjustmentTransaction({
+        id: uid('tx'),
+        wallet,
+        drift_minor: checkin.drift_minor,
+        category: getCheckinPrimaryCategory(checkin),
+        note: checkin.note || '',
+        checkin_id: checkin.id,
+        ts: checkin.ts,
+      });
+      if (adjustmentTx) {
+        app.state.transactions.push(adjustmentTx);
+      }
+
+      saveState();
+      render();
+      await modalAlert(t('budget.checkin.saved'));
+    }
+
+    async function promptQuickReconcileActualTotal(wallet, expectedMinor) {
+      while (true) {
+        const result = await showModal({
+          title: t('budget.quick_reconcile.title'),
+          message: `${t('budget.quick_reconcile.prompt')}<br><br>${t('budget.checkin.prompt', { amount: formatMoney(expectedMinor, wallet.currency) })}`,
+          fields: [
+            {
+              id: 'actual_total',
+              label: t('budget.checkin.actual', { currency: wallet.currency }),
+              type: 'text',
+              defaultValue: formatBudgetInputFromMinor(expectedMinor),
+            },
+          ],
+          actions: [
+            { id: 'confirm', label: t('common.confirm'), style: 'primary' },
+            { id: 'cancel', label: t('common.cancel'), style: 'secondary' },
+          ],
+        });
+        if (!result || result.id !== 'confirm') return null;
+        const actualMinor = parseBudgetTotalToMinor(result.values?.actual_total, wallet.currency);
+        if (actualMinor == null) {
+          await modalAlert(t('budget.checkin.actual_invalid'));
+          continue;
+        }
+        return actualMinor;
+      }
+    }
+
+    async function startQuickReconcileFlow(walletId) {
+      const helper = getBudgetCheckinsHelper();
+      if (!helper?.buildQuickReconcileArtifacts || !helper?.requiresLargeDriftConfirm) {
+        await modalAlert(t('budget.wizard.money_helper_unavailable'));
+        return;
+      }
+      const wallet = app.state.wallets[walletId];
+      if (!wallet) return;
+
+      const expectedMinor = Number.isFinite(Number(wallet.balance_minor))
+        ? Math.trunc(Number(wallet.balance_minor))
+        : getWalletTotal(wallet);
+      const actualMinor = await promptQuickReconcileActualTotal(wallet, expectedMinor);
+      if (actualMinor == null) return;
+
+      const driftMinor = actualMinor - expectedMinor;
+      if (helper.requiresLargeDriftConfirm(driftMinor, getDriftAlertAbsMinor())) {
+        const confirmed = await modalConfirm(
+          t('budget.quick_reconcile.big_change', { amount: formatMoney(Math.abs(driftMinor), wallet.currency) }),
+          t('budget.quick_reconcile.title'),
+        );
+        if (!confirmed) return;
+      }
+
+      const artifacts = helper.buildQuickReconcileArtifacts({
+        checkin_id: uid('checkin'),
+        tx_id: uid('tx'),
+        wallet,
+        wallet_id: wallet.id,
+        ts: Math.floor(Date.now() / 1000),
+        cadence: getWalletBudgetCadence(wallet),
+        week_start: getBudgetWeekStart(),
+        expected_minor: expectedMinor,
+        actual_minor: actualMinor,
+        category: 'unknown',
+      });
+
+      if (!Array.isArray(app.state.checkins)) app.state.checkins = [];
+      app.state.checkins.push(artifacts.checkin);
+      if (artifacts.adjustmentTx) {
+        app.state.transactions.push(artifacts.adjustmentTx);
+      }
+      wallet.balance_minor = artifacts.next_balance_minor;
+      wallet.count_mode = artifacts.next_count_mode;
+      wallet.updated_at = nowIso();
+
+      saveState();
+      render();
+      await modalAlert(t('budget.quick_reconcile.saved'));
+    }
+
+    function getQuickSpendTrackingConfig(wallet, envelopeId) {
+      const defaults = app.state.settings?.budget || {};
+      const fallbackLevel = defaults.default_tracking_level || 'big_only';
+      const fallbackThreshold = Number.isFinite(Number(defaults.default_big_spend_threshold_minor))
+        ? Math.max(0, Math.trunc(Number(defaults.default_big_spend_threshold_minor)))
+        : 2000;
+      const envelopes = Array.isArray(wallet?.budget?.envelopes) ? wallet.budget.envelopes : [];
+      const selected = envelopes.find((entry) => entry?.id === envelopeId);
+      if (selected) {
+        return {
+          tracking_level: selected.tracking_level || fallbackLevel,
+          threshold_minor: Number.isFinite(Number(selected.big_spend_threshold_minor))
+            ? Math.max(0, Math.trunc(Number(selected.big_spend_threshold_minor)))
+            : fallbackThreshold,
+        };
+      }
+      return {
+        tracking_level: wallet?.budget?.tracking_level || fallbackLevel,
+        threshold_minor: Number.isFinite(Number(wallet?.budget?.big_spend_threshold_minor))
+          ? Math.max(0, Math.trunc(Number(wallet.budget.big_spend_threshold_minor)))
+          : fallbackThreshold,
+      };
+    }
+
+    async function startBudgetQuickSpendFlow(defaultWalletId) {
+      const helper = getLedgerTxHelper();
+      if (!helper?.buildQuickSpendTx || !helper?.evaluateQuickSpendThreshold) {
+        await modalAlert(t('budget.wizard.money_helper_unavailable'));
+        return;
+      }
+      const wallets = getWalletList();
+      if (wallets.length === 0) return;
+      let walletId = (typeof defaultWalletId === 'string' && defaultWalletId && app.state.wallets[defaultWalletId])
+        ? defaultWalletId
+        : wallets[0].id;
+      if (wallets.length > 1) {
+        const walletOptions = wallets
+          .map((wallet) => `<option value="${wallet.id}" ${wallet.id === walletId ? 'selected' : ''}>${escapeBudgetHtml(wallet.name)} (${wallet.currency})</option>`)
+          .join('');
+        const walletChoice = await showModal({
+          title: t('pay.quick_spend.title'),
+          message: t('pay.quick_spend.wallet'),
+          fields: [
+            {
+              id: 'wallet_id',
+              label: t('pay.quick_spend.wallet'),
+              type: 'select',
+              defaultValue: walletId,
+              optionsHtml: walletOptions,
+            },
+          ],
+          actions: [
+            { id: 'continue', label: t('budget.wizard.continue'), style: 'primary' },
+            { id: 'cancel', label: t('common.cancel'), style: 'secondary' },
+          ],
+        });
+        if (!walletChoice || walletChoice.id !== 'continue') return;
+        walletId = walletChoice.values?.wallet_id || walletId;
+      }
+      const wallet = app.state.wallets[walletId];
+      if (!wallet) return;
+      const envelopes = Array.isArray(wallet?.budget?.envelopes) ? wallet.budget.envelopes : [];
+      const envelopeOptions = [`<option value="">${t('pay.quick_spend.no_envelope')}</option>`]
+        .concat(envelopes.map((envelope) => `<option value="${envelope.id}">${escapeBudgetHtml(envelope.name)}</option>`))
+        .join('');
+
+      while (true) {
+        const result = await showModal({
+          title: t('pay.quick_spend.title'),
+          message: `${t('pay.selected_wallet')}: ${escapeBudgetHtml(wallet.name)} (${wallet.currency})`,
+          fields: [
+            {
+              id: 'amount',
+              label: `${t('pay.quick_spend.amount')} (${wallet.currency})`,
+              type: 'text',
+              defaultValue: '',
+            },
+            ...(envelopes.length > 0
+              ? [{
+                  id: 'envelope_id',
+                  label: t('pay.quick_spend.envelope'),
+                  type: 'select',
+                  defaultValue: '',
+                  optionsHtml: envelopeOptions,
+                }]
+              : []),
+            {
+              id: 'note',
+              label: t('pay.quick_spend.note'),
+              type: 'text',
+              defaultValue: '',
+              maxLength: 80,
+            },
+          ],
+          actions: [
+            { id: 'confirm', label: t('common.confirm'), style: 'primary' },
+            { id: 'cancel', label: t('common.cancel'), style: 'secondary' },
+          ],
+        });
+        if (!result || result.id !== 'confirm') return;
+        const amountMinor = parseBudgetTotalToMinor(result.values?.amount, wallet.currency);
+        if (!Number.isFinite(amountMinor) || amountMinor <= 0) {
+          await modalAlert(t('pay.quick_spend.invalid_amount'));
+          continue;
+        }
+        const envelopeIdRaw = String(result.values?.envelope_id || '').trim();
+        const envelopeId = envelopes.some((envelope) => envelope.id === envelopeIdRaw) ? envelopeIdRaw : '';
+        const note = String(result.values?.note || '').trim();
+
+        const artifacts = helper.buildQuickSpendTx({
+          tx_id: uid('tx'),
+          wallet,
+          current_balance_minor: getWalletDisplayTotal(wallet),
+          amount_minor: amountMinor,
+          envelope_id: envelopeId,
+          note,
+          ts: Math.floor(Date.now() / 1000),
+        });
+        const trackingConfig = getQuickSpendTrackingConfig(wallet, envelopeId);
+        const thresholdEval = helper.evaluateQuickSpendThreshold({
+          tracking_level: trackingConfig.tracking_level,
+          amount_minor: amountMinor,
+          threshold_minor: trackingConfig.threshold_minor,
+        });
+        let hintMessage = '';
+        if (thresholdEval.hint === 'below') {
+          hintMessage = `<br><br>${t('pay.quick_spend.hint_below', { amount: formatMoney(thresholdEval.threshold_minor, wallet.currency) })}`;
+        } else if (thresholdEval.hint === 'good') {
+          hintMessage = `<br><br>${t('pay.quick_spend.hint_good', { amount: formatMoney(thresholdEval.threshold_minor, wallet.currency) })}`;
+        }
+
+        app.state.transactions.push(artifacts.tx);
+        wallet.balance_minor = artifacts.next_balance_minor;
+        wallet.count_mode = 'total';
+        wallet.updated_at = nowIso();
+        saveState();
+        render();
+        await modalAlert(`${t('pay.quick_spend.saved')}${hintMessage}`);
+        return;
+      }
+    }
+
+    async function startBudgetTransferFlow(fromWalletId) {
+      const helper = getLedgerTxHelper();
+      if (!helper?.buildTransferPair || !helper?.validateTransfer) {
+        await modalAlert(t('budget.wizard.money_helper_unavailable'));
+        return;
+      }
+      const fromWallet = app.state.wallets[fromWalletId];
+      if (!fromWallet) return;
+      const candidateWallets = getWalletList().filter((wallet) => wallet.id !== fromWallet.id);
+      if (candidateWallets.length === 0) {
+        await modalAlert(t('pay.transfer.no_target_wallet'));
+        return;
+      }
+
+      while (true) {
+        const walletOptions = candidateWallets
+          .map((wallet) => `<option value="${wallet.id}">${escapeBudgetHtml(wallet.name)} (${wallet.currency})</option>`)
+          .join('');
+        const result = await showModal({
+          title: t('pay.transfer.title'),
+          message: `${t('pay.selected_wallet')}: ${escapeBudgetHtml(fromWallet.name)} (${fromWallet.currency})`,
+          fields: [
+            {
+              id: 'to_wallet_id',
+              label: t('pay.transfer.to_wallet'),
+              type: 'select',
+              defaultValue: candidateWallets[0]?.id || '',
+              optionsHtml: walletOptions,
+            },
+            {
+              id: 'amount',
+              label: `${t('pay.transfer.amount')} (${fromWallet.currency})`,
+              type: 'text',
+              defaultValue: '',
+            },
+            {
+              id: 'note',
+              label: t('pay.transfer.note'),
+              type: 'text',
+              defaultValue: '',
+              maxLength: 80,
+            },
+          ],
+          actions: [
+            { id: 'confirm', label: t('common.confirm'), style: 'primary' },
+            { id: 'cancel', label: t('common.cancel'), style: 'secondary' },
+          ],
+        });
+        if (!result || result.id !== 'confirm') return;
+
+        const toWalletId = String(result.values?.to_wallet_id || '').trim();
+        const toWallet = app.state.wallets[toWalletId];
+        if (!toWallet) {
+          await modalAlert(t('pay.transfer.same_wallet'));
+          continue;
+        }
+        const amountMinor = parseBudgetTotalToMinor(result.values?.amount, fromWallet.currency);
+        if (!Number.isFinite(amountMinor) || amountMinor <= 0) {
+          await modalAlert(t('pay.transfer.invalid_amount'));
+          continue;
+        }
+
+        const fromBalanceMinor = getWalletDisplayTotal(fromWallet);
+        const validation = helper.validateTransfer({
+          from_wallet_id: fromWallet.id,
+          to_wallet_id: toWallet.id,
+          amount_minor: amountMinor,
+          from_balance_minor: fromBalanceMinor,
+          from_currency: fromWallet.currency,
+          to_currency: toWallet.currency,
+        });
+        if (!validation.ok && validation.error === 'same_wallet') {
+          await modalAlert(t('pay.transfer.same_wallet'));
+          continue;
+        }
+        if (!validation.ok && validation.error === 'currency_mismatch') {
+          await modalAlert(t('pay.transfer.currency_mismatch'));
+          continue;
+        }
+        if (!validation.ok && validation.error === 'invalid_amount') {
+          await modalAlert(t('pay.transfer.invalid_amount'));
+          continue;
+        }
+        if (!validation.ok && validation.error === 'insufficient_balance') {
+          const proceed = await modalConfirm(
+            t('pay.transfer.insufficient_confirm', {
+              amount: formatMoney(Math.max(0, validation.missing_minor || 0), fromWallet.currency),
+            }),
+            t('pay.transfer.title'),
+          );
+          if (!proceed) continue;
+        }
+
+        const artifacts = helper.buildTransferPair({
+          transfer_id: uid('transfer'),
+          tx_out_id: uid('tx'),
+          tx_in_id: uid('tx'),
+          from_wallet: fromWallet,
+          to_wallet: toWallet,
+          from_balance_minor: fromBalanceMinor,
+          to_balance_minor: getWalletDisplayTotal(toWallet),
+          amount_minor: amountMinor,
+          note: String(result.values?.note || '').trim(),
+          ts: Math.floor(Date.now() / 1000),
+        });
+        app.state.transactions.push(artifacts.outgoing_tx);
+        app.state.transactions.push(artifacts.incoming_tx);
+        fromWallet.balance_minor = artifacts.from_next_balance_minor;
+        toWallet.balance_minor = artifacts.to_next_balance_minor;
+        fromWallet.count_mode = 'total';
+        toWallet.count_mode = 'total';
+        fromWallet.updated_at = nowIso();
+        toWallet.updated_at = nowIso();
+        saveState();
+        render();
+        await modalAlert(t('pay.transfer.saved'));
+        return;
+      }
+    }
+
+    async function startBudgetAdjustmentFlow(walletId) {
+      const helper = getLedgerTxHelper();
+      if (!helper?.buildAdjustmentTx) {
+        await modalAlert(t('budget.wizard.money_helper_unavailable'));
+        return;
+      }
+      const wallet = app.state.wallets[walletId];
+      if (!wallet) return;
+
+      while (true) {
+        const result = await showModal({
+          title: t('pay.adjustment.title'),
+          message: `${t('pay.selected_wallet')}: ${escapeBudgetHtml(wallet.name)} (${wallet.currency})`,
+          fields: [
+            {
+              id: 'direction',
+              label: t('pay.adjustment.direction'),
+              type: 'select',
+              defaultValue: 'decrease',
+              optionsHtml: `
+                <option value="decrease">${t('pay.adjustment.direction_decrease')}</option>
+                <option value="increase">${t('pay.adjustment.direction_increase')}</option>
+              `,
+            },
+            {
+              id: 'amount',
+              label: `${t('pay.adjustment.amount')} (${wallet.currency})`,
+              type: 'text',
+              defaultValue: '',
+            },
+            {
+              id: 'category',
+              label: t('pay.adjustment.category'),
+              type: 'select',
+              defaultValue: 'loss',
+              optionsHtml: `
+                <option value="loss">${categoryLabel('loss')}</option>
+                <option value="unknown">${categoryLabel('unknown')}</option>
+              `,
+            },
+            {
+              id: 'note',
+              label: t('pay.adjustment.note'),
+              type: 'text',
+              defaultValue: '',
+              maxLength: 80,
+            },
+          ],
+          actions: [
+            { id: 'confirm', label: t('common.confirm'), style: 'primary' },
+            { id: 'cancel', label: t('common.cancel'), style: 'secondary' },
+          ],
+        });
+        if (!result || result.id !== 'confirm') return;
+
+        const amountMinor = parseBudgetTotalToMinor(result.values?.amount, wallet.currency);
+        if (!Number.isFinite(amountMinor) || amountMinor <= 0) {
+          await modalAlert(t('pay.adjustment.invalid_amount'));
+          continue;
+        }
+        const direction = result.values?.direction === 'increase' ? 'increase' : 'decrease';
+        const category = result.values?.category === 'unknown' ? 'unknown' : 'loss';
+        const artifacts = helper.buildAdjustmentTx({
+          tx_id: uid('tx'),
+          wallet,
+          current_balance_minor: getWalletDisplayTotal(wallet),
+          amount_minor: amountMinor,
+          direction,
+          category,
+          note: String(result.values?.note || '').trim(),
+          ts: Math.floor(Date.now() / 1000),
+        });
+        app.state.transactions.push(artifacts.tx);
+        wallet.balance_minor = artifacts.next_balance_minor;
+        wallet.count_mode = 'total';
+        wallet.updated_at = nowIso();
+        saveState();
+        render();
+        await modalAlert(t('pay.adjustment.saved'));
+        return;
+      }
+    }
+
     function getSortedDenoms(wallet, order) {
       const rows = [...wallet.denominations];
       rows.sort((a, b) => {
@@ -1540,6 +2783,16 @@ const STORAGE_KEY = 'kontana_state_v1';
     function parseAmountToMinor(input, currency) {
       if (!input || !input.trim()) return null;
       const scale = getMinorScale(currency);
+      const helper = window.KontanaMoney;
+      if (helper?.toMinor && scale === 100) {
+        try {
+          const parsed = helper.toMinor(input);
+          if (!Number.isFinite(parsed) || parsed <= 0) return null;
+          return parsed;
+        } catch {
+          // Fall through to the legacy parser.
+        }
+      }
       const raw = input.trim().replace(/[^0-9.,]/g, '');
       if (!raw) return null;
 
@@ -1614,7 +2867,8 @@ const STORAGE_KEY = 'kontana_state_v1';
     }
 
     function normalizeWalletDenominations(wallet) {
-      const currentCounts = new Map(wallet.denominations.map((d) => [d.value_minor, d.count]));
+      const rows = Array.isArray(wallet.denominations) ? wallet.denominations : [];
+      const currentCounts = new Map(rows.map((d) => [d.value_minor, d.count]));
       const canonical = getCurrencyDenominations(wallet.currency);
       wallet.denominations = canonical.map((d) => ({
         ...d,
@@ -1703,6 +2957,178 @@ const STORAGE_KEY = 'kontana_state_v1';
     function exportJson(state) {
       const date = new Date().toISOString().slice(0, 10);
       downloadTextFile(JSON.stringify(state, null, 2), `kontana-export-${date}.json`, 'application/json');
+    }
+
+    function buildImportPreviewMessage(versionLabel, preview, options = {}) {
+      const hasBudgets = preview?.hasBudgetsOrEnvelopes
+        ? t('import.preview.yes')
+        : t('import.preview.no');
+      const walletCollisions = Array.isArray(options.walletCollisions)
+        ? options.walletCollisions.length
+        : 0;
+      const collisionNotice = walletCollisions > 0
+        ? `
+          <p class="status danger">${t('import.preview.wallet_collisions', { count: String(walletCollisions) })}</p>
+          <p class="muted">${t('import.preview.wallet_collisions_detail')}</p>
+        `
+        : '';
+      return `
+        <p>${t('import.preview.version', { version: versionLabel })}</p>
+        <p>${t('import.preview.wallets', { count: String(preview?.walletCount || 0) })}</p>
+        <p>${t('import.preview.transactions', { count: String(preview?.txCount || 0) })}</p>
+        <p>${t('import.preview.checkins', { count: String(preview?.checkinsCount || 0) })}</p>
+        <p>${t('import.preview.budgets', { value: hasBudgets })}</p>
+        ${collisionNotice}
+      `;
+    }
+
+    function formatValidationErrors(errors) {
+      if (!Array.isArray(errors) || errors.length === 0) return 'unknown error';
+      return errors.join(' | ');
+    }
+
+    function getCurrentRawStateForBackup() {
+      const rawState = readStateRaw();
+      if (rawState.ok && rawState.exists && typeof rawState.raw === 'string') {
+        return rawState.raw;
+      }
+      try {
+        return JSON.stringify(app.state);
+      } catch {
+        return null;
+      }
+    }
+
+    async function applyImportedState(importedStateV2, mode) {
+      const helper = window.KontanaImportExport;
+      if (!helper?.coerceToV2Candidate || !helper?.validateV2Candidate || !helper?.mergeStates) {
+        await modalAlert(t('alerts.import_invalid', { details: 'import helper unavailable' }));
+        return;
+      }
+
+      let candidateState = helper.coerceToV2Candidate(importedStateV2);
+      if (mode === 'merge') {
+        candidateState = helper.mergeStates(app.state, candidateState);
+        candidateState = helper.coerceToV2Candidate(candidateState);
+      }
+
+      const validation = helper.validateV2Candidate(candidateState);
+      if (!validation.ok) {
+        await modalAlert(t('alerts.import_invalid', { details: formatValidationErrors(validation.errors) }));
+        return;
+      }
+
+      const backupRaw = getCurrentRawStateForBackup();
+      if (typeof backupRaw === 'string') {
+        const backupResult = writeBackupRawIfMissing(backupRaw);
+        if (!backupResult.ok) {
+          setBlockingState(backupResult.error, backupRaw);
+          return;
+        }
+      }
+
+      const writeResult = writeStateRaw(candidateState);
+      if (!writeResult.ok) {
+        const currentRaw = getCurrentRawStateForBackup();
+        setBlockingState(writeResult.error, currentRaw || writeResult.raw || null);
+        return;
+      }
+
+      app.state = normalizeLoadedState(candidateState);
+      app.boot.needsMigration = false;
+      app.boot.migration = null;
+      app.boot.migrationRaw = null;
+      app.boot.migrationState = null;
+      await modalAlert(t('alerts.import_success'));
+      window.location.reload();
+    }
+
+    async function handleImportJsonFile(file) {
+      if (!file) return;
+      const isJsonName = typeof file.name === 'string' && /\.json$/i.test(file.name);
+      const isJsonType = typeof file.type === 'string' && /json/i.test(file.type);
+      if (!isJsonName && !isJsonType) {
+        await modalAlert(t('alerts.import_file_only_json'));
+        return;
+      }
+
+      let text = '';
+      try {
+        text = await file.text();
+      } catch {
+        await modalAlert(t('alerts.import_read_failed'));
+        return;
+      }
+
+      const helper = window.KontanaImportExport;
+      if (
+        !helper?.parseJsonText
+        || !helper?.detectImportVersion
+        || !helper?.coerceToV2Candidate
+        || !helper?.buildPreview
+        || !helper?.validateV2Candidate
+        || !helper?.getWalletIdCollisions
+      ) {
+        await modalAlert(t('alerts.import_invalid', { details: 'import helper unavailable' }));
+        return;
+      }
+
+      const parsed = helper.parseJsonText(text);
+      if (!parsed.ok) {
+        await modalAlert(t('alerts.import_invalid', { details: formatValidationErrors(parsed.errors) }));
+        return;
+      }
+
+      const detected = helper.detectImportVersion(parsed.value);
+      if (!detected.ok) {
+        await modalAlert(t('alerts.import_invalid', { details: formatValidationErrors(detected.errors) }));
+        return;
+      }
+
+      let importedState = parsed.value;
+      let versionLabel = 'v2';
+      if (detected.version === 'v1') {
+        try {
+          importedState = migrateStateToLatest(importedState, { to: 2 });
+          versionLabel = 'v1 -> v2';
+        } catch {
+          await modalAlert(t('alerts.import_migration_failed'));
+          return;
+        }
+      }
+
+      importedState = helper.coerceToV2Candidate(importedState);
+      const validation = helper.validateV2Candidate(importedState);
+      if (!validation.ok) {
+        await modalAlert(t('alerts.import_invalid', { details: formatValidationErrors(validation.errors) }));
+        return;
+      }
+
+      const preview = helper.buildPreview(importedState);
+      const walletCollisions = helper.getWalletIdCollisions(app.state, importedState);
+      const choice = await showModal({
+        title: t('import.preview.title'),
+        message: buildImportPreviewMessage(versionLabel, preview, { walletCollisions }),
+        actions: [
+          { id: 'merge', label: t('import.action.merge'), style: 'primary' },
+          { id: 'replace', label: t('import.action.replace'), style: 'danger' },
+          { id: 'cancel', label: t('common.cancel'), style: 'secondary' },
+        ],
+      });
+
+      if (choice === 'replace') {
+        const confirmed = await modalConfirm(
+          t('import.replace.confirm_body'),
+          t('import.replace.confirm_title'),
+        );
+        if (!confirmed) return;
+        await applyImportedState(importedState, 'replace');
+        return;
+      }
+
+      if (choice === 'merge') {
+        await applyImportedState(importedState, 'merge');
+      }
     }
 
     async function openPdfReport(state) {
@@ -1857,7 +3283,7 @@ const STORAGE_KEY = 'kontana_state_v1';
             ensureSpace(16);
             drawTableRowBackground(16, idx % 2 ? rowAltBg : rgb(1, 1, 1));
             const walletName = wrapCellText(walletLabelForPdf(wallet), walletCols[0].width - 12, 1)[0];
-            const totalText = formatMoney(getWalletTotal(wallet), wallet.currency);
+            const totalText = formatMoney(getWalletDisplayTotal(wallet), wallet.currency);
             drawTextLine(walletName, walletColX[0] + 6, y - 11);
             drawTextLine(totalText, walletColX[1] + walletCols[1].width - 6 - regular.widthOfTextAtSize(totalText, bodySize), y - 11);
             y -= 16;
@@ -1907,7 +3333,9 @@ const STORAGE_KEY = 'kontana_state_v1';
           txs.forEach((tx, idx) => {
             const amountMinor = Number.isFinite(tx.requested_amount_minor) ? tx.requested_amount_minor : (tx.amount_minor || 0);
             const paidMinor = Number.isFinite(tx.paid_amount_minor) ? tx.paid_amount_minor : 0;
-            const txTypeKey = tx.type === 'incoming' ? 'incoming' : 'outgoing';
+            const txTypeKey = ['incoming', 'outgoing', 'transfer_in', 'transfer_out', 'adjustment', 'spend'].includes(tx.type)
+              ? tx.type
+              : 'outgoing';
             const cells = {
               date: formatDateTimeEU(tx.created_at),
               wallet: tx.wallet_name || '-',
@@ -1964,6 +3392,8 @@ const STORAGE_KEY = 'kontana_state_v1';
         name: name.trim(),
         currency,
         enabled: true,
+        balance_minor: 0,
+        count_mode: 'denoms',
         denominations: defaultDenominations(currency),
         created_at: nowIso(),
         updated_at: nowIso(),
@@ -1981,6 +3411,8 @@ const STORAGE_KEY = 'kontana_state_v1';
         denom.count += direction * row.count;
         if (denom.count < 0) denom.count = 0;
       }
+      syncWalletBalanceMinor(wallet);
+      if (wallet.count_mode !== 'total') wallet.count_mode = 'denoms';
       wallet.updated_at = nowIso();
     }
 
@@ -1989,121 +3421,321 @@ const STORAGE_KEY = 'kontana_state_v1';
       wallet.denominations.forEach((denom) => {
         denom.count = byValue.get(denom.value_minor) || 0;
       });
+      syncWalletBalanceMinor(wallet);
+      wallet.count_mode = 'denoms';
       wallet.updated_at = nowIso();
     }
 
-    function loadState() {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return makeDefaultState();
+    function readStateRaw() {
+      const helper = window.KontanaStateIO;
+      if (helper?.readStateRaw) {
+        return helper.readStateRaw(STORAGE_KEY);
+      }
+      let raw = null;
       try {
-        const parsed = JSON.parse(raw);
-        const merged = { ...makeDefaultState(), ...parsed };
-        merged.settings = { ...makeDefaultState().settings, ...(parsed.settings || {}) };
-        if (!['en', 'es'].includes(merged.settings.language)) {
-          merged.settings.language = 'en';
-        }
-        if (typeof merged.settings.payment_strategies !== 'boolean') {
-          merged.settings.payment_strategies = true;
-        }
-        if (typeof merged.settings.change_suggestions !== 'boolean') {
-          merged.settings.change_suggestions = true;
-        }
-        if (typeof merged.settings.show_denominations_on_hand_only !== 'boolean') {
-          merged.settings.show_denominations_on_hand_only = false;
-        }
-        if (!merged.settings.payment_strategies) {
-          merged.settings.coins_rule = 'off';
-          merged.settings.change_suggestions = false;
-        }
-        if (!['greedy', 'lex', 'equalisation'].includes(merged.settings.default_strategy)) {
-          merged.settings.default_strategy = 'greedy';
-        }
-        if (![ORDER_LARGEST_FIRST, ORDER_SMALLEST_FIRST].includes(merged.settings.denomination_order)) {
-          merged.settings.denomination_order = ORDER_LARGEST_FIRST;
-        }
-        if (!['off', 'avoid', 'prefer'].includes(merged.settings.coins_rule)) {
-          merged.settings.coins_rule = 'off';
-        }
-        if (!['light', 'dark'].includes(merged.settings.appearance)) {
-          merged.settings.appearance = getInitialAppearance();
-        }
-        if (typeof merged.settings.biometric_lock !== 'boolean') {
-          merged.settings.biometric_lock = false;
-        }
-        if (merged.settings.biometric_lock && !isMobileDevice()) {
-          merged.settings.biometric_lock = false;
-        }
-        if (typeof merged.settings.single_cover !== 'boolean') {
-          merged.settings.single_cover = true;
-        }
-        if (typeof merged.settings.show_bills_coins !== 'boolean') {
-          merged.settings.show_bills_coins = true;
-        }
-        if (typeof merged.settings.show_cents !== 'boolean') {
-          merged.settings.show_cents = false;
-        }
-        merged.settings.tx_columns = { ...makeDefaultState().settings.tx_columns, ...(parsed.settings?.tx_columns || {}) };
-        merged.wallets = parsed.wallets || {};
-        if (!Array.isArray(merged.wallet_order)) merged.wallet_order = [];
-        Object.values(merged.wallets).forEach((wallet) => {
-          if (typeof wallet.enabled !== 'boolean') wallet.enabled = true;
-          normalizeWalletDenominations(wallet);
-        });
-        merged.transactions = Array.isArray(parsed.transactions) ? parsed.transactions : [];
-        merged.transactions = merged.transactions.map((tx) => {
-          const type = tx.type === 'payment' ? 'outgoing' : tx.type;
-          const category = PAYMENT_CATEGORIES.includes(tx.category) ? tx.category : 'uncategorized';
-          if (Number.isFinite(tx.delta_minor)) return { ...tx, type, category };
-          if (type === 'adjustment') return { ...tx, type, category, delta_minor: 0 };
-          if (type === 'incoming') return { ...tx, type, category, delta_minor: tx.amount_minor || 0 };
-          if (type === 'outgoing') return { ...tx, type, category, delta_minor: -(tx.amount_minor || 0) };
-          if (Number.isFinite(tx.requested_amount_minor)) {
-            const change = Number.isFinite(tx.change_received_minor) ? tx.change_received_minor : 0;
-            return { ...tx, category, delta_minor: -tx.requested_amount_minor + change, type: 'outgoing', amount_minor: tx.requested_amount_minor };
-          }
-          return { ...tx, category, type: type || 'adjustment', delta_minor: 0 };
-        });
-        const walletIds = Object.keys(merged.wallets);
-        const normalizedOrder = [];
-        const seen = new Set();
-        merged.wallet_order.forEach((id) => {
-          if (merged.wallets[id]) {
-            normalizedOrder.push(id);
-            seen.add(id);
-          }
-        });
-        walletIds.forEach((id) => {
-          if (!seen.has(id)) normalizedOrder.push(id);
-        });
-        merged.wallet_order = normalizedOrder;
-        const walletIdsWithTx = new Set(merged.transactions.map((tx) => tx.wallet_id));
-        Object.values(merged.wallets).forEach((wallet) => {
-          if (walletIdsWithTx.has(wallet.id)) return;
-          const total = getWalletTotal(wallet);
-          if (total <= 0) return;
-          merged.transactions.push({
-            id: uid('tx'),
-            created_at: nowIso(),
-            wallet_id: wallet.id,
-            wallet_name: wallet.name,
-            currency: wallet.currency,
-            type: 'adjustment',
-            amount_minor: 0,
-            delta_minor: total,
-            tag: 'Adjustment',
-            note: 'Initial balance migration',
-            category: 'uncategorized',
-            breakdown: wallet.denominations.filter((d) => d.count > 0).map((d) => ({ value_minor: d.value_minor, count: d.count })),
-          });
-        });
-        return merged;
+        raw = localStorage.getItem(STORAGE_KEY);
       } catch {
-        return makeDefaultState();
+        return { ok: false, error: 'storage_unavailable', raw: null };
+      }
+      if (raw == null) return { ok: true, exists: false, raw: null, value: null };
+      try {
+        const value = JSON.parse(raw);
+        return { ok: true, exists: true, raw, value };
+      } catch {
+        return { ok: false, error: 'corrupt_json', raw };
       }
     }
 
+    function writeStateRaw(nextState) {
+      const helper = window.KontanaStateIO;
+      if (helper?.writeStateRaw) {
+        return helper.writeStateRaw(nextState, STORAGE_KEY);
+      }
+      let raw = '';
+      try {
+        raw = JSON.stringify(nextState);
+      } catch {
+        return { ok: false, error: 'serialize_failed', raw: null };
+      }
+      try {
+        localStorage.setItem(STORAGE_KEY, raw);
+        return { ok: true, raw };
+      } catch (error) {
+        const isQuota = typeof error?.name === 'string' && error.name === 'QuotaExceededError';
+        return { ok: false, error: isQuota ? 'quota' : 'storage_unavailable', raw };
+      }
+    }
+
+    function writeBackupRawIfMissing(raw) {
+      const helper = window.KontanaStateIO;
+      if (helper?.writeRawStringIfMissing) {
+        return helper.writeRawStringIfMissing(raw, BACKUP_STORAGE_KEY);
+      }
+      if (typeof raw !== 'string') {
+        return { ok: false, error: 'invalid_raw' };
+      }
+      try {
+        const existing = localStorage.getItem(BACKUP_STORAGE_KEY);
+        if (existing != null) {
+          return { ok: true, created: false };
+        }
+        localStorage.setItem(BACKUP_STORAGE_KEY, raw);
+        return { ok: true, created: true };
+      } catch (error) {
+        const isQuota = typeof error?.name === 'string' && error.name === 'QuotaExceededError';
+        return { ok: false, error: isQuota ? 'quota' : 'storage_unavailable' };
+      }
+    }
+
+    function migrateStateToLatest(state, migration) {
+      const helper = window.KontanaMigrate;
+      const latestVersion = Number.isFinite(Number(migration?.to)) ? Number(migration.to) : 2;
+      if (helper?.migrateToLatest) {
+        return helper.migrateToLatest(state, { latestVersion });
+      }
+      if (latestVersion === 2 && helper?.migrateV1toV2) {
+        return helper.migrateV1toV2(state);
+      }
+      const cloned = JSON.parse(JSON.stringify(state));
+      cloned.schema_version = latestVersion;
+      return cloned;
+    }
+
+    function runMigrationShell(state) {
+      const helper = window.KontanaMigrate;
+      if (helper?.migrateIfNeeded) {
+        return helper.migrateIfNeeded(state, { latestVersion: 2 });
+      }
+      if (!Object.prototype.hasOwnProperty.call(state, 'schema_version')) {
+        return { needsMigration: true, from: 1, to: 2, state };
+      }
+      const schemaVersion = Number(state?.schema_version);
+      if (!Number.isFinite(schemaVersion)) return { needsMigration: true, from: 1, to: 2, state };
+      if (schemaVersion > 2) return { needsMigration: false, appTooOld: true, from: schemaVersion, to: 2, state };
+      if (schemaVersion < 2) return { needsMigration: true, from: schemaVersion, to: 2, state };
+      return { needsMigration: false, state };
+    }
+
+    function normalizeLoadedState(parsed, options = {}) {
+      const preserveLegacySchema = Boolean(options.preserveLegacySchema);
+      const baseDefaults = makeDefaultState();
+      if (preserveLegacySchema) {
+        delete baseDefaults.schema_version;
+        delete baseDefaults.checkins;
+        if (baseDefaults.settings) {
+          delete baseDefaults.settings.app_mode;
+          delete baseDefaults.settings.budget;
+        }
+      }
+      const merged = { ...baseDefaults, ...parsed };
+      merged.settings = { ...baseDefaults.settings, ...(parsed.settings || {}) };
+      if (baseDefaults.settings?.budget) {
+        merged.settings.budget = {
+          ...baseDefaults.settings.budget,
+          ...(parsed.settings?.budget || {}),
+        };
+        merged.settings.budget.drift_alerts = {
+          ...baseDefaults.settings.budget.drift_alerts,
+          ...(parsed.settings?.budget?.drift_alerts || {}),
+        };
+      }
+      if (!preserveLegacySchema) {
+        merged.schema_version = Number.isFinite(Number(parsed.schema_version))
+          ? Number(parsed.schema_version)
+          : 2;
+      }
+      if (!preserveLegacySchema || Array.isArray(parsed.checkins)) {
+        merged.checkins = Array.isArray(parsed.checkins) ? parsed.checkins : [];
+      }
+      if (!preserveLegacySchema && !['precise', 'budget'].includes(merged.settings.app_mode)) {
+        merged.settings.app_mode = 'precise';
+      }
+      if (!['en', 'es'].includes(merged.settings.language)) {
+        merged.settings.language = 'en';
+      }
+      if (typeof merged.settings.payment_strategies !== 'boolean') {
+        merged.settings.payment_strategies = true;
+      }
+      if (typeof merged.settings.change_suggestions !== 'boolean') {
+        merged.settings.change_suggestions = true;
+      }
+      if (typeof merged.settings.show_denominations_on_hand_only !== 'boolean') {
+        merged.settings.show_denominations_on_hand_only = false;
+      }
+      if (!merged.settings.payment_strategies) {
+        merged.settings.coins_rule = 'off';
+        merged.settings.change_suggestions = false;
+      }
+      if (!['greedy', 'lex', 'equalisation'].includes(merged.settings.default_strategy)) {
+        merged.settings.default_strategy = 'greedy';
+      }
+      if (![ORDER_LARGEST_FIRST, ORDER_SMALLEST_FIRST].includes(merged.settings.denomination_order)) {
+        merged.settings.denomination_order = ORDER_LARGEST_FIRST;
+      }
+      if (!['off', 'avoid', 'prefer'].includes(merged.settings.coins_rule)) {
+        merged.settings.coins_rule = 'off';
+      }
+      if (!['light', 'dark'].includes(merged.settings.appearance)) {
+        merged.settings.appearance = getInitialAppearance();
+      }
+      if (typeof merged.settings.biometric_lock !== 'boolean') {
+        merged.settings.biometric_lock = false;
+      }
+      if (merged.settings.biometric_lock && !isMobileDevice()) {
+        merged.settings.biometric_lock = false;
+      }
+      if (typeof merged.settings.single_cover !== 'boolean') {
+        merged.settings.single_cover = true;
+      }
+      if (typeof merged.settings.show_bills_coins !== 'boolean') {
+        merged.settings.show_bills_coins = true;
+      }
+      if (typeof merged.settings.show_cents !== 'boolean') {
+        merged.settings.show_cents = false;
+      }
+      merged.settings.tx_columns = { ...baseDefaults.settings.tx_columns, ...(parsed.settings?.tx_columns || {}) };
+      merged.wallets = parsed.wallets || {};
+      if (!Array.isArray(merged.wallet_order)) merged.wallet_order = [];
+      Object.values(merged.wallets).forEach((wallet) => {
+        if (typeof wallet.enabled !== 'boolean') wallet.enabled = true;
+        normalizeWalletDenominations(wallet);
+        if (!['denoms', 'total'].includes(wallet.count_mode)) wallet.count_mode = 'denoms';
+        if (!Number.isFinite(Number(wallet.balance_minor))) {
+          wallet.balance_minor = getWalletTotal(wallet);
+        } else {
+          wallet.balance_minor = Math.trunc(Number(wallet.balance_minor));
+        }
+      });
+      merged.transactions = Array.isArray(parsed.transactions) ? parsed.transactions : [];
+      merged.transactions = merged.transactions.map((tx) => {
+        const type = tx.type === 'payment' ? 'outgoing' : tx.type;
+        const fallbackCategory = type === 'adjustment'
+          ? 'unknown'
+          : ((type === 'transfer_in' || type === 'transfer_out')
+            ? 'transfer'
+            : (type === 'spend' ? 'misc' : 'uncategorized'));
+        const category = TX_CATEGORIES.includes(tx.category) ? tx.category : fallbackCategory;
+        if (Number.isFinite(tx.delta_minor)) return { ...tx, type, category };
+        if (type === 'adjustment') return { ...tx, type, category, delta_minor: 0 };
+        if (type === 'incoming') return { ...tx, type, category, delta_minor: tx.amount_minor || 0 };
+        if (type === 'outgoing') return { ...tx, type, category, delta_minor: -(tx.amount_minor || 0) };
+        if (type === 'transfer_in') return { ...tx, type, category, delta_minor: tx.amount_minor || 0 };
+        if (type === 'transfer_out') return { ...tx, type, category, delta_minor: -(tx.amount_minor || 0) };
+        if (type === 'spend') return { ...tx, type, category, delta_minor: -(tx.amount_minor || 0) };
+        if (Number.isFinite(tx.requested_amount_minor)) {
+          const change = Number.isFinite(tx.change_received_minor) ? tx.change_received_minor : 0;
+          return { ...tx, category, delta_minor: -tx.requested_amount_minor + change, type: 'outgoing', amount_minor: tx.requested_amount_minor };
+        }
+        return { ...tx, category, type: type || 'adjustment', delta_minor: 0 };
+      });
+      const walletIds = Object.keys(merged.wallets);
+      const normalizedOrder = [];
+      const seen = new Set();
+      merged.wallet_order.forEach((id) => {
+        if (merged.wallets[id]) {
+          normalizedOrder.push(id);
+          seen.add(id);
+        }
+      });
+      walletIds.forEach((id) => {
+        if (!seen.has(id)) normalizedOrder.push(id);
+      });
+      merged.wallet_order = normalizedOrder;
+      const walletIdsWithTx = new Set(merged.transactions.map((tx) => tx.wallet_id));
+      Object.values(merged.wallets).forEach((wallet) => {
+        if (walletIdsWithTx.has(wallet.id)) return;
+        const total = getWalletTotal(wallet);
+        if (total <= 0) return;
+        merged.transactions.push({
+          id: uid('tx'),
+          created_at: nowIso(),
+          wallet_id: wallet.id,
+          wallet_name: wallet.name,
+          currency: wallet.currency,
+          type: 'adjustment',
+          amount_minor: 0,
+          delta_minor: total,
+          tag: 'Adjustment',
+          note: 'Initial balance migration',
+          category: 'uncategorized',
+          breakdown: wallet.denominations.filter((d) => d.count > 0).map((d) => ({ value_minor: d.value_minor, count: d.count })),
+        });
+      });
+      return merged;
+    }
+
+    function loadInitialState() {
+      const readResult = readStateRaw();
+      if (!readResult.ok) {
+        return {
+          state: makeDefaultState(),
+          blocking: { reason: readResult.error, raw: readResult.raw || null },
+          needsMigration: false,
+          migration: null,
+          migrationRaw: null,
+          migrationState: null,
+        };
+      }
+      if (!readResult.exists) {
+        return {
+          state: makeDefaultState(),
+          blocking: null,
+          needsMigration: false,
+          migration: null,
+          migrationRaw: null,
+          migrationState: null,
+        };
+      }
+      const parsed = readResult.value;
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        return {
+          state: makeDefaultState(),
+          blocking: { reason: 'corrupt_json', raw: readResult.raw || null },
+          needsMigration: false,
+          migration: null,
+          migrationRaw: null,
+          migrationState: null,
+        };
+      }
+      const migration = runMigrationShell(parsed);
+      if (migration.appTooOld) {
+        return {
+          state: makeDefaultState(),
+          blocking: {
+            reason: 'app_too_old',
+            raw: readResult.raw || null,
+            schemaVersion: migration.from,
+          },
+          needsMigration: false,
+          migration,
+          migrationRaw: null,
+          migrationState: null,
+        };
+      }
+      if (migration.needsMigration) {
+        return {
+          state: normalizeLoadedState(parsed, { preserveLegacySchema: true }),
+          blocking: null,
+          needsMigration: true,
+          migration,
+          migrationRaw: readResult.raw || null,
+          migrationState: parsed,
+        };
+      }
+      return {
+        state: normalizeLoadedState(parsed),
+        blocking: null,
+        needsMigration: false,
+        migration,
+        migrationRaw: null,
+        migrationState: null,
+      };
+    }
+
+    const initialStateLoad = loadInitialState();
+
     const app = {
-      state: loadState(),
+      state: initialStateLoad.state,
       activeTab: 'cash',
       activeWalletId: null,
       cashDenomTabByWallet: {},
@@ -2130,12 +3762,97 @@ const STORAGE_KEY = 'kontana_state_v1';
       modal: null,
       modalResolver: null,
       settingsOpen: false,
+      settingsFocusTarget: null,
       isLocked: false,
       lockedAt: null,
+      boot: {
+        needsMigration: Boolean(initialStateLoad.needsMigration),
+        migration: initialStateLoad.migration || null,
+        migrationRaw: initialStateLoad.migrationRaw || null,
+        migrationState: initialStateLoad.migrationState || null,
+      },
+      txBudgetViewMode: getAppMode() === 'budget' ? 'dashboard' : 'ledger',
+      swUpdateDismissed: false,
+      swRefreshPending: false,
+      blocking: initialStateLoad.blocking || null,
     };
 
+    function setBlockingState(reason, raw = null, schemaVersion = null) {
+      const blocking = {
+        reason,
+        raw: typeof raw === 'string' ? raw : null,
+        schemaVersion: Number.isFinite(schemaVersion) ? schemaVersion : null,
+      };
+      if (blocking.raw == null) {
+        const latestRaw = readStateRaw();
+        if (latestRaw.ok && latestRaw.exists) {
+          blocking.raw = latestRaw.raw;
+        }
+      }
+      app.blocking = blocking;
+      renderBlockingState();
+    }
+
+    function runPendingMigration() {
+      if (!app.boot?.needsMigration) return { ok: true };
+
+      const migrationRaw = typeof app.boot.migrationRaw === 'string' ? app.boot.migrationRaw : null;
+      const migrationState = app.boot.migrationState;
+      if (!migrationState || typeof migrationState !== 'object' || Array.isArray(migrationState)) {
+        setBlockingState('corrupt_json', migrationRaw);
+        return { ok: false };
+      }
+
+      let migratedState = null;
+      try {
+        migratedState = migrateStateToLatest(migrationState, app.boot.migration);
+      } catch {
+        setBlockingState('migration_failed', migrationRaw);
+        return { ok: false };
+      }
+      if (!migratedState || typeof migratedState !== 'object' || Array.isArray(migratedState)) {
+        setBlockingState('migration_failed', migrationRaw);
+        return { ok: false };
+      }
+
+      const rawForBackup = migrationRaw || (() => {
+        try {
+          return JSON.stringify(migrationState);
+        } catch {
+          return null;
+        }
+      })();
+      if (typeof rawForBackup !== 'string') {
+        setBlockingState('migration_failed', migrationRaw);
+        return { ok: false };
+      }
+
+      const backupResult = writeBackupRawIfMissing(rawForBackup);
+      if (!backupResult.ok) {
+        setBlockingState(backupResult.error, rawForBackup);
+        return { ok: false };
+      }
+
+      const writeResult = writeStateRaw(migratedState);
+      if (!writeResult.ok) {
+        setBlockingState(writeResult.error, rawForBackup);
+        return { ok: false };
+      }
+
+      app.state = normalizeLoadedState(migratedState);
+      app.boot.needsMigration = false;
+      app.boot.migration = null;
+      app.boot.migrationRaw = null;
+      app.boot.migrationState = null;
+      return { ok: true };
+    }
+
     function saveState() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(app.state));
+      const result = writeStateRaw(app.state);
+      if (!result.ok) {
+        setBlockingState(result.error, result.raw);
+      }
+      return result;
     }
 
     function getWalletList() {
@@ -2191,7 +3908,11 @@ const STORAGE_KEY = 'kontana_state_v1';
     function setAppearance(theme) {
       const nextTheme = theme === 'dark' ? 'dark' : 'light';
       document.documentElement.dataset.theme = nextTheme;
-      localStorage.setItem('theme', nextTheme);
+      try {
+        localStorage.setItem('theme', nextTheme);
+      } catch {
+        // Ignore theme persistence failures and keep UI usable.
+      }
     }
 
     function getPaymentContext() {
@@ -2246,9 +3967,89 @@ const STORAGE_KEY = 'kontana_state_v1';
       };
     }
 
+    function renderBlockingState() {
+      const root = document.getElementById('app-modal-root');
+      if (!root) return;
+      const reason = app.blocking?.reason || 'corrupt_json';
+      const raw = typeof app.blocking?.raw === 'string' ? app.blocking.raw : null;
+      const hasRaw = Boolean(raw && raw.length > 0);
+      const isTooOld = reason === 'app_too_old';
+      const title = isTooOld
+        ? 'This app is too old to open your data.'
+        : 'We couldn’t load your data safely.';
+      const body = isTooOld
+        ? `Your data uses a newer schema version (${app.blocking?.schemaVersion ?? 'unknown'}). Update the app, then try again.`
+        : (reason === 'quota'
+          ? 'Storage is full, so we could not save safely. Your existing data was not overwritten.'
+          : 'Your existing local data is still intact. Choose an option below.');
+
+      root.innerHTML = `
+        <div class="modal-backdrop">
+          <section class="modal-card" role="dialog" aria-modal="true" aria-label="${title}">
+            <h3>${title}</h3>
+            <p>${body}</p>
+            <div class="inline-actions">
+              <button type="button" class="btn-primary-soft" id="blocking-export-raw" ${hasRaw ? '' : 'disabled'}>
+                Export raw data
+              </button>
+              ${isTooOld
+                ? '<button type="button" class="btn-secondary-soft" id="blocking-refresh">Refresh</button>'
+                : '<button type="button" class="btn-danger-soft" id="blocking-reset">Reset app</button>'}
+            </div>
+          </section>
+        </div>
+      `;
+
+      const exportBtn = document.getElementById('blocking-export-raw');
+      if (exportBtn) {
+        exportBtn.addEventListener('click', () => {
+          if (!raw) return;
+          const date = nowIso().slice(0, 10);
+          const downloaded = window.KontanaStateIO?.downloadRawData
+            ? window.KontanaStateIO.downloadRawData(raw, `kontana-raw-${date}.json`)
+            : { ok: false };
+          if (!downloaded.ok) {
+            downloadTextFile(raw, `kontana-raw-${date}.json`, 'application/json');
+          }
+        });
+      }
+
+      const resetBtn = document.getElementById('blocking-reset');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+          const confirmed = window.confirm('Reset local app data on this device?');
+          if (!confirmed) return;
+          const cleared = window.KontanaStateIO?.clearStateRaw
+            ? window.KontanaStateIO.clearStateRaw(STORAGE_KEY)
+            : (() => {
+                try {
+                  localStorage.removeItem(STORAGE_KEY);
+                  return { ok: true };
+                } catch {
+                  return { ok: false };
+                }
+              })();
+          if (!cleared.ok) return;
+          window.location.reload();
+        });
+      }
+
+      const refreshBtn = document.getElementById('blocking-refresh');
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => window.location.reload());
+      }
+    }
+
     function render() {
+      if (app.blocking) {
+        renderBlockingState();
+        return;
+      }
       Object.values(app.state.wallets).forEach((wallet) => normalizeWalletDenominations(wallet));
-      saveState();
+      if (!app.boot?.needsMigration) {
+        const saved = saveState();
+        if (!saved.ok) return;
+      }
       setAppearance(app.state.settings.appearance);
       
       if (app.isLocked) {
@@ -2555,6 +4356,22 @@ const STORAGE_KEY = 'kontana_state_v1';
 
       const settingsBtn = document.getElementById('open-settings');
       if (settingsBtn) settingsBtn.setAttribute('aria-label', t('tab.settings'));
+
+      const modePillBtn = document.getElementById('app-mode-pill');
+      if (modePillBtn) {
+        modePillBtn.textContent = getAppModePillLabel();
+        modePillBtn.setAttribute('aria-label', t('header.mode.open_settings'));
+        if (!modePillBtn.dataset.bound) {
+          modePillBtn.dataset.bound = 'true';
+          modePillBtn.addEventListener('click', async () => {
+            if (isAppGated()) {
+              await modalAlert(t('alerts.finish_edit_before_nav'));
+              return;
+            }
+            openSettingsOverlay('app-mode');
+          });
+        }
+      }
     }
 
     function renderWalletCards(wallets, activeWalletId, selectorId, compact = false, options = {}) {
@@ -2593,7 +4410,7 @@ const STORAGE_KEY = 'kontana_state_v1';
                   >
                     <p class="wallet-card-head">${CURRENCY_FLAGS[wallet.currency] || '🏳️'}</p>
                     <p class="wallet-card-name">${wallet.name}</p>
-                    <p class="wallet-card-total">${formatMoney(getWalletTotal(wallet), wallet.currency)}</p>
+                    <p class="wallet-card-total">${formatMoney(getWalletDisplayTotal(wallet), wallet.currency)}</p>
                   </div>
                 </div>
                 ${showActions && active ? `
@@ -2861,6 +4678,33 @@ const STORAGE_KEY = 'kontana_state_v1';
       }
 
       const isEditMode = app.editMode && app.editMode.walletId === wallet.id;
+      const appMode = getAppMode();
+      const walletEnvelopes = Array.isArray(wallet?.budget?.envelopes) ? wallet.budget.envelopes : [];
+      const isBudgetEnabled = wallet?.budget?.enabled === true;
+      const showBudgetEnvelopeCta = appMode === 'budget' && (!isBudgetEnabled || walletEnvelopes.length === 0);
+      const showBudgetEnvelopeList = appMode === 'budget' && isBudgetEnabled && walletEnvelopes.length > 0;
+      const showBudgetCheckinCta = appMode === 'budget' && isBudgetEnabled;
+      const showQuickReconcileCta = appMode === 'budget' && isBudgetEnabled;
+      const budgetCheckinDue = showBudgetCheckinCta ? isWalletCheckinDue(wallet) : false;
+      const driftAlert = appMode === 'budget' && isBudgetEnabled ? getWalletDriftAlert(wallet) : null;
+      const showDriftAlertBanner = !isEditMode && Boolean(driftAlert?.should_alert);
+      const driftAlertMinor = Number.isFinite(Number(driftAlert?.drift_minor))
+        ? Math.trunc(Number(driftAlert.drift_minor))
+        : 0;
+      const driftAlertLabel = driftAlertMinor === 0
+        ? formatMoney(0, wallet.currency)
+        : `${driftAlertMinor > 0 ? '+' : '-'}${formatMoney(Math.abs(driftAlertMinor), wallet.currency)}`;
+      const driftAlertThresholdLabel = formatMoney(
+        Number.isFinite(Number(driftAlert?.threshold_minor)) ? Math.trunc(Number(driftAlert.threshold_minor)) : 0,
+        wallet.currency,
+      );
+      const denomsStale = isWalletDenomsStale(wallet);
+      const envelopeListHtml = walletEnvelopes.map((envelope) => `
+        <article class="budget-envelope-row">
+          <p class="budget-envelope-name">${escapeBudgetHtml(envelope.name || '')}</p>
+          <p class="budget-envelope-target">${t('budget.envelopes.target')}: ${formatMoney(envelope.target_minor || 0, wallet.currency)}</p>
+        </article>
+      `).join('');
       const expectedTotal = getExpectedWalletTotal(wallet.id);
       const currentTotal = getWalletDraftTotal(wallet);
       const difference = currentTotal - expectedTotal;
@@ -2912,9 +4756,33 @@ const STORAGE_KEY = 'kontana_state_v1';
             ${!isEditMode && currentTotal === 0 ? `
               <p class="status warn">${t('cash.wallet_empty')}</p>
             ` : ''}
+            ${!isEditMode && showBudgetEnvelopeCta ? `
+              <div class="inline-actions">
+                <button type="button" id="budget-setup-envelopes" class="btn-secondary-soft">${t('cash.setup_envelopes_cta')}</button>
+              </div>
+            ` : ''}
+            ${!isEditMode && showBudgetCheckinCta ? `
+              <div class="inline-actions">
+                <button type="button" id="budget-checkin-now" class="btn-secondary-soft">${t('budget.checkin.cta')}</button>
+                ${showQuickReconcileCta ? `<button type="button" id="budget-quick-reconcile" class="btn-secondary-soft">${t('budget.quick_reconcile.cta')}</button>` : ''}
+                ${budgetCheckinDue ? `<span class="status warn">${t('budget.checkin.due')}</span>` : ''}
+              </div>
+            ` : ''}
+            ${showDriftAlertBanner ? `
+              <p class="status warn">${t('budget.drift_alert.banner')}</p>
+              <p class="muted">${t('budget.drift_alert.details', { drift: driftAlertLabel, threshold: driftAlertThresholdLabel })}</p>
+              <div class="inline-actions">
+                <button type="button" id="budget-drift-alert-checkin" class="btn-secondary-soft">${t('budget.drift_alert.checkin')}</button>
+                <button type="button" id="budget-drift-alert-tracking" class="btn-secondary-soft">${t('budget.drift_alert.tracking')}</button>
+                <button type="button" id="budget-drift-alert-targets" class="btn-secondary-soft">${t('budget.drift_alert.adjust_targets')}</button>
+                <button type="button" id="budget-drift-alert-snooze" class="btn-secondary-soft">${t('budget.drift_alert.snooze')}</button>
+              </div>
+            ` : ''}
+            ${!isEditMode && denomsStale ? `<p class="status warn">${t('cash.denoms_not_counted')}</p>` : ''}
             ${isEditMode ? `
               <section class="edit-status">
                 <p class="status warn">${t('cash.edit_mode_active')}</p>
+                ${denomsStale ? `<p class="status warn">${t('cash.denoms_stale_warning')}</p>` : ''}
                 <p class="edit-reconciliation">${t('cash.allocated_expected', { allocated: formatMoney(currentTotal, wallet.currency), expected: formatMoney(expectedTotal, wallet.currency) })}</p>
                 <p class="edit-reconciliation-pill ${difference === 0 ? 'success' : 'danger'}">${difference === 0 ? t('cash.reconciled') : (difference > 0 ? t('cash.over_by', { amount: formatMoney(Math.abs(difference), wallet.currency) }) : t('cash.short_by', { amount: formatMoney(Math.abs(difference), wallet.currency) }))}</p>
                 <div class="inline-actions edit-actions">
@@ -2924,6 +4792,13 @@ const STORAGE_KEY = 'kontana_state_v1';
               </section>
             ` : ''}
           </section>
+
+          ${showBudgetEnvelopeList ? `
+            <section class="card">
+              <h3>${t('budget.envelopes.title')}</h3>
+              <div class="budget-envelope-list">${envelopeListHtml}</div>
+            </section>
+          ` : ''}
 
           ${!isEditMode && currentTotal === 0 ? '' : `
             <section class="card">
@@ -2971,6 +4846,56 @@ const STORAGE_KEY = 'kontana_state_v1';
       if (addWalletCardBtn) {
         addWalletCardBtn.addEventListener('click', async () => {
           await openCreateWalletModal();
+        });
+      }
+
+      const budgetSetupBtn = document.getElementById('budget-setup-envelopes');
+      if (budgetSetupBtn) {
+        budgetSetupBtn.addEventListener('click', async () => {
+          await startBudgetOnboardingWizard(wallet.id);
+        });
+      }
+
+      const budgetCheckinBtn = document.getElementById('budget-checkin-now');
+      if (budgetCheckinBtn) {
+        budgetCheckinBtn.addEventListener('click', async () => {
+          await startBudgetCheckinFlow(wallet.id);
+        });
+      }
+      const budgetQuickReconcileBtn = document.getElementById('budget-quick-reconcile');
+      if (budgetQuickReconcileBtn) {
+        budgetQuickReconcileBtn.addEventListener('click', async () => {
+          await startQuickReconcileFlow(wallet.id);
+        });
+      }
+
+      const driftAlertCheckinBtn = document.getElementById('budget-drift-alert-checkin');
+      if (driftAlertCheckinBtn) {
+        driftAlertCheckinBtn.addEventListener('click', async () => {
+          await startBudgetCheckinFlow(wallet.id);
+        });
+      }
+
+      const driftAlertTrackingBtn = document.getElementById('budget-drift-alert-tracking');
+      if (driftAlertTrackingBtn) {
+        driftAlertTrackingBtn.addEventListener('click', () => {
+          enableWalletBigSpendTracking(wallet);
+          renderCashOnHand();
+        });
+      }
+
+      const driftAlertTargetsBtn = document.getElementById('budget-drift-alert-targets');
+      if (driftAlertTargetsBtn) {
+        driftAlertTargetsBtn.addEventListener('click', async () => {
+          await startBudgetOnboardingWizard(wallet.id);
+        });
+      }
+
+      const driftAlertSnoozeBtn = document.getElementById('budget-drift-alert-snooze');
+      if (driftAlertSnoozeBtn) {
+        driftAlertSnoozeBtn.addEventListener('click', () => {
+          setWalletDriftAlertSnooze(wallet);
+          renderCashOnHand();
         });
       }
 
@@ -3042,6 +4967,7 @@ const STORAGE_KEY = 'kontana_state_v1';
             ],
           });
           if (ok !== 'edit') return;
+          await warnIfDenomsStale(wallet);
           startEditMode();
         });
       }
@@ -3058,6 +4984,8 @@ const STORAGE_KEY = 'kontana_state_v1';
           wallet.denominations.forEach((d) => {
             d.count = app.editMode.draft[d.value_minor] || 0;
           });
+          syncWalletBalanceMinor(wallet);
+          wallet.count_mode = 'denoms';
           wallet.updated_at = nowIso();
           const priorBreakdown = app.editMode.snapshot.map((row) => ({ value_minor: row.value_minor, count: row.count }));
           const newBreakdown = wallet.denominations.filter((d) => d.count > 0).map((d) => ({ value_minor: d.value_minor, count: d.count }));
@@ -3134,1125 +5062,68 @@ const STORAGE_KEY = 'kontana_state_v1';
 
     }
 
-    function renderPay() {
-      const el = document.getElementById('tab-pay');
-      if (!el) return;
-      const wallets = getWalletList();
-      if (!wallets.length) {
-        el.innerHTML = `
-          <section class="panel">
-            <p class="empty-notice">${t('cash.no_wallets')}</p>
-            <div class="inline-actions">
-              <button type="button" id="open-create-wallet-pay" class="btn-secondary-soft">${t('cash.create_wallet')}</button>
-            </div>
-          </section>
-        `;
-        const openCreateWalletBtn = document.getElementById('open-create-wallet-pay');
-        if (openCreateWalletBtn) {
-          openCreateWalletBtn.addEventListener('click', openCreateWalletModal);
-        }
-        return;
-      }
-      const hasEntry = Boolean(
-        app.paymentDraft.amountInput.trim()
-        || app.paymentDraft.note.trim()
-        || (app.paymentDraft.category && app.paymentDraft.category !== 'uncategorized')
-        || Object.keys(app.paymentDraft.allocation || {}).length > 0
-        || app.paymentDraft.manualEntry
-        || app.paymentDraft.startedAllocation
-        || app.paymentDraft.incomingEntryMode
-      );
-      if (!hasEntry) {
-        app.paymentDraft.walletId = app.activeWalletId || wallets[0]?.id || null;
-      }
-      const wallet = app.state.wallets[app.paymentDraft.walletId || ''] || null;
-      if (wallet && !hasEntry) {
-        const walletTotal = getWalletTotal(wallet);
-        app.paymentDraft.mode = walletTotal === 0 ? 'incoming' : 'outgoing';
-      }
-      renderNewPayment('tab-pay', { showWalletSelector: true });
+    function getPayUiContext() {
+      return {
+        app,
+        t,
+        document,
+        console,
+        window,
+        ORDER_LARGEST_FIRST,
+        PAYMENT_CATEGORIES,
+        CURRENCY_NAMES,
+        CURRENCY_FLAGS,
+        WALLET_NAME_MAX,
+        getWalletList,
+        getWalletTotal,
+        getWalletDisplayTotal,
+        getWalletDenomGroups,
+        getActivePaymentTab,
+        getPaymentContext,
+        getAppMode,
+        getDraftAllocationTotal,
+        getSortedDenoms,
+        getAllocationTotal,
+        breakdownToAllocation,
+        allocationToBreakdown,
+        breakdownHtml,
+        parseAmountToMinor,
+        formatMoney,
+        formatDenomValue,
+        formatAmountDisplay,
+        formatDateTimeEU,
+        truncateNote,
+        categoryLabel,
+        renderCategoryOptions,
+        renderWalletCards,
+        switchPaymentMode,
+        openCreateWalletModal,
+        defaultDenominations,
+        computeChangeBreakdown,
+        promptManualChangeAllocation,
+        showModal,
+        modalAlert,
+        modalConfirm,
+        modalPrompt,
+        applyBreakdownToWallet,
+        setPaymentSuccess,
+        uid,
+        nowIso,
+        saveState,
+        render,
+        bindWalletCards,
+        bindWalletReorder,
+        warnIfDenomsStale,
+        startBudgetQuickSpendFlow,
+        startBudgetTransferFlow,
+        startBudgetAdjustmentFlow,
+      };
     }
 
-    function renderNewPayment(target = 'tab-payment', options = {}) {
-      const el = typeof target === 'string' ? document.getElementById(target) : target;
-      if (!el) return;
-      const rerenderPayment = () => renderNewPayment(target, options);
-      const showWalletSelector = Boolean(options.showWalletSelector);
-      const wallets = getWalletList();
-      if (wallets.length === 0) {
-        el.innerHTML = `
-          <section class="panel">
-            <p class="empty-notice">${t('cash.no_wallets')}</p>
-            <div class="inline-actions">
-              <button type="button" id="open-create-wallet-payment" class="btn-secondary-soft">${t('cash.create_wallet')}</button>
-            </div>
-          </section>
-        `;
-        const openCreateWalletBtn = document.getElementById('open-create-wallet-payment');
-        if (openCreateWalletBtn) {
-          openCreateWalletBtn.addEventListener('click', openCreateWalletModal);
-        }
-        return;
-      }
-
-      if (app.editMode) {
-        el.innerHTML = `
-          <section class="panel">
-            <section class="card">
-              <p class="status warn">${t('pay.blocked_title')}</p>
-              <p>${t('pay.blocked_body')}</p>
-            </section>
-          </section>
-        `;
-        return;
-      }
-
-      if (!app.paymentDraft.walletId || !app.state.wallets[app.paymentDraft.walletId]) {
-        app.paymentDraft.walletId = app.activeWalletId || wallets[0].id;
-      }
-      if (!wallets.some((w) => w.id === app.paymentDraft.walletId)) app.paymentDraft.walletId = wallets[0].id;
-      app.paymentDraft.strategy = app.state.settings.default_strategy || 'greedy';
-      if (!['incoming', 'outgoing'].includes(app.paymentDraft.mode)) app.paymentDraft.mode = 'outgoing';
-      if (!PAYMENT_CATEGORIES.includes(app.paymentDraft.category)) app.paymentDraft.category = 'uncategorized';
-      if (!app.paymentDraft.allocation || typeof app.paymentDraft.allocation !== 'object') {
-        app.paymentDraft.allocation = {};
-      }
-      if (typeof app.paymentDraft.manualEntry !== 'boolean') app.paymentDraft.manualEntry = false;
-      if (typeof app.paymentDraft.showAllDenoms !== 'boolean') app.paymentDraft.showAllDenoms = false;
-      if (app.paymentDraft.incomingEntryMode === undefined) app.paymentDraft.incomingEntryMode = null;
-      
-      // Auto-set incoming transactions to manual-direct mode
-      if (app.paymentDraft.mode === 'incoming' && app.paymentDraft.incomingEntryMode === null) {
-        app.paymentDraft.incomingEntryMode = 'manual';
-        app.paymentDraft.manualEntry = true;
-      }
-
-      if (app.pendingOutgoingChange && !app.state.wallets[app.pendingOutgoingChange.walletId]) {
-        app.pendingOutgoingChange = null;
-      }
-      // Manual change entry now runs fully in modal popup flow.
-      app.pendingOutgoingChange = null;
-
-      if (app.pendingOutgoingChange) {
-        const pending = app.pendingOutgoingChange;
-        const pendingWallet = app.state.wallets[pending.walletId];
-        app.paymentDraft.walletId = pending.walletId;
-        app.paymentDraft.mode = 'outgoing';
-        const changeRows = getSortedDenoms(pendingWallet, 'largest_first')
-          .filter((row) => row.value_minor <= pending.expectedChangeMinor);
-        const receivedTotal = getAllocationTotal(pending.receivedAllocation);
-        const canFinalize = receivedTotal === pending.expectedChangeMinor;
-        const changeRowHtml = changeRows.map((row) => {
-          const count = pending.receivedAllocation[row.value_minor] || 0;
-          return `<article class="denom-row">
-            <p class="denom-value">${formatDenomValue(row.value_minor, pendingWallet.currency)}</p>
-            <div class="denom-count-wrap">
-              <button type="button" class="denom-step" data-change-step="-1" data-denom="${row.value_minor}">-</button>
-              <input type="text" inputmode="numeric" pattern="[0-9]*" class="denom-input" data-change-denom="${row.value_minor}" value="${count}" />
-              <button type="button" class="denom-step" data-change-step="1" data-denom="${row.value_minor}">+</button>
-            </div>
-            <p class="denom-subtotal">${formatMoney(row.value_minor * count, pendingWallet.currency)}</p>
-          </article>`;
-        }).join('');
-
-        el.innerHTML = `
-          <section class="panel">
-            <section class="card">
-              <h3>${t('pay.confirm_change_received')}</h3>
-              <p class="muted">${t('pay.finalize_outgoing_for', { amount: formatMoney(pending.requestedAmountMinor, pendingWallet.currency) })}</p>
-              <p class="status warn">${t('pay.expected_change', { amount: formatMoney(pending.expectedChangeMinor, pendingWallet.currency) })}</p>
-              <div class="preview">
-                <p class="muted">${t('pay.suggested_change')}</p>
-                ${breakdownHtml(pendingWallet, pending.suggestedChangeBreakdown)}
-              </div>
-              <p class="muted">${t('pay.received_change_breakdown')}</p>
-              <div class="denom-header-row">
-                <p>${t('pay.denomination')}</p><p>${t('pay.count')}</p><p>${t('pay.subtotal')}</p>
-              </div>
-              <div class="denom-list">${changeRowHtml || `<p class="muted">${t('pay.no_denoms_for_change')}</p>`}</div>
-              <div class="preview">
-                <p class="muted">${t('pay.received_vs_expected', { received: formatMoney(receivedTotal, pendingWallet.currency), expected: formatMoney(pending.expectedChangeMinor, pendingWallet.currency) })}</p>
-                ${canFinalize ? `<p class="status success">${t('pay.change_total_reconciled')}</p>` : `<p class="status danger">${t('pay.change_total_must_match')}</p>`}
-              </div>
-              <div class="inline-actions edit-actions">
-                <button type="button" id="confirm-outgoing-finalize" class="btn-primary-soft" ${canFinalize ? '' : 'disabled'}>${t('pay.confirm_and_finalize')}</button>
-                <button type="button" id="cancel-change-confirm" class="btn-secondary-soft">${t('common.cancel')}</button>
-              </div>
-            </section>
-          </section>
-        `;
-
-        el.querySelectorAll('input[data-change-denom]').forEach((input) => {
-          input.addEventListener('input', (evt) => {
-            const denom = Number(evt.target.dataset.changeDenom);
-            const cleaned = String(evt.target.value || '').replace(/[^\d]/g, '');
-            if (cleaned !== evt.target.value) evt.target.value = cleaned;
-            pending.receivedAllocation[denom] = Math.max(0, Number.parseInt(cleaned || '0', 10) || 0);
-            rerenderPayment();
-          });
-        });
-
-        el.querySelectorAll('button[data-change-step]').forEach((btn) => {
-          btn.addEventListener('click', () => {
-            const denom = Number(btn.dataset.denom);
-            const step = Number(btn.dataset.changeStep);
-            const current = pending.receivedAllocation[denom] || 0;
-            pending.receivedAllocation[denom] = Math.max(0, current + step);
-            rerenderPayment();
-          });
-        });
-
-        document.getElementById('cancel-change-confirm').addEventListener('click', () => {
-          app.pendingOutgoingChange = null;
-          rerenderPayment();
-        });
-
-        document.getElementById('confirm-outgoing-finalize').addEventListener('click', () => {
-          const confirmedTotal = getAllocationTotal(pending.receivedAllocation);
-          if (confirmedTotal !== pending.expectedChangeMinor) return;
-          const paidBreakdown = pending.paidBreakdown;
-          const confirmedChangeBreakdown = allocationToBreakdown(pending.receivedAllocation);
-          applyBreakdownToWallet(pendingWallet, paidBreakdown, -1);
-          if (confirmedChangeBreakdown.length > 0) {
-            applyBreakdownToWallet(pendingWallet, confirmedChangeBreakdown, 1);
-          }
-          const tx = {
-            id: uid('tx'),
-            created_at: nowIso(),
-            wallet_id: pendingWallet.id,
-            wallet_name: pendingWallet.name,
-            currency: pendingWallet.currency,
-            type: 'outgoing',
-            amount_minor: pending.requestedAmountMinor,
-            delta_minor: -pending.requestedAmountMinor,
-            strategy: pending.strategy,
-            note: pending.note,
-            category: pending.category || 'uncategorized',
-            breakdown: paidBreakdown,
-            change_expected_minor: pending.expectedChangeMinor,
-            change_received_minor: pending.expectedChangeMinor,
-            change_breakdown: confirmedChangeBreakdown,
-          };
-          app.state.transactions.push(tx);
-          app.pendingOutgoingChange = null;
-          setPaymentSuccess(tx);
-          app.paymentDraft.note = '';
-          app.paymentDraft.category = 'uncategorized';
-          app.paymentDraft.amountInput = '';
-          app.paymentDraft.allocation = {};
-          app.paymentDraft.manualEntry = false;
-          app.paymentDraft.startedAllocation = false;
-          saveState();
-          render();
-        });
-        return;
-      }
-
-      const mode = app.paymentDraft.mode;
-      const wallet = app.state.wallets[app.paymentDraft.walletId];
-      const walletTotalForHint = getWalletTotal(wallet);
-      const zeroWalletHint = walletTotalForHint === 0 ? t('pay.wallet_empty_hint') : '';
-      const amountMinor = parseAmountToMinor(app.paymentDraft.amountInput, wallet.currency);
-      const noteText = app.paymentDraft.note.trim().slice(0, 30);
-      const category = PAYMENT_CATEGORIES.includes(app.paymentDraft.category) ? app.paymentDraft.category : 'uncategorized';
-      const draftAllocated = getDraftAllocationTotal();
-      const validAmount = amountMinor !== null && amountMinor > 0;
-      const { bills, coins } = getWalletDenomGroups(wallet);
-      const divideBillsCoins = app.state.settings.show_bills_coins;
-      const showToggle = divideBillsCoins && bills.length > 0 && coins.length > 0;
-      const activeTab = divideBillsCoins ? getActivePaymentTab(wallet) : 'all';
-      app.paymentDenomTabByWallet[wallet.id] = activeTab;
-      const smallestByType = {
-        bills: [...bills].sort((a, b) => a.value_minor - b.value_minor)[0] || null,
-        coins: [...coins].sort((a, b) => a.value_minor - b.value_minor)[0] || null,
-      };
-
-      const ctx = mode === 'outgoing' ? getPaymentContext() : null;
-      const denomOrder = app.state.settings.denomination_order || ORDER_LARGEST_FIRST;
-
-      const suggestedBreakdown = (() => {
-        if (!validAmount) return [];
-        if (mode === 'outgoing') {
-          if (ctx?.status === 'EXACT_PAYABLE' || ctx?.status === 'COVER_PAYABLE') return ctx.breakdown || [];
-          return [];
-        }
-        // Incoming transactions don't use suggestions - always return empty
-        return [];
-      })();
-      const strategiesEnabled = app.state.settings.payment_strategies;
-      const suggestionAvailable = strategiesEnabled && suggestedBreakdown.length > 0;
-      const usingSuggestion = suggestionAvailable && !app.paymentDraft.manualEntry;
-      const effectiveAllocation = usingSuggestion ? breakdownToAllocation(suggestedBreakdown) : app.paymentDraft.allocation;
-      const effectiveAllocated = getAllocationTotal(effectiveAllocation);
-      const allocationReady = amountMinor !== null && (mode === 'outgoing' ? effectiveAllocated >= amountMinor : effectiveAllocated === amountMinor);
-      app.paymentDraft.startedAllocation = Boolean(amountMinor !== null && (mode === 'outgoing' ? effectiveAllocated < amountMinor : draftAllocated !== amountMinor));
-      const walletTotalMinor = getWalletTotal(wallet);
-      const expectedChangeMinor = (mode === 'outgoing' && amountMinor !== null && effectiveAllocated >= amountMinor)
-        ? (effectiveAllocated - amountMinor)
-        : 0;
-      let applyDisabled = !allocationReady;
-      let suggestionStatusHtml = '';
-      let suggestionToneClass = 'suggestion-success';
-      const insufficientOutgoing = mode === 'outgoing'
-        && validAmount
-        && (amountMinor > walletTotalMinor || (strategiesEnabled && ctx && ctx.amountMinor !== null && ctx.status === 'INSUFFICIENT_FUNDS'));
-      const hasDraftEntry = Boolean(
-        app.paymentDraft.amountInput.trim()
-        || app.paymentDraft.note.trim()
-        || category !== 'uncategorized'
-        || Object.keys(app.paymentDraft.allocation || {}).length > 0
-        || app.paymentDraft.manualEntry
-      );
-
-      if (insufficientOutgoing) {
-        applyDisabled = true;
-        const missingMinor = Math.max(0, amountMinor - walletTotalMinor);
-        suggestionToneClass = 'suggestion-danger';
-        suggestionStatusHtml = `<p class="status danger">Missing: ${formatMoney(missingMinor, wallet.currency)}</p>`;
-      }
-      if (mode === 'outgoing' && ctx && ctx.amountMinor !== null && strategiesEnabled) {
-        if (ctx.status === 'EXACT_PAYABLE') {
-          suggestionStatusHtml = '<p class="status success">Exact suggestion</p>';
-          suggestionToneClass = 'suggestion-success';
-        } else if (ctx.status === 'COVER_PAYABLE') {
-          suggestionStatusHtml = `<p class="status warn">Change expected: ${formatMoney(ctx.overpay || 0, wallet.currency)}</p>`;
-          suggestionToneClass = 'suggestion-warn';
-        } else if (ctx.status === 'INSUFFICIENT_FUNDS') {
-          suggestionStatusHtml = `<p class="status danger">Missing: ${formatMoney(ctx.missingMinor, wallet.currency)}</p>`;
-          suggestionToneClass = 'suggestion-danger';
-        } else if (ctx.status === 'NO_EXACT_SUGGESTION') {
-          suggestionStatusHtml = '<p class="status warn">No exact suggestion available.</p>';
-          suggestionToneClass = 'suggestion-warn';
-        }
-      }
-
-      const noExactSuggestionState = mode === 'outgoing'
-        && strategiesEnabled
-        && !insufficientOutgoing
-        && ctx
-        && ctx.amountMinor !== null
-        && ctx.status === 'NO_EXACT_SUGGESTION';
-      const exactSuggestionState = mode === 'outgoing'
-        && strategiesEnabled
-        && !insufficientOutgoing
-        && ctx
-        && ctx.amountMinor !== null
-        && ctx.status === 'EXACT_PAYABLE';
-      const coverSuggestionState = mode === 'outgoing'
-        && strategiesEnabled
-        && !insufficientOutgoing
-        && ctx
-        && ctx.amountMinor !== null
-        && ctx.status === 'COVER_PAYABLE';
-
-      const incomingManualDirect = mode === 'incoming' && app.paymentDraft.incomingEntryMode === 'manual';
-      const manualDirect = app.paymentDraft.incomingEntryMode === 'manual';
-      const allRowsForTab = getSortedDenoms(wallet, denomOrder)
-        .filter((row) => (activeTab === 'all' ? true : (activeTab === 'bills' ? row.type === 'note' : row.type === 'coin')));
-      const rowsForTab = manualDirect
-        ? allRowsForTab
-        : (validAmount
-          ? allRowsForTab.filter((row) => {
-            if (mode === 'outgoing') {
-              if (row.count <= 0) return false;
-              if (strategiesEnabled) return row.value_minor <= amountMinor;
-              return true;
-            }
-            return row.value_minor <= amountMinor;
-          })
-          : []);
-      const showManualEditor = manualDirect || (validAmount && app.paymentDraft.manualEntry);
-
-      const allocationRows = rowsForTab
-        .map((row) => {
-          const count = effectiveAllocation[row.value_minor] || 0;
-          const willExceed = !incomingManualDirect && amountMinor !== null
-            && mode === 'incoming' && (effectiveAllocated + row.value_minor > amountMinor);
-          const maxAvailable = mode === 'outgoing' ? row.count : Infinity;
-          const atMaxAvailable = mode === 'outgoing' && count >= maxAvailable;
-          const disableAdd = atMaxAvailable;
-          const remainingAvailable = mode === 'outgoing' ? Math.max(0, row.count - count) : row.count;
-          const showRemaining = mode === 'outgoing';
-          return `<article class="denom-row ${willExceed ? 'denom-row-deemphasis' : ''}">
-            <p class="denom-value">${formatDenomValue(row.value_minor, wallet.currency)}${showRemaining ? ` <span class="muted">[${remainingAvailable}]</span>` : ''}</p>
-            <div class="denom-count-wrap">
-              <button type="button" class="denom-step" data-alloc-step="-1" data-denom="${row.value_minor}">-</button>
-              <input type="text" inputmode="numeric" pattern="[0-9]*" class="denom-input" data-alloc-denom="${row.value_minor}" value="${count}" />
-              <button type="button" class="denom-step ${disableAdd ? 'disabled' : ''}" data-alloc-step="1" data-denom="${row.value_minor}" ${disableAdd ? 'disabled' : ''}>+</button>
-            </div>
-            <p class="denom-subtotal">${formatMoney(row.value_minor * count, wallet.currency)}</p>
-          </article>`;
-        }).join('');
-      const outgoingOveruse = mode === 'outgoing'
-        ? getSortedDenoms(wallet, 'largest_first').some((row) => (effectiveAllocation[row.value_minor] || 0) > row.count)
-        : false;
-      if (outgoingOveruse) applyDisabled = true;
-      const allocNotEqual = amountMinor !== null && effectiveAllocated !== amountMinor;
-      const allocOverOutgoing = mode === 'outgoing' && amountMinor !== null && effectiveAllocated > amountMinor;
-      const allocToneClass = (() => {
-        if (mode === 'outgoing' && outgoingOveruse) return 'suggestion-danger';
-        if (mode === 'outgoing' && insufficientOutgoing) return 'suggestion-danger';
-        if (allocNotEqual) return 'suggestion-warn';
-        return '';
-      })();
-      const allocationPreviewHtml = manualDirect
-        ? `<div class="preview allocation-summary"><p class="allocation-line">Allocated count: ${formatMoney(effectiveAllocated, wallet.currency)}</p></div>`
-        : `
-        <div class="preview allocation-summary ${allocToneClass}">
-          ${mode === 'outgoing' && usingSuggestion ? `<p class="allocation-line">Allocated (suggested): ${formatMoney(effectiveAllocated, wallet.currency)} / Expected: ${formatMoney(amountMinor || 0, wallet.currency)}</p>` : ''}
-          ${mode === 'outgoing' && usingSuggestion ? '' : `<p class="allocation-line">Allocated: ${formatMoney(effectiveAllocated, wallet.currency)}${amountMinor !== null ? ` / Expected: ${formatMoney(amountMinor, wallet.currency)}` : ''}</p>`}
-          ${allocOverOutgoing ? `<p class="status warn">Change: ${formatMoney(effectiveAllocated - amountMinor, wallet.currency)}</p>` : ''}
-          ${mode === 'outgoing' && outgoingOveruse ? '<p class="status danger">Allocation exceeds available counts.</p>' : ''}
-        </div>
-      `;
-
-      const successSummary = app.paymentSuccessSummary;
-      const successTone = successSummary?.type === 'outgoing' ? 'danger' : 'success';
-      const successAmountLabel = successSummary
-        ? `${successSummary.type === 'incoming' ? '+' : '-'}${formatMoney(successSummary.amount_minor, successSummary.currency)}`
-        : '';
-      const headerHtml = showWalletSelector ? `
-        <section class="card payment-context-pill">
-          <div class="payment-wallet-selector">
-            ${renderWalletCards(wallets, wallet.id, 'pay-wallet', false, { showCreateCard: true, showActions: true })}
-          </div>
-          <div class="segmented-control" role="tablist" aria-label="${t('pay.payment_mode')}">
-            <button type="button" id="mode-outgoing" class="segment ${mode === 'outgoing' ? 'active' : ''}">↑ ${t('pay.mode_outgoing')}</button>
-            <button type="button" id="mode-incoming" class="segment ${mode === 'incoming' ? 'active' : ''}">↓ ${t('pay.mode_incoming')}</button>
-          </div>
-          ${zeroWalletHint ? `<p class="status warn">${zeroWalletHint}</p>` : ''}
-        </section>
-      ` : `
-        <section class="card payment-context-pill">
-          <div class="payment-wallet-summary">
-            <p class="muted">${t('pay.selected_wallet')}</p>
-            <p><strong>${CURRENCY_FLAGS[wallet.currency] || ''} ${wallet.name}</strong> · ${CURRENCY_NAMES[wallet.currency] || wallet.currency} · ${formatMoney(getWalletTotal(wallet), wallet.currency)}</p>
-          </div>
-          <div class="segmented-control" role="tablist" aria-label="${t('pay.payment_mode')}">
-            <button type="button" id="mode-outgoing" class="segment ${mode === 'outgoing' ? 'active' : ''}">↑ ${t('pay.mode_outgoing')}</button>
-            <button type="button" id="mode-incoming" class="segment ${mode === 'incoming' ? 'active' : ''}">↓ ${t('pay.mode_incoming')}</button>
-          </div>
-          ${zeroWalletHint ? `<p class="status warn">${zeroWalletHint}</p>` : ''}
-        </section>
-      `;
-
-      el.innerHTML = `
-        <section class="panel">
-          ${app.paymentSuccessSummary ? `
-            <section class="card payment-context-pill">
-              <div class="payment-wallet-summary">
-                <p class="muted">${t('pay.selected_wallet')}</p>
-                <p><strong>${CURRENCY_FLAGS[wallet.currency] || ''} ${wallet.name}</strong> · ${CURRENCY_NAMES[wallet.currency] || wallet.currency} · ${formatMoney(getWalletTotal(wallet), wallet.currency)}</p>
-              </div>
-            </section>
-            <section class="card">
-              <p class="status ${successTone}">${app.paymentSuccessMessage}</p>
-              <div class="tx-success-summary">
-                <div class="tx-success-row"><span>${t('common.date')}</span><span>${formatDateTimeEU(successSummary.created_at)}</span></div>
-                <div class="tx-success-row"><span>${t('common.wallet')}</span><span>${successSummary.wallet_name}</span></div>
-                <div class="tx-success-row"><span>${t('common.amount')}</span><span class="tx-amount ${successSummary.type === 'incoming' ? 'incoming' : 'outgoing'}">${successAmountLabel}</span></div>
-                <div class="tx-success-row"><span>${t('common.note')}</span><span>${truncateNote(successSummary.note || '', 30) || '-'}</span></div>
-                <div class="tx-success-row"><span>${t('common.category')}</span><span>${categoryLabel(successSummary.category)}</span></div>
-                ${successSummary.change_expected_minor > 0 ? `<div class="tx-success-row"><span>${t('common.change')}</span><span>${formatMoney(successSummary.change_expected_minor, successSummary.currency)} / ${formatMoney(successSummary.change_received_minor, successSummary.currency)}</span></div>` : ''}
-              </div>
-              <div class="inline-actions">
-                <button type="button" id="new-transaction" class="btn-secondary-soft">${t('pay.new_transaction')}</button>
-                <button type="button" id="revert-last-transaction" class="btn-danger-soft">${t('pay.revert_transaction')}</button>
-              </div>
-            </section>
-          ` : `
-            ${headerHtml}
-
-            <form id="payment-form" class="panel">
-            <section class="card payment-entry-pill">
-              ${manualDirect ? `
-              <div class="payment-entry-grid">
-                ${mode === 'outgoing' ? `
-                <label class="payment-amount-field">${t('pay.amount_label')}
-                  <input id="payment-amount" class="payment-amount-input" type="text" inputmode="decimal" value="${app.paymentDraft.amountDisplay || ''}" autocomplete="off" />
-                </label>
-                ` : ''}
-                <label>${t('pay.note_label')}
-                  <input id="payment-note" type="text" maxlength="30" value="${app.paymentDraft.note}" />
-                </label>
-                <label>${t('pay.category_label')}
-                  <select id="payment-category">${renderCategoryOptions(category)}</select>
-                </label>
-                ${app.paymentDraft.note.length >= 25 ? `<p class="muted note-limit-hint">${t('pay.note_limit', { count: app.paymentDraft.note.length, suffix: app.paymentDraft.note.length >= 30 ? t('pay.note_limit_reached') : '' })}</p>` : ''}
-              </div>
-              <div class="payment-divider" aria-hidden="true"></div>
-              <section class="payment-breakdown-inline">
-                ${allocationPreviewHtml}
-                ${showToggle ? `
-                  <div class="segmented-control" role="tablist" aria-label="${t('cash.denomination_type')}">
-                    <button type="button" class="segment ${activeTab === 'bills' ? 'active' : ''}" id="payment-bills">${t('cash.bills')}</button>
-                    <button type="button" class="segment ${activeTab === 'coins' ? 'active' : ''}" id="payment-coins">${t('cash.coins')}</button>
-                  </div>
-                ` : ''}
-                <div class="denom-list">${allocationRows || `<p class="muted">${t('pay.no_denoms_available')}</p>`}</div>
-              </section>
-              <div class="payment-actions">
-                ${mode === 'incoming' ? (effectiveAllocated > 0 ? `<button type="submit" class="btn-primary-soft">${t('pay.confirm_and_finalize')}</button>` : '') : ''}
-                ${mode === 'outgoing' && validAmount && !applyDisabled ? `<button type="submit" class="btn-primary-soft">${t('pay.confirm_and_finalize')}</button>` : ''}
-                <button type="button" id="payment-cancel-entry" class="btn-secondary-soft">${t('common.cancel')}</button>
-              </div>
-              ` : `
-              <div class="payment-entry-grid">
-                <label class="payment-amount-field">${t('pay.amount_label')}
-                  <input id="payment-amount" class="payment-amount-input" type="text" inputmode="decimal" value="${app.paymentDraft.amountDisplay || ''}" autocomplete="off" />
-                </label>
-                <label>${t('pay.note_label')}
-                  <input id="payment-note" type="text" maxlength="30" value="${app.paymentDraft.note}" />
-                </label>
-                <label>${t('pay.category_label')}
-                  <select id="payment-category">${renderCategoryOptions(category)}</select>
-                </label>
-                ${app.paymentDraft.note.length >= 25 ? `<p class="muted note-limit-hint">${t('pay.note_limit', { count: app.paymentDraft.note.length, suffix: app.paymentDraft.note.length >= 30 ? t('pay.note_limit_reached') : '' })}</p>` : ''}
-              </div>
-              <div class="payment-divider" aria-hidden="true"></div>
-              <section class="payment-breakdown-inline ${validAmount ? '' : 'disabled'}">
-                ${validAmount ? `
-                  ${insufficientOutgoing ? `
-                    <div class="preview suggestion-danger">
-                      <p class="status danger">${t('pay.insufficient_funds')}</p>
-                      ${suggestionStatusHtml}
-                    </div>
-                  ` : `
-                    ${!strategiesEnabled && mode === 'outgoing' ? `
-                      <div class="preview suggestion-warn">
-                        <p class="status warn">${t('pay.suggestions_off')}</p>
-                      </div>
-                      ${allocationPreviewHtml}
-                      ${!showManualEditor ? `<div class="inline-actions"><button type="button" id="payment-edit-manual" class="btn-secondary-soft">${t('pay.edit_manually')}</button></div>` : ''}
-                    ` : ''}
-                    ${!strategiesEnabled && mode !== 'outgoing' ? `
-                      ${allocationPreviewHtml}
-                      ${!showManualEditor ? `<div class="inline-actions"><button type="button" id="payment-edit-manual" class="btn-secondary-soft">${t('pay.edit_manually')}</button></div>` : ''}
-                    ` : ''}
-
-                    ${strategiesEnabled ? `
-                    ${noExactSuggestionState ? `
-                      <div class="preview suggestion-warn">
-                        ${suggestionStatusHtml}
-                      </div>
-                      ${allocationPreviewHtml}
-                      <div class="inline-actions">
-                        <button type="button" id="payment-edit-manual" class="btn-secondary-soft">${t('pay.edit_manually')}</button>
-                      </div>
-                    ` : `
-                    <div class="preview ${suggestionToneClass}">
-                      ${suggestedBreakdown.length > 0 ? breakdownHtml(wallet, suggestedBreakdown) : ''}
-                      ${suggestionStatusHtml}
-                      ${allocationPreviewHtml}
-                      ${suggestionAvailable ? `<div class="inline-actions"><button type="button" id="payment-use-suggested" class="${usingSuggestion ? 'btn-primary-soft' : 'btn-secondary-soft'}">${mode === 'outgoing' ? (ctx?.status === 'EXACT_PAYABLE' ? t('pay.use_and_finalize') : t('pay.use_suggested')) : t('pay.use_and_finalize')}</button><button type="button" id="payment-edit-manual" class="btn-secondary-soft">${t('pay.edit_manually')}</button></div>` : ''}
-                    </div>
-                    `}
-                    ` : ''}
-                    ${showManualEditor ? `
-                      ${showToggle ? `
-                        <div class="segmented-control" role="tablist" aria-label="${t('cash.denomination_type')}">
-                          <button type="button" class="segment ${activeTab === 'bills' ? 'active' : ''}" id="payment-bills">${t('cash.bills')}</button>
-                          <button type="button" class="segment ${activeTab === 'coins' ? 'active' : ''}" id="payment-coins">${t('cash.coins')}</button>
-                        </div>
-                      ` : ''}
-                      <div class="denom-list">${allocationRows || `<p class="muted">${t('pay.no_denoms_available_for_amount')}</p>`}</div>
-                    ` : ''}
-                    ${strategiesEnabled && !exactSuggestionState && !noExactSuggestionState && !coverSuggestionState ? '' : ''}
-                  `}
-                ` : `<p class="muted">${t('pay.enter_amount_to_allocate')}</p>`}
-              </section>
-              <div class="payment-actions">
-                ${mode === 'incoming' && (app.paymentDraft.manualEntry || !suggestionAvailable) && !applyDisabled && validAmount
-                  ? `<button type="submit" class="btn-primary-soft">${t('pay.finalize_incoming')}</button>`
-                  : ''}
-                ${mode === 'outgoing' && (app.paymentDraft.manualEntry || !suggestionAvailable) && !applyDisabled && validAmount
-                  ? `<button type="submit" class="btn-primary-soft">${t('pay.confirm_and_finalize')}</button>`
-                  : ''}
-                ${hasDraftEntry ? `<button type="button" id="payment-cancel-entry" class="btn-secondary-soft">${t('common.cancel')}</button>` : ''}
-              </div>
-              `}
-            </section>
-          </form>
-          `}
-        </section>
-      `;
-
-      if (showWalletSelector) {
-        bindWalletCards('pay-wallet', (walletId) => {
-          if (walletId === app.paymentDraft.walletId) return;
-          app.activeWalletId = walletId;
-          app.paymentDraft.walletId = walletId;
-          app.paymentDraft.amountInput = '';
-          app.paymentDraft.amountDisplay = '';
-          app.paymentDraft.note = '';
-          app.paymentDraft.category = 'uncategorized';
-          app.paymentDraft.allocation = {};
-          app.paymentDraft.manualEntry = false;
-          app.paymentDraft.startedAllocation = false;
-          app.paymentDraft.showAllDenoms = false;
-          app.paymentDraft.incomingEntryMode = null;
-          app.pendingOutgoingChange = null;
-          app.paymentSuccessMessage = '';
-          app.paymentSuccessSummary = null;
-          const wallet = app.state.wallets[walletId];
-          if (wallet) {
-            app.paymentDraft.mode = getWalletTotal(wallet) === 0 ? 'incoming' : 'outgoing';
-          }
-          render();
-        });
-        bindWalletReorder('pay-wallet');
-
-        const addWalletCardBtn = document.querySelector('[data-wallet-selector="pay-wallet"][data-wallet-add="1"]');
-        if (addWalletCardBtn) {
-          addWalletCardBtn.addEventListener('click', async () => {
-            await openCreateWalletModal();
-          });
-        }
-      }
-
-      const revertBtn = document.getElementById('revert-last-transaction');
-      if (revertBtn) {
-        revertBtn.addEventListener('click', async () => {
-          const confirmed = await modalConfirm(t('pay.revert_confirm'));
-          if (!confirmed) return;
-          const summary = app.paymentSuccessSummary;
-          if (!summary) return;
-          const txIdx = app.state.transactions.findIndex((tx) => tx.wallet_id === summary.wallet_id && tx.created_at === summary.created_at);
-          if (txIdx !== -1) {
-            const tx = app.state.transactions[txIdx];
-            const wallet = app.state.wallets[tx.wallet_id];
-            if (wallet && tx.breakdown) {
-              const direction = tx.type === 'incoming' ? -1 : 1;
-              applyBreakdownToWallet(wallet, tx.breakdown, direction);
-            }
-            if (wallet && tx.change_breakdown) {
-              applyBreakdownToWallet(wallet, tx.change_breakdown, -1);
-            }
-            app.state.transactions.splice(txIdx, 1);
-          }
-          app.paymentSuccessMessage = '';
-          app.paymentSuccessSummary = null;
-          app.paymentDraft.amountInput = '';
-          app.paymentDraft.amountDisplay = '';
-          app.paymentDraft.note = '';
-          app.paymentDraft.category = 'uncategorized';
-          app.paymentDraft.allocation = {};
-          app.paymentDraft.manualEntry = false;
-          app.paymentDraft.startedAllocation = false;
-          app.paymentDraft.showAllDenoms = false;
-          app.paymentDraft.incomingEntryMode = null;
-          app.pendingOutgoingChange = null;
-          render();
-        });
-      }
-      const newTransactionBtn = document.getElementById('new-transaction');
-      if (newTransactionBtn) {
-        newTransactionBtn.addEventListener('click', () => {
-          app.paymentDraft.amountInput = '';
-          app.paymentDraft.amountDisplay = '';
-          app.paymentDraft.note = '';
-          app.paymentDraft.category = 'uncategorized';
-          app.paymentDraft.allocation = {};
-          app.paymentDraft.manualEntry = false;
-          app.paymentDraft.startedAllocation = false;
-          app.paymentDraft.showAllDenoms = false;
-          app.paymentDraft.incomingEntryMode = null;
-          app.pendingOutgoingChange = null;
-          app.paymentSuccessMessage = '';
-          app.paymentSuccessSummary = null;
-          rerenderPayment();
-        });
-      }
-
-      if (app.paymentSuccessSummary) {
-        return;
-      }
-
-      const switchPaymentMode = (nextMode) => {
-        app.paymentDraft.mode = nextMode;
-        app.paymentSuccessMessage = '';
-        app.paymentSuccessSummary = null;
-        app.paymentDraft.allocation = {};
-        app.paymentDraft.manualEntry = false;
-        app.paymentDraft.startedAllocation = false;
-        app.paymentDraft.showAllDenoms = false;
-        app.paymentDraft.incomingEntryMode = null;
-        app.pendingOutgoingChange = null;
-        rerenderPayment();
-      };
-      document.getElementById('mode-outgoing').addEventListener('click', () => {
-        switchPaymentMode('outgoing');
-      });
-      document.getElementById('mode-incoming').addEventListener('click', () => {
-        switchPaymentMode('incoming');
-      });
-
-
-            
-      const paymentAmountEl = document.getElementById('payment-amount');
-      if (paymentAmountEl) {
-        paymentAmountEl.addEventListener('input', (e) => {
-          const raw = e.target.value.replace(/[^0-9.,]/g, '');
-          app.paymentDraft.amountInput = raw;
-          const formatted = formatAmountDisplay(raw, wallet.currency);
-          app.paymentDraft.amountDisplay = formatted;
-          const cursorPos = e.target.selectionStart;
-          const lenDiff = formatted.length - e.target.value.length;
-          app.paymentSuccessMessage = '';
-          app.paymentSuccessSummary = null;
-          app.paymentDraft.allocation = {};
-          app.paymentDraft.manualEntry = false;
-          app.paymentDraft.startedAllocation = false;
-          app.paymentDraft.showAllDenoms = false;
-          rerenderPayment();
-          const amountInput = document.getElementById('payment-amount');
-          if (amountInput) {
-            amountInput.focus();
-            const newPos = Math.max(0, Math.min((cursorPos || 0) + lenDiff, amountInput.value.length));
-            amountInput.setSelectionRange(newPos, newPos);
-          }
-        });
-      }
-
-      const paymentNoteEl = document.getElementById('payment-note');
-      if (paymentNoteEl) {
-        paymentNoteEl.addEventListener('input', (e) => {
-          const cursorStart = e.target.selectionStart;
-          const cursorEnd = e.target.selectionEnd;
-          app.paymentDraft.note = e.target.value;
-          app.paymentSuccessMessage = '';
-          app.paymentSuccessSummary = null;
-          rerenderPayment();
-          const noteInput = document.getElementById('payment-note');
-          if (noteInput) {
-            noteInput.focus();
-            if (cursorStart !== null && cursorEnd !== null) {
-              const start = Math.min(cursorStart, noteInput.value.length);
-              const end = Math.min(cursorEnd, noteInput.value.length);
-              noteInput.setSelectionRange(start, end);
-            }
-          }
-        });
-      }
-      const paymentCategoryEl = document.getElementById('payment-category');
-      if (paymentCategoryEl) {
-        paymentCategoryEl.addEventListener('change', (e) => {
-          const next = PAYMENT_CATEGORIES.includes(e.target.value) ? e.target.value : 'uncategorized';
-          app.paymentDraft.category = next;
-          app.paymentSuccessMessage = '';
-          app.paymentSuccessSummary = null;
-          rerenderPayment();
-        });
-      }
-      const paymentBills = document.getElementById('payment-bills');
-      const paymentCoins = document.getElementById('payment-coins');
-      if (paymentBills) {
-        paymentBills.addEventListener('click', () => {
-          app.paymentDenomTabByWallet[wallet.id] = 'bills';
-          rerenderPayment();
-        });
-      }
-      if (paymentCoins) {
-        paymentCoins.addEventListener('click', () => {
-          app.paymentDenomTabByWallet[wallet.id] = 'coins';
-          rerenderPayment();
-        });
-      }
-      const paymentUseSuggested = document.getElementById('payment-use-suggested');
-      if (paymentUseSuggested) {
-        paymentUseSuggested.addEventListener('click', async () => {
-          app.paymentDraft.allocation = breakdownToAllocation(suggestedBreakdown);
-          app.paymentDraft.manualEntry = false;
-          app.paymentSuccessMessage = '';
-          app.paymentSuccessSummary = null;
-          rerenderPayment();
-          if (mode === 'incoming' && amountMinor !== null) {
-            const suggestedAllocation = breakdownToAllocation(suggestedBreakdown);
-            const suggestedTotal = getAllocationTotal(suggestedAllocation);
-            if (suggestedTotal === amountMinor) {
-              const breakdown = allocationToBreakdown(suggestedAllocation);
-              applyBreakdownToWallet(wallet, breakdown, 1);
-              const tx = {
-                id: uid('tx'),
-                created_at: nowIso(),
-                wallet_id: wallet.id,
-                wallet_name: wallet.name,
-                currency: wallet.currency,
-                type: 'incoming',
-                amount_minor: amountMinor,
-                delta_minor: amountMinor,
-                note: noteText || undefined,
-                category,
-                breakdown,
-              };
-              app.state.transactions.push(tx);
-              setPaymentSuccess(tx);
-              app.paymentDraft.note = '';
-              app.paymentDraft.category = 'uncategorized';
-              app.paymentDraft.amountInput = '';
-              app.paymentDraft.allocation = {};
-              app.paymentDraft.manualEntry = false;
-              app.paymentDraft.startedAllocation = false;
-              app.paymentDraft.incomingEntryMode = null;
-              saveState();
-              render();
-              return;
-            }
-          }
-          if (mode === 'outgoing' && amountMinor !== null) {
-            const suggestedAllocation = breakdownToAllocation(suggestedBreakdown);
-            const suggestedTotal = getAllocationTotal(suggestedAllocation);
-            if (suggestedTotal >= amountMinor) {
-              await handleOutgoingFinalize(allocationToBreakdown(suggestedAllocation), suggestedTotal);
-            }
-          }
-        });
-      }
-      const paymentEditManual = document.getElementById('payment-edit-manual');
-      if (paymentEditManual) {
-        paymentEditManual.addEventListener('click', () => {
-          app.paymentDraft.manualEntry = true;
-          app.paymentDraft.allocation = {};
-          rerenderPayment();
-        });
-      }
-      const paymentCancelEntry = document.getElementById('payment-cancel-entry');
-      if (paymentCancelEntry) {
-        paymentCancelEntry.addEventListener('click', () => {
-          app.paymentDraft.amountInput = '';
-          app.paymentDraft.amountDisplay = '';
-          app.paymentDraft.note = '';
-          app.paymentDraft.category = 'uncategorized';
-          app.paymentDraft.allocation = {};
-          app.paymentDraft.manualEntry = false;
-          app.paymentDraft.startedAllocation = false;
-          app.paymentDraft.incomingEntryMode = null;
-          app.pendingOutgoingChange = null;
-          app.paymentSuccessMessage = '';
-          app.paymentSuccessSummary = null;
-          rerenderPayment();
-        });
-      }
-
-      const handleOutgoingFinalize = async (breakdown, allocatedTotalMinor) => {
-        const invalid = breakdown.some((row) => row.count > (wallet.denominations.find((d) => d.value_minor === row.value_minor)?.count || 0));
-        if (invalid) return;
-
-        const changeExpectedMinor = Math.max(0, allocatedTotalMinor - amountMinor);
-        const strategiesEnabled = app.state.settings.payment_strategies;
-        const changeSuggestionsEnabled = app.state.settings.change_suggestions;
-        const allowChangeSuggestion = strategiesEnabled && changeSuggestionsEnabled;
-        const changeBreakdown = changeExpectedMinor > 0 && allowChangeSuggestion
-          ? computeChangeBreakdown(defaultDenominations(wallet.currency), changeExpectedMinor)
-          : [];
-        if (changeExpectedMinor > 0) {
-          if (!allowChangeSuggestion) {
-            const manualAllocation = await promptManualChangeAllocation(wallet, changeExpectedMinor, {});
-            if (!manualAllocation) return;
-            const manualChangeBreakdown = allocationToBreakdown(manualAllocation);
-            applyBreakdownToWallet(wallet, breakdown, -1);
-            if (manualChangeBreakdown.length > 0) {
-              applyBreakdownToWallet(wallet, manualChangeBreakdown, 1);
-            }
-            const tx = {
-              id: uid('tx'),
-              created_at: nowIso(),
-              wallet_id: wallet.id,
-              wallet_name: wallet.name,
-              currency: wallet.currency,
-              type: 'outgoing',
-              amount_minor: amountMinor,
-              delta_minor: -amountMinor,
-              strategy: app.paymentDraft.strategy,
-              note: noteText,
-              category,
-              breakdown,
-              change_expected_minor: changeExpectedMinor,
-              change_received_minor: changeExpectedMinor,
-              change_breakdown: manualChangeBreakdown,
-            };
-            app.state.transactions.push(tx);
-            setPaymentSuccess(tx);
-            app.paymentDraft.note = '';
-            app.paymentDraft.category = 'uncategorized';
-            app.paymentDraft.amountInput = '';
-            app.paymentDraft.allocation = {};
-            app.paymentDraft.manualEntry = false;
-            app.paymentDraft.startedAllocation = false;
-            saveState();
-            render();
-            return;
-          }
-          const suggestedLabel = changeBreakdown.length > 0
-          ? changeBreakdown.map((row) => `${formatDenomValue(row.value_minor, wallet.currency)} x ${row.count}`).join('<br>')
-          : t('pay.no_auto_suggestion');
-        const changeAction = await showModal({
-          title: t('pay.confirm_change_received'),
-          message: `<strong>${t('pay.expected_change', { amount: '' }).replace(/:\s*$/, '')}:</strong> ${formatMoney(changeExpectedMinor, wallet.currency)}<br><strong>${t('pay.suggested_change')}:</strong><br>${suggestedLabel}`,
-          actions: [
-            { id: 'confirm_suggested', label: t('pay.confirm_suggested'), style: 'primary' },
-            { id: 'manual_change', label: t('pay.enter_manually'), style: 'secondary' },
-            { id: 'cancel', label: t('common.cancel'), style: 'secondary' },
-          ],
-        });
-          if (changeAction === 'confirm_suggested') {
-            applyBreakdownToWallet(wallet, breakdown, -1);
-            if (changeBreakdown.length > 0) {
-              applyBreakdownToWallet(wallet, changeBreakdown, 1);
-            }
-            const tx = {
-              id: uid('tx'),
-              created_at: nowIso(),
-              wallet_id: wallet.id,
-              wallet_name: wallet.name,
-              currency: wallet.currency,
-              type: 'outgoing',
-              amount_minor: amountMinor,
-              delta_minor: -amountMinor,
-              strategy: app.paymentDraft.strategy,
-              note: noteText,
-              category,
-              breakdown,
-              change_expected_minor: changeExpectedMinor,
-              change_received_minor: changeExpectedMinor,
-              change_breakdown: changeBreakdown,
-            };
-            app.state.transactions.push(tx);
-            setPaymentSuccess(tx);
-            app.paymentDraft.note = '';
-            app.paymentDraft.category = 'uncategorized';
-            app.paymentDraft.amountInput = '';
-            app.paymentDraft.allocation = {};
-            app.paymentDraft.manualEntry = false;
-            app.paymentDraft.startedAllocation = false;
-            saveState();
-            render();
-            return;
-          }
-          if (changeAction === 'manual_change') {
-            const manualAllocation = await promptManualChangeAllocation(wallet, changeExpectedMinor, {});
-            if (!manualAllocation) return;
-            const manualChangeBreakdown = allocationToBreakdown(manualAllocation);
-            applyBreakdownToWallet(wallet, breakdown, -1);
-            if (manualChangeBreakdown.length > 0) {
-              applyBreakdownToWallet(wallet, manualChangeBreakdown, 1);
-            }
-            const tx = {
-              id: uid('tx'),
-              created_at: nowIso(),
-              wallet_id: wallet.id,
-              wallet_name: wallet.name,
-              currency: wallet.currency,
-              type: 'outgoing',
-              amount_minor: amountMinor,
-              delta_minor: -amountMinor,
-              strategy: app.paymentDraft.strategy,
-              note: noteText,
-              category,
-              breakdown,
-              change_expected_minor: changeExpectedMinor,
-              change_received_minor: changeExpectedMinor,
-              change_breakdown: manualChangeBreakdown,
-            };
-            app.state.transactions.push(tx);
-            setPaymentSuccess(tx);
-            app.paymentDraft.note = '';
-            app.paymentDraft.category = 'uncategorized';
-            app.paymentDraft.amountInput = '';
-            app.paymentDraft.allocation = {};
-            app.paymentDraft.manualEntry = false;
-            app.paymentDraft.startedAllocation = false;
-            saveState();
-            render();
-          }
-          return;
-        }
-
-        applyBreakdownToWallet(wallet, breakdown, -1);
-        const tx = {
-          id: uid('tx'),
-          created_at: nowIso(),
-          wallet_id: wallet.id,
-          wallet_name: wallet.name,
-          currency: wallet.currency,
-          type: 'outgoing',
-          amount_minor: amountMinor,
-          delta_minor: -amountMinor,
-          strategy: app.paymentDraft.strategy,
-          note: noteText,
-          category,
-          breakdown,
-        };
-        app.state.transactions.push(tx);
-        setPaymentSuccess(tx);
-        app.paymentDraft.note = '';
-        app.paymentDraft.category = 'uncategorized';
-        app.paymentDraft.amountInput = '';
-        app.paymentDraft.allocation = {};
-        app.paymentDraft.manualEntry = false;
-        app.paymentDraft.startedAllocation = false;
-        saveState();
-        render();
-      };
-
-      document.getElementById('payment-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const finalAmountMinor = manualDirect ? (mode === 'incoming' ? effectiveAllocated : amountMinor) : amountMinor;
-        if (manualDirect) {
-          if (mode === 'incoming' && effectiveAllocated <= 0) return;
-          if (mode === 'outgoing' && finalAmountMinor === null) return;
-        } else {
-          if (finalAmountMinor === null) return;
-          if (mode === 'outgoing' ? effectiveAllocated < finalAmountMinor : effectiveAllocated !== finalAmountMinor) return;
-        }
-        const breakdown = allocationToBreakdown(effectiveAllocation);
-
-        if (mode === 'outgoing') {
-          await handleOutgoingFinalize(breakdown, effectiveAllocated);
-          return;
-        }
-
-        applyBreakdownToWallet(wallet, breakdown, 1);
-        const tx = {
-          id: uid('tx'),
-          created_at: nowIso(),
-          wallet_id: wallet.id,
-          wallet_name: wallet.name,
-          currency: wallet.currency,
-          type: 'incoming',
-          amount_minor: finalAmountMinor,
-          delta_minor: finalAmountMinor,
-          strategy: undefined,
-          note: noteText,
-          category,
-          breakdown,
-        };
-        app.state.transactions.push(tx);
-        setPaymentSuccess(tx);
-        app.paymentDraft.note = '';
-        app.paymentDraft.category = 'uncategorized';
-        app.paymentDraft.amountInput = '';
-        app.paymentDraft.allocation = {};
-        app.paymentDraft.manualEntry = false;
-        app.paymentDraft.startedAllocation = false;
-        app.paymentDraft.incomingEntryMode = null;
-        saveState();
-        render();
-      });
-
-      if (showManualEditor) {
-        el.querySelectorAll('input[data-alloc-denom]').forEach((input) => {
-          input.addEventListener('input', (evt) => {
-            const denom = Number(evt.target.dataset.allocDenom);
-            const cleaned = String(evt.target.value || '').replace(/[^\d]/g, '');
-            if (cleaned !== evt.target.value) evt.target.value = cleaned;
-            const maxAvail = mode === 'outgoing'
-              ? (wallet.denominations.find((d) => d.value_minor === denom)?.count || 0)
-              : Infinity;
-            const next = Math.max(0, Number.parseInt(cleaned || '0', 10) || 0);
-            let capped = Math.min(next, maxAvail);
-            if (mode === 'incoming' && amountMinor !== null) {
-              const current = app.paymentDraft.allocation[denom] || 0;
-              const totalWithout = effectiveAllocated - current * denom;
-              const maxByAmount = Math.max(0, Math.floor((amountMinor - totalWithout) / denom));
-              capped = Math.min(capped, maxByAmount);
-            }
-            app.paymentDraft.allocation[denom] = capped;
-            app.paymentDraft.manualEntry = true;
-            rerenderPayment();
-          });
-        });
-        el.querySelectorAll('button[data-alloc-step]').forEach((btn) => {
-          btn.addEventListener('click', () => {
-            const denom = Number(btn.dataset.denom);
-            const step = Number(btn.dataset.allocStep);
-            const current = app.paymentDraft.allocation[denom] || 0;
-            const maxAvail = mode === 'outgoing'
-              ? (wallet.denominations.find((d) => d.value_minor === denom)?.count || 0)
-              : Infinity;
-            let next = Math.max(0, Math.min(current + step, maxAvail));
-            if (mode === 'incoming' && amountMinor !== null) {
-              const totalWithout = effectiveAllocated - current * denom;
-              const maxByAmount = Math.max(0, Math.floor((amountMinor - totalWithout) / denom));
-              next = Math.min(next, maxByAmount);
-            }
-            app.paymentDraft.allocation[denom] = next;
-            app.paymentDraft.manualEntry = true;
-            rerenderPayment();
-          });
-        });
-      }
-
-      // Add wallet action event handler
-      const payWalletActionsBtn = el.querySelector('[data-wallet-action="1"]');
-      if (payWalletActionsBtn) {
-        payWalletActionsBtn.addEventListener('click', async () => {
-          const choice = await showModal({
-            title: t('wallet.actions_title'),
-            message: t('wallet.manage', { name: wallet.name }),
-            showClose: true,
-            actions: [
-              { id: 'name', label: t('wallet.edit_name'), style: 'secondary' },
-              { id: 'denoms', label: t('wallet.edit_denoms'), style: 'secondary' },
-              { id: 'delete', label: t('wallet.delete'), style: 'danger' },
-            ],
-          });
-          if (choice === 'name') {
-            const name = await modalPrompt(t('wallet.new_name_prompt'), wallet.name, t('wallet.edit_name_title'), '', WALLET_NAME_MAX);
-            if (!name) return;
-            if (name.length > WALLET_NAME_MAX) {
-              await modalAlert(t('wallet.name_too_long', { max: WALLET_NAME_MAX }));
-              return;
-            }
-            wallet.name = name.trim();
-            wallet.updated_at = nowIso();
-            saveState();
-            rerenderPayment();
-            return;
-          }
-          if (choice === 'delete') {
-            const ok = await modalConfirm(t('wallet.delete_confirm', { name: wallet.name }), t('wallet.delete_title'));
-            if (!ok) return;
-            const id = wallet.id;
-            delete app.state.wallets[id];
-            if (Array.isArray(app.state.wallet_order)) {
-              app.state.wallet_order = app.state.wallet_order.filter((walletId) => walletId !== id);
-            }
-            app.state.transactions = app.state.transactions.filter((tx) => tx.wallet_id !== id);
-            if (app.activeWalletId === id) {
-              app.activeWalletId = getWalletList()[0]?.id || null;
-            }
-            if (app.paymentDraft.walletId === id) {
-              app.paymentDraft.walletId = getWalletList()[0]?.id || null;
-            }
-            if (app.editMode && app.editMode.walletId === id) app.editMode = null;
-            saveState();
-            rerenderPayment();
-            return;
-          }
-          if (choice !== 'denoms') return;
-          const ok = await showModal({
-            title: t('wallet.edit_denoms_question'),
-            message: t('wallet.edit_denoms_instead'),
-            actions: [
-              { id: 'edit', label: t('wallet.enter_edit_mode'), style: 'secondary' },
-              { id: 'cancel', label: t('common.cancel'), style: 'secondary' },
-            ],
-          });
-          if (ok !== 'edit') return;
-          app.editMode = {
-            walletId: wallet.id,
-            snapshot: wallet.denominations.map((d) => ({ value_minor: d.value_minor, count: d.count })),
-            draft: wallet.denominations.reduce((acc, d) => {
-              acc[d.value_minor] = d.count;
-              return acc;
-            }, {}),
-          };
-          app.activeWalletId = wallet.id;
-          app.activeTab = 'cash';
-          render();
-        });
-      }
+    function renderPay() {
+      const helper = window.KontanaPayUI;
+      if (!helper || typeof helper.renderPay !== 'function') return;
+      helper.renderPay(getPayUiContext());
     }
 
     function renderTransactions() {
@@ -4294,6 +5165,28 @@ const STORAGE_KEY = 'kontana_state_v1';
         filters.wallet = defaultWalletId;
       }
       if (filters.wallet) app.activeWalletId = filters.wallet;
+      const txWallet = app.state.wallets[filters.wallet] || null;
+      const isBudgetMode = getAppMode() === 'budget';
+      const showBudgetDashboard = isBudgetMode && app.txBudgetViewMode !== 'ledger';
+      const showRecentCheckins = isBudgetMode && txWallet?.budget?.enabled === true;
+      const insightsHelper = getBudgetInsightsHelper();
+      const budgetSummary = (isBudgetMode && txWallet && insightsHelper?.summarizeWalletPeriod)
+        ? insightsHelper.summarizeWalletPeriod({
+            wallet: txWallet,
+            walletId: filters.wallet,
+            checkins: app.state.checkins,
+            transactions: app.state.transactions,
+            cadence: getWalletBudgetCadence(txWallet),
+            weekStart: getBudgetWeekStart(),
+            nowTs: Math.floor(Date.now() / 1000),
+            recentLimit: 5,
+            driftCategoriesLimit: 3,
+            topSpendsLimit: 3,
+          })
+        : null;
+      const recentCheckins = Array.isArray(budgetSummary?.recent_checkins)
+        ? budgetSummary.recent_checkins
+        : (isBudgetMode ? getWalletCheckins(filters.wallet).slice(0, 5) : []);
 
       const filtered = [...app.state.transactions]
         .filter((tx) => !filters.wallet || tx.wallet_id === filters.wallet)
@@ -4313,7 +5206,11 @@ const STORAGE_KEY = 'kontana_state_v1';
       chronological.forEach((tx) => {
         const deltaMinor = Number.isFinite(tx.delta_minor)
           ? tx.delta_minor
-          : (tx.type === 'incoming' ? (tx.amount_minor || 0) : tx.type === 'outgoing' ? -(tx.amount_minor || 0) : (tx.amount_minor || 0));
+          : ((tx.type === 'incoming' || tx.type === 'transfer_in')
+            ? (tx.amount_minor || 0)
+            : ((tx.type === 'outgoing' || tx.type === 'transfer_out' || tx.type === 'spend')
+              ? -(tx.amount_minor || 0)
+              : (tx.amount_minor || 0)));
         runningBalance += deltaMinor;
         balanceById.set(tx.id, runningBalance);
       });
@@ -4330,23 +5227,52 @@ const STORAGE_KEY = 'kontana_state_v1';
         const detailPrior = tx.type === 'denominations_edited' ? formatBreakdownLine(tx.prior_breakdown || [], tx.currency) : '';
         const detailNew = tx.type === 'denominations_edited' ? formatBreakdownLine(tx.breakdown || [], tx.currency) : '';
         const amountMinor = Number.isFinite(tx.requested_amount_minor) ? tx.requested_amount_minor : (tx.amount_minor || 0);
-        const amountLabel = tx.type === 'incoming' ? '+' : tx.type === 'outgoing' ? '-' : '±';
-        const amountClass = tx.type === 'incoming' ? 'incoming' : tx.type === 'outgoing' ? 'outgoing' : '';
+        const incomingLike = tx.type === 'incoming'
+          || tx.type === 'transfer_in'
+          || (tx.type === 'adjustment' && Number(tx.delta_minor) > 0);
+        const outgoingLike = tx.type === 'outgoing'
+          || tx.type === 'transfer_out'
+          || tx.type === 'spend'
+          || (tx.type === 'adjustment' && Number(tx.delta_minor) < 0);
+        const amountLabel = incomingLike ? '+' : outgoingLike ? '-' : '±';
+        const amountClass = incomingLike ? 'incoming' : outgoingLike ? 'outgoing' : '';
         const isLatestForWallet = latestByWallet.get(tx.wallet_id)?.id === tx.id;
         const noteText = String(tx.note || '').trim();
         const shortNote = truncateNote(noteText, 30);
         const useNoteAsTitle = noteText && noteText.length <= 24;
         const isDenomEdit = tx.type === 'denominations_edited';
+        const isCheckinAdjustment = tx.type === 'adjustment' && typeof tx.checkin_id === 'string' && tx.checkin_id;
+        const isTransferOut = tx.type === 'transfer_out';
+        const isTransferIn = tx.type === 'transfer_in';
+        const isTransfer = isTransferOut || isTransferIn;
+        const adjustmentCategory = categoryLabel(tx.category || 'unknown');
         const titleText = isDenomEdit
           ? t('tx.denoms_edited')
           : (useNoteAsTitle
             ? noteText
-            : (tx.type === 'incoming' ? t('tx.cash_in') : tx.type === 'outgoing' ? t('tx.payment') : t('tx.adjustment')));
+            : (isTransferOut
+              ? t('tx.transfer_out')
+              : isTransferIn
+                ? t('tx.transfer_in')
+                : (tx.type === 'spend'
+                  ? t('tx.spend')
+                : (tx.type === 'incoming'
+              ? t('tx.cash_in')
+              : tx.type === 'outgoing'
+                ? t('tx.payment')
+                : (isCheckinAdjustment ? t('tx.adjustment_checkin') : t('tx.adjustment_with_category', { category: adjustmentCategory }))))));
         const secondaryText = `${formatTimeEU(tx.created_at)}${(!isDenomEdit && !useNoteAsTitle && shortNote) ? ` · ${shortNote}` : ''}`;
         const changeSummary = tx.change_expected_minor
           ? `${formatMoney(tx.change_expected_minor, tx.currency)} / ${formatMoney(tx.change_received_minor || 0, tx.currency)}${detailChange !== '-' ? ` (${detailChange})` : ''}`
           : '-';
         const balanceLabel = formatMoney(balanceById.get(tx.id) || 0, tx.currency);
+        const transferDetailsHtml = isTransfer
+          ? `
+             <div class="tx-detail"><span>${t('tx.detail.transfer_id')}</span><span>${tx.transfer_id || '-'}</span></div>
+             ${isTransferOut ? `<div class="tx-detail"><span>${t('tx.detail.to_wallet')}</span><span>${tx.to_wallet_id || '-'}</span></div>` : ''}
+             ${isTransferIn ? `<div class="tx-detail"><span>${t('tx.detail.from_wallet')}</span><span>${tx.from_wallet_id || '-'}</span></div>` : ''}
+            `
+          : '';
         const detailsBodyHtml = isDenomEdit
           ? `<div class="tx-detail"><span>${t('tx.detail.timestamp')}</span><span>${formatDateTimeEU(tx.created_at)}</span></div>
              <div class="tx-detail"><span>${t('tx.detail.type')}</span><span>${t('tx.denoms_edited')}</span></div>
@@ -4358,6 +5284,9 @@ const STORAGE_KEY = 'kontana_state_v1';
              <div class="tx-detail"><span>${t('tx.detail.strategy')}</span><span>${strategyDisplayName(tx.strategy)}</span></div>
              <div class="tx-detail"><span>${t('tx.detail.breakdown')}</span><span>${detailPaid}</span></div>
              <div class="tx-detail"><span>${t('tx.detail.change')}</span><span>${changeSummary}</span></div>
+             ${transferDetailsHtml}
+             ${isCheckinAdjustment ? `<div class="tx-detail"><span>${t('tx.detail.source')}</span><span>${t('tx.source.checkin')}</span></div>` : ''}
+             ${isCheckinAdjustment ? `<div class="tx-detail"><span>${t('tx.detail.checkin_id')}</span><span>${tx.checkin_id}</span></div>` : ''}
              <div class="tx-detail"><span>${t('tx.detail.note')}</span><span>${noteText || '-'}</span></div>
              <div class="tx-detail"><span>${t('tx.detail.category')}</span><span>${categoryLabel(tx.category || 'uncategorized')}</span></div>
              ${isLatestForWallet ? `<button type="button" class="btn-danger-soft tx-revert-btn" data-revert-tx-id="${tx.id}">${t('tx.revert_button')}</button>` : ''}`;
@@ -4381,6 +5310,160 @@ const STORAGE_KEY = 'kontana_state_v1';
         `;
       }).join('');
 
+      const recentCheckinsHtml = recentCheckins.length === 0
+        ? `<p class="muted">${t('budget.checkin.none')}</p>`
+        : `
+          <div class="budget-envelope-list">
+            ${recentCheckins.map((checkin) => {
+              const driftMinor = Number.isFinite(Number(checkin?.drift_minor)) ? Math.trunc(Number(checkin.drift_minor)) : 0;
+              const checkinTs = Number.isFinite(Number(checkin?.ts)) ? Number(checkin.ts) * 1000 : Date.now();
+              const category = getCheckinPrimaryCategory(checkin);
+              const driftLabel = driftMinor === 0
+                ? formatMoney(0, txWallet?.currency || 'USD')
+                : `${driftMinor > 0 ? '+' : '-'}${formatMoney(Math.abs(driftMinor), txWallet?.currency || 'USD')}`;
+              return `
+                <article class="budget-envelope-row">
+                  <p class="budget-envelope-name">${formatDateTimeEU(new Date(checkinTs).toISOString())}</p>
+                  <p class="budget-envelope-target">${driftLabel} · ${categoryLabel(category)} · ${getCheckinMethodLabel(checkin.method)}</p>
+                </article>
+              `;
+            }).join('')}
+          </div>
+        `;
+
+      const formatPeriodBoundary = (tsSec) => {
+        const date = new Date(Number(tsSec || 0) * 1000);
+        if (Number.isNaN(date.getTime())) return '-';
+        return new Intl.DateTimeFormat(getUserLocale(), {
+          month: 'short',
+          day: '2-digit',
+        }).format(date);
+      };
+
+      const summaryPeriod = budgetSummary?.period || null;
+      const summaryCurrency = txWallet?.currency || 'USD';
+      const periodLabel = summaryPeriod
+        ? t('budget.tx.period_label', {
+            from: formatPeriodBoundary(summaryPeriod.start_ts),
+            to: formatPeriodBoundary(Math.max(summaryPeriod.start_ts, summaryPeriod.end_ts - 1)),
+            period: summaryPeriod.period_id || '-',
+          })
+        : null;
+      const netDriftMinor = Number.isFinite(Number(budgetSummary?.net_drift_minor))
+        ? Math.trunc(Number(budgetSummary.net_drift_minor))
+        : 0;
+      const netDriftLabel = netDriftMinor === 0
+        ? formatMoney(0, summaryCurrency)
+        : `${netDriftMinor > 0 ? '+' : '-'}${formatMoney(Math.abs(netDriftMinor), summaryCurrency)}`;
+      const driftByCategoryRows = Array.isArray(budgetSummary?.drift_by_category)
+        ? budgetSummary.drift_by_category
+        : [];
+      const driftByCategoryHtml = driftByCategoryRows.length === 0
+        ? `<p class="muted">${t('budget.tx.drift_none')}</p>`
+        : `<div class="budget-envelope-list">${driftByCategoryRows.map((row) => {
+            const minor = Number.isFinite(Number(row?.minor)) ? Math.trunc(Number(row.minor)) : 0;
+            const amountLabel = minor === 0
+              ? formatMoney(0, summaryCurrency)
+              : `${minor > 0 ? '+' : '-'}${formatMoney(Math.abs(minor), summaryCurrency)}`;
+            return `
+              <article class="budget-envelope-row">
+                <p class="budget-envelope-name">${categoryLabel(row?.category || 'unknown')}</p>
+                <p class="budget-envelope-target">${amountLabel}</p>
+              </article>
+            `;
+          }).join('')}</div>`;
+      const topSpends = Array.isArray(budgetSummary?.top_spends) ? budgetSummary.top_spends : [];
+      const topSpendsHtml = topSpends.length === 0
+        ? `<p class="muted">${t('budget.tx.top_spends_none')}</p>`
+        : `<div class="budget-envelope-list">${topSpends.map((tx) => {
+            const deltaMinor = Number.isFinite(Number(tx?.delta_minor))
+              ? Math.trunc(Number(tx.delta_minor))
+              : -Math.abs(Math.trunc(Number(tx?.amount_minor || 0)));
+            const spendCurrency = tx?.currency || summaryCurrency;
+            const noteText = String(tx?.note || '').trim();
+            const label = noteText ? escapeBudgetHtml(truncateNote(noteText, 30)) : t('tx.spend');
+            const createdAt = Number.isFinite(Date.parse(tx?.created_at || ''))
+              ? formatDateTimeEU(tx.created_at)
+              : '-';
+            return `
+              <article class="budget-envelope-row">
+                <p class="budget-envelope-name">${label}</p>
+                <p class="budget-envelope-target">-${formatMoney(Math.abs(deltaMinor), spendCurrency)} · ${createdAt}</p>
+              </article>
+            `;
+          }).join('')}</div>`;
+      const plannedCheckins = Number.isFinite(Number(budgetSummary?.planned_checkins))
+        ? Math.trunc(Number(budgetSummary.planned_checkins))
+        : 0;
+      const completedCheckins = Number.isFinite(Number(budgetSummary?.completed_checkins))
+        ? Math.trunc(Number(budgetSummary.completed_checkins))
+        : 0;
+
+      const budgetDashboardHtml = showBudgetDashboard
+        ? `
+          <section class="card">
+            <h3>${t('budget.tx.this_period')}</h3>
+            ${periodLabel ? `<p class="muted">${periodLabel}</p>` : ''}
+            <div class="budget-envelope-list">
+              <article class="budget-envelope-row">
+                <p class="budget-envelope-name">${t('budget.tx.planned_checkins')}</p>
+                <p class="budget-envelope-target">${plannedCheckins}</p>
+              </article>
+              <article class="budget-envelope-row">
+                <p class="budget-envelope-name">${t('budget.tx.completed_checkins')}</p>
+                <p class="budget-envelope-target">${completedCheckins}</p>
+              </article>
+              <article class="budget-envelope-row">
+                <p class="budget-envelope-name">${t('budget.tx.net_drift')}</p>
+                <p class="budget-envelope-target">${netDriftLabel}</p>
+              </article>
+            </div>
+            <div class="inline-actions">
+              <button type="button" id="tx-view-full-ledger" class="btn-secondary-soft">${t('budget.tx.view_full_ledger')}</button>
+            </div>
+          </section>
+          <section class="card">
+            <h3>${t('budget.tx.drift_by_category')}</h3>
+            ${driftByCategoryHtml}
+          </section>
+          <section class="card">
+            <h3>${t('budget.checkin.recent_title')}</h3>
+            ${recentCheckinsHtml}
+          </section>
+          <section class="card">
+            <h3>${t('budget.tx.top_spends')}</h3>
+            ${topSpendsHtml}
+          </section>
+        `
+        : '';
+
+      const ledgerSectionHtml = `
+        ${(isBudgetMode && !showBudgetDashboard) ? `
+          <div class="inline-actions">
+            <button type="button" id="tx-view-summary" class="btn-secondary-soft">${t('budget.tx.view_summary')}</button>
+          </div>
+        ` : ''}
+        ${showRecentCheckins ? `
+          <section class="card">
+            <h3>${t('budget.checkin.recent_title')}</h3>
+            ${recentCheckinsHtml}
+          </section>
+        ` : ''}
+        ${filtered.length === 0
+          ? `<p>${t('tx.none')}</p>`
+          : `<table class="tx-table">
+              <thead>
+                <tr>
+                  <th>${t('tx.table.description')}</th>
+                  <th>${t('tx.table.amount')}</th>
+                  <th>${t('tx.table.balance')}</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>`
+        }
+      `;
+
       el.innerHTML = `
         <section class="panel">
           <section class="card summary-card">
@@ -4388,21 +5471,25 @@ const STORAGE_KEY = 'kontana_state_v1';
               ${wallets.length > 0 ? renderWalletCards(wallets, filters.wallet, 'tx-wallet', false, { showCreateCard: true, showActions: true }) : '<p class="muted">No wallets yet.</p>'}
             </div>
           </section>
-          ${filtered.length === 0
-            ? `<p>${t('tx.none')}</p>`
-            : `<table class="tx-table">
-                <thead>
-                  <tr>
-                    <th>${t('tx.table.description')}</th>
-                    <th>${t('tx.table.amount')}</th>
-                    <th>${t('tx.table.balance')}</th>
-                  </tr>
-                </thead>
-                <tbody>${rows}</tbody>
-              </table>`
-          }
+          ${showBudgetDashboard ? budgetDashboardHtml : ledgerSectionHtml}
         </section>
       `;
+
+      const viewFullLedgerBtn = document.getElementById('tx-view-full-ledger');
+      if (viewFullLedgerBtn) {
+        viewFullLedgerBtn.addEventListener('click', () => {
+          app.txBudgetViewMode = 'ledger';
+          renderTransactions();
+        });
+      }
+
+      const viewSummaryBtn = document.getElementById('tx-view-summary');
+      if (viewSummaryBtn) {
+        viewSummaryBtn.addEventListener('click', () => {
+          app.txBudgetViewMode = 'dashboard';
+          renderTransactions();
+        });
+      }
 
       document.querySelectorAll('.tx-row').forEach((row) => {
         const toggle = () => {
@@ -4533,6 +5620,7 @@ const STORAGE_KEY = 'kontana_state_v1';
             ],
           });
           if (ok !== 'edit') return;
+          await warnIfDenomsStale(activeWallet);
           app.editMode = {
             walletId: activeWallet.id,
             snapshot: activeWallet.denominations.map((d) => ({ value_minor: d.value_minor, count: d.count })),
@@ -4568,6 +5656,7 @@ const STORAGE_KEY = 'kontana_state_v1';
       const singleCoverEnabled = app.state.settings.single_cover;
       const showBillsCoins = app.state.settings.show_bills_coins;
       const showCents = app.state.settings.show_cents;
+      const appMode = getAppMode();
 
       const denomOrder = app.state.settings.denomination_order || ORDER_LARGEST_FIRST;
 
@@ -4582,6 +5671,15 @@ const STORAGE_KEY = 'kontana_state_v1';
             <section class="settings-section">
               <h3>${t('settings.section.behaviour')}</h3>
               <p class="muted">${t('settings.behaviour.helper')}</p>
+
+              <div class="settings-item" id="settings-app-mode" tabindex="-1">
+                <div class="settings-item-title">${t('settings.app_mode.title')}</div>
+                <p class="muted">${t('settings.app_mode.body')}</p>
+                <div class="segmented-control" role="group" aria-label="${t('settings.app_mode.title')}">
+                  <button type="button" class="segment ${appMode === 'precise' ? 'active' : ''}" data-app-mode="precise">${t('settings.app_mode.precise')}</button>
+                  <button type="button" class="segment ${appMode === 'budget' ? 'active' : ''}" data-app-mode="budget">${t('settings.app_mode.budget')}</button>
+                </div>
+              </div>
 
               <div class="settings-item">
                 <div class="settings-item-title">${t('settings.suggestions.title')}</div>
@@ -4720,6 +5818,14 @@ const STORAGE_KEY = 'kontana_state_v1';
                 </div>
               </div>
 
+              <div class="settings-item">
+                <div class="settings-item-title">${t('settings.import.title')}</div>
+                <div class="inline-actions">
+                  <button type="button" id="import-json" class="btn-secondary-soft">${t('settings.import.json')}</button>
+                </div>
+                <input type="file" id="import-json-file" accept=".json,application/json" hidden />
+              </div>
+
               <div class="settings-item settings-danger-zone">
                 <div class="settings-item-title">${t('settings.delete_all.title')}</div>
                 <p>${t('settings.delete_all.body')}</p>
@@ -4750,6 +5856,17 @@ const STORAGE_KEY = 'kontana_state_v1';
 
       const newModal = el.querySelector('.settings-modal');
       if (newModal && savedScroll) newModal.scrollTop = savedScroll;
+
+      el.querySelectorAll('button[data-app-mode]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const next = btn.dataset.appMode === 'budget' ? 'budget' : 'precise';
+          if (app.state.settings.app_mode === next) return;
+          app.state.settings.app_mode = next;
+          saveState();
+          renderSettings();
+          render();
+        });
+      });
 
       el.querySelectorAll('button[data-strategy]').forEach((btn) => {
         btn.addEventListener('click', () => {
@@ -4873,6 +5990,7 @@ const STORAGE_KEY = 'kontana_state_v1';
 
       const closeSettings = () => {
         app.settingsOpen = false;
+        app.settingsFocusTarget = null;
         renderSettings();
       };
       const closeBtn = document.getElementById('settings-close');
@@ -4924,6 +6042,20 @@ const STORAGE_KEY = 'kontana_state_v1';
 
       document.getElementById('export-json').addEventListener('click', () => exportJson(app.state));
       document.getElementById('export-pdf').addEventListener('click', () => openPdfReport(app.state));
+      const importJsonBtn = document.getElementById('import-json');
+      const importJsonFileInput = document.getElementById('import-json-file');
+      if (importJsonBtn && importJsonFileInput) {
+        importJsonBtn.addEventListener('click', () => {
+          importJsonFileInput.value = '';
+          importJsonFileInput.click();
+        });
+        importJsonFileInput.addEventListener('change', async (event) => {
+          const file = event.target?.files?.[0];
+          if (!file) return;
+          await handleImportJsonFile(file);
+          importJsonFileInput.value = '';
+        });
+      }
 
       document.getElementById('delete-all-data').addEventListener('click', async () => {
         const token = await modalPrompt(t('confirm.delete_all.prompt'), '', t('confirm.delete_all.title'), 'DELETE ALL DATA');
@@ -4987,6 +6119,17 @@ const STORAGE_KEY = 'kontana_state_v1';
         }
         renderSettings();
       });
+
+      if (app.settingsFocusTarget === 'app-mode') {
+        const appModeSection = document.getElementById('settings-app-mode');
+        const appModeButton = appModeSection?.querySelector(`button[data-app-mode="${appMode}"]`)
+          || appModeSection?.querySelector('button[data-app-mode]');
+        requestAnimationFrame(() => {
+          appModeSection?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          appModeButton?.focus();
+        });
+        app.settingsFocusTarget = null;
+      }
     }
 
     let previousTab = app.activeTab;
@@ -4998,6 +6141,9 @@ const STORAGE_KEY = 'kontana_state_v1';
         }
         previousTab = app.activeTab;
         app.activeTab = btn.dataset.tab;
+        if (previousTab !== 'transactions' && app.activeTab === 'transactions') {
+          app.txBudgetViewMode = getAppMode() === 'budget' ? 'dashboard' : 'ledger';
+        }
         if (previousTab === 'pay' && app.activeTab !== 'pay') {
           app.paymentSuccessMessage = '';
           app.paymentSuccessSummary = null;
@@ -5019,6 +6165,9 @@ const STORAGE_KEY = 'kontana_state_v1';
         }
         const prevTab = app.activeTab;
         app.activeTab = link.dataset.tab;
+        if (prevTab !== 'transactions' && app.activeTab === 'transactions') {
+          app.txBudgetViewMode = getAppMode() === 'budget' ? 'dashboard' : 'ledger';
+        }
         if (prevTab === 'pay' && app.activeTab !== 'pay') {
           app.paymentSuccessMessage = '';
           app.paymentSuccessSummary = null;
@@ -5038,8 +6187,7 @@ const STORAGE_KEY = 'kontana_state_v1';
           await modalAlert(t('alerts.finish_edit_before_nav'));
           return;
         }
-        app.settingsOpen = true;
-        renderSettings();
+        openSettingsOverlay();
       });
     }
 
@@ -5159,7 +6307,11 @@ const STORAGE_KEY = 'kontana_state_v1';
 
     // Update last activity timestamp
     function updateLastActivity() {
-      localStorage.setItem('kontana_last_activity', Date.now().toString());
+      try {
+        localStorage.setItem('kontana_last_activity', Date.now().toString());
+      } catch {
+        // Keep the app usable if browser storage is unavailable.
+      }
     }
 
     // Add activity tracking
@@ -5167,16 +6319,93 @@ const STORAGE_KEY = 'kontana_state_v1';
     document.addEventListener('keydown', updateLastActivity);
     document.addEventListener('touchstart', updateLastActivity);
 
+    function removeSwUpdateToast() {
+      const existing = document.getElementById('sw-update-toast');
+      if (existing) existing.remove();
+    }
+
+    function showSwUpdateToast(registration) {
+      if (!registration?.waiting || !document.body || app.swUpdateDismissed) return;
+      if (document.getElementById('sw-update-toast')) return;
+      console.debug('[SW] Showing update toast');
+      const toast = document.createElement('div');
+      toast.id = 'sw-update-toast';
+      toast.className = 'sw-update-toast';
+      toast.innerHTML = `
+        <span class="sw-update-toast__text">${t('sw.update_available')}</span>
+        <div class="sw-update-toast__actions">
+          <button type="button" class="btn-primary-soft" id="sw-update-reload">${t('sw.update_reload')}</button>
+          <button type="button" class="btn-secondary-soft" id="sw-update-dismiss">${t('sw.update_dismiss')}</button>
+        </div>
+      `;
+      document.body.appendChild(toast);
+
+      const reloadBtn = document.getElementById('sw-update-reload');
+      if (reloadBtn) {
+        reloadBtn.addEventListener('click', () => {
+          console.debug('[SW] Reload clicked, telling waiting SW to skip waiting');
+          const waiting = registration.waiting;
+          app.swRefreshPending = true;
+          removeSwUpdateToast();
+          if (waiting) {
+            waiting.postMessage({ type: 'SKIP_WAITING' });
+            window.setTimeout(() => {
+              if (app.swRefreshPending) window.location.reload();
+            }, 1000);
+          }
+        });
+      }
+
+      const dismissBtn = document.getElementById('sw-update-dismiss');
+      if (dismissBtn) {
+        dismissBtn.addEventListener('click', () => {
+          app.swUpdateDismissed = true;
+          removeSwUpdateToast();
+        });
+      }
+    }
+
     async function registerServiceWorker() {
       if (!('serviceWorker' in navigator)) return;
       try {
-        await navigator.serviceWorker.register('/sw.js');
+        const registration = await navigator.serviceWorker.register('/sw.js');
+        const notifyIfUpdateWaiting = () => {
+          if (registration.waiting && navigator.serviceWorker.controller) {
+            showSwUpdateToast(registration);
+          }
+        };
+
+        notifyIfUpdateWaiting();
+        registration.addEventListener('updatefound', () => {
+          const installing = registration.installing;
+          if (!installing) return;
+          installing.addEventListener('statechange', () => {
+            if (installing.state === 'installed' && navigator.serviceWorker.controller) {
+              showSwUpdateToast(registration);
+            }
+          });
+        });
+
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!app.swRefreshPending) return;
+          app.swRefreshPending = false;
+          window.location.reload();
+        });
       } catch {
         // Ignore registration failures and keep app functional.
       }
     }
 
     async function initializeApp() {
+      if (app.blocking) {
+        renderBlockingState();
+        return;
+      }
+      const migrationResult = runPendingMigration();
+      if (!migrationResult.ok) {
+        return;
+      }
+      await ensureStrategiesLoaded();
       await registerServiceWorker();
       await checkAppLockStatus();
       render();

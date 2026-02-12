@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kontana-v8';
+const CACHE_NAME = 'kontana-v18';
 const CORE_ASSETS = [
   '/app',
   '/',
@@ -6,6 +6,16 @@ const CORE_ASSETS = [
   '/kontana-logo3.svg',
   '/app.css',
   '/app.js',
+  '/app/state.js',
+  '/app/migrate.js',
+  '/app/money.js',
+  '/app/import_export.js',
+  '/app/budget_onboarding.js',
+  '/app/budget/checkins.js',
+  '/app/budget/insights.js',
+  '/app/ledger/tx.js',
+  '/app/ui/pay.js',
+  '/lib/strategies.js',
   '/lib/pdf-lib.min.js',
   '/kt-terminal.css',
   '/manifest.webmanifest',

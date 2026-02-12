@@ -1,4 +1,13 @@
 {{ if or (eq .RelPermalink "/app/") (eq .RelPermalink "/app") }}
   <script src="{{ "lib/pdf-lib.min.js" | absURL }}"></script>
+  <script src="{{ "app/state.js" | absURL }}"></script>
+  <script src="{{ "app/migrate.js" | absURL }}"></script>
+  <script src="{{ "app/money.js" | absURL }}"></script>
+  <script src="{{ "app/import_export.js" | absURL }}"></script>
+  <script src="{{ "app/budget_onboarding.js" | absURL }}"></script>
+  <script src="{{ "app/budget/checkins.js" | absURL }}"></script>
+  <script src="{{ "app/budget/insights.js" | absURL }}"></script>
+  <script src="{{ "app/ledger/tx.js" | absURL }}"></script>
+  <script src="{{ "app/ui/pay.js" | absURL }}"></script>
   <script src="{{ "app.js" | absURL }}"></script>
 {{ end }}
