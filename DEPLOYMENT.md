@@ -11,18 +11,16 @@ Output is written to `site/public/`.
 
 ## Quick Deploy Options:
 
-### Netlify
+### Cloudflare (recommended)
+Static site deploy:
 ```bash
-npm install -g netlify-cli
-netlify deploy --prod --dir=site/public
+npx wrangler deploy --assets=site/public
 ```
 
-### Vercel
+Cloudflare Functions API routes (in `functions/`):
 ```bash
-npm install -g vercel
-vercel --prod
+npx wrangler deploy
 ```
-Set the build command to `hugo -s site` and the output directory to `site/public`.
 
 ### Manual Upload
 Upload the `site/public/` folder to your web server.
@@ -30,12 +28,6 @@ Upload the `site/public/` folder to your web server.
 ## Local Development
 ```bash
 hugo server -s site -p 1313 --disableFastRender
-```
-
-## Cloudflare Functions
-The `functions/` directory contains Cloudflare Workers API routes (e.g. waitlist). Deploy with:
-```bash
-npx wrangler deploy
 ```
 
 ## Domain Setup:
