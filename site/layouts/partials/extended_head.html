@@ -1,7 +1,7 @@
 {{ if or (eq .RelPermalink "/app/") (eq .RelPermalink "/app") }}
-  <link rel="stylesheet" href="{{ "kt-terminal.css" | absURL }}">
-  <link rel="stylesheet" href="{{ "app.css" | absURL }}">
-  <link rel="manifest" href="{{ "manifest.webmanifest" | absURL }}">
+  <link rel="stylesheet" href="{{ "kt-terminal.css" | relURL }}">
+  <link rel="stylesheet" href="{{ "app.css" | relURL }}">
+  <link rel="manifest" href="{{ "manifest.webmanifest" | relURL }}">
   <meta name="theme-color" content="#0b1618">
 {{ end }}
 {{ if .IsHome }}

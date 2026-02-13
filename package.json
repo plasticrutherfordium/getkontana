@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "dev": "hugo server -s site -p 1313 --disableFastRender",
+    "dev": "sh -c 'hugo server -s site -p ${PORT:-1313} --disableFastRender'",
     "build": "npm run vendor:pdf-lib && hugo -s site",
     "test": "node --test",
     "vendor:pdf-lib": "cp node_modules/pdf-lib/dist/pdf-lib.min.js site/static/lib/pdf-lib.min.js",
