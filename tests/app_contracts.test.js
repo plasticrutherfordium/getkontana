@@ -50,7 +50,7 @@ test('Service worker caches app money helper script', () => {
   assert.equal(/SKIP_WAITING/.test(swJs), true);
   const installMatch = swJs.match(/self\.addEventListener\('install'[\s\S]*?\n\}\);/);
   assert.equal(Boolean(installMatch), true);
-  assert.equal(/skipWaiting\(\)/.test(installMatch ? installMatch[0] : ''), false);
+  assert.equal(/skipWaiting\(\)/.test(installMatch ? installMatch[0] : ''), true);
   assert.equal(/self\.addEventListener\('message'[\s\S]*?skipWaiting\(\)/.test(swJs), true);
 });
 
