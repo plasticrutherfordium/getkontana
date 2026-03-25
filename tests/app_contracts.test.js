@@ -96,3 +96,18 @@ test('No runtime console logging of sensitive app flow', () => {
   assert.equal(/console\.log\(/.test(appJs), false);
   assert.equal(/console\.error\(/.test(appJs), false);
 });
+
+test('Boot initialization avoids calling getAppMode before app exists', () => {
+  assert.equal(/txBudgetViewMode:\s*getAppMode\(\)\s*===\s*'budget'/.test(appJs), false);
+  assert.equal(/txBudgetViewMode:\s*initialStateLoad\.state\?\.settings\?\.app_mode\s*===\s*'budget'\s*\?\s*'dashboard'\s*:\s*'ledger'/.test(appJs), true);
+});
+
+test('Pay UI context does not reference missing switchPaymentMode symbol', () => {
+  assert.equal(/getPayUiContext\(\)[\s\S]*\bswitchPaymentMode,/.test(appJs), false);
+});
+
+test('Strategies helper loading bootstraps via module import', () => {
+  assert.equal(/import\('\/lib\/strategies\.js'\)/.test(appJs), true);
+  assert.equal(/await ensureStrategiesLoaded\(\);/.test(appJs), true);
+  assert.equal(/type=\"module\"[\s\S]*lib\/strategies\.js/.test(footerPartial), true);
+});

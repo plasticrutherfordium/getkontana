@@ -1,4 +1,4 @@
-{{ if or (eq .RelPermalink "/app/") (eq .RelPermalink "/app") }}
+{{ if eq .Layout "app" }}
   <link rel="stylesheet" href="{{ "kt-terminal.css" | relURL }}">
   <link rel="stylesheet" href="{{ "app.css" | relURL }}">
   <link rel="manifest" href="{{ "manifest.webmanifest" | relURL }}">

@@ -34,7 +34,6 @@
       categoryLabel,
       renderCategoryOptions,
       renderWalletCards,
-      switchPaymentMode,
       openCreateWalletModal,
       defaultDenominations,
       computeChangeBreakdown,

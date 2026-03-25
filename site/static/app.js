@@ -1693,6 +1693,37 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
       return window.KontanaLedgerTx || null;
     }
 
+    async function ensureHelpersLoaded() {
+      await ensureStrategiesLoaded();
+      const helpers = [
+        'KontanaMoney',
+        'KontanaImportExport',
+        'KontanaStateIO',
+        'KontanaMigrate',
+        'KontanaBudgetOnboarding',
+        'KontanaBudgetCheckins',
+        'KontanaBudgetInsights',
+        'KontanaLedgerTx',
+        'KontanaPayUI',
+      ];
+      const waitForGlobal = (name, timeoutMs = 5000) => new Promise((resolve) => {
+        const startedAt = Date.now();
+        const check = () => {
+          if (window[name]) {
+            resolve(window[name]);
+            return;
+          }
+          if (Date.now() - startedAt >= timeoutMs) {
+            resolve(null);
+            return;
+          }
+          setTimeout(check, 50);
+        };
+        check();
+      });
+      await Promise.all(helpers.map((name) => waitForGlobal(name)));
+    }
+
     function formatBudgetInputFromMinor(minor) {
       const safeMinor = Number.isFinite(Number(minor)) ? Math.trunc(Number(minor)) : 0;
       const asMajor = (safeMinor / 100).toFixed(2);
@@ -3771,7 +3802,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
         migrationRaw: initialStateLoad.migrationRaw || null,
         migrationState: initialStateLoad.migrationState || null,
       },
-      txBudgetViewMode: getAppMode() === 'budget' ? 'dashboard' : 'ledger',
+      txBudgetViewMode: initialStateLoad.state?.settings?.app_mode === 'budget' ? 'dashboard' : 'ledger',
       swUpdateDismissed: false,
       swRefreshPending: false,
       blocking: initialStateLoad.blocking || null,
@@ -5096,7 +5127,6 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
         categoryLabel,
         renderCategoryOptions,
         renderWalletCards,
-        switchPaymentMode,
         openCreateWalletModal,
         defaultDenominations,
         computeChangeBreakdown,
@@ -6405,7 +6435,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
       if (!migrationResult.ok) {
         return;
       }
-      await ensureStrategiesLoaded();
+      await ensureHelpersLoaded();
       await registerServiceWorker();
       await checkAppLockStatus();
       render();

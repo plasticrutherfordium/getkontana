@@ -1,4 +1,4 @@
-{{ if or (eq .RelPermalink "/app/") (eq .RelPermalink "/app") }}
+{{ if eq .Layout "app" }}
   <script src="{{ "lib/pdf-lib.min.js" | relURL }}"></script>
   <script type="module" src="{{ "lib/strategies.js" | relURL }}"></script>
   <script src="{{ "app/state.js" | relURL }}"></script>
