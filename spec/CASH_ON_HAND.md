@@ -11,7 +11,9 @@ Wallet actions are Rename, Edit denominations, and Delete wallet. Creation/renam
 
 ## Inventory
 
-Read-only rows show value, count, and subtotal. Notes/coins can be split or combined according to Settings. The Hide empty control changes visibility, not stored counts. Zero counts are de-emphasized. The total row totals the visible group; the card totals the complete wallet.
+Inventory uses labelled Denomination / Quantity / Subtotal columns. Quantity is explicit (for example, “1 bill”, “2 bills”, “3 coins”), without ambiguous glyphs or multiplication markers. Read-only rows are grouped into “In your wallet” followed by “Not in your wallet”. Each group follows the configured denomination order; a caption explains the order. Zero rows show a readable zero quantity and zero subtotal rather than low-opacity text.
+
+Notes/coins can be split or combined according to Settings. Tabs show the number of physical bills/coins held, not the number of denomination types. Hide empty removes the unavailable group from the view without deleting counts. An empty group explains that no bills/coins are held, and an empty wallet still shows the inventory. The footer is labelled Bills total / Coins total (or Total for the combined view); it totals that complete group. The wallet card totals the complete wallet. Editing shows all denominations in the selected tab, including zero rows, regardless of Hide empty.
 
 Desktop places real wallet-check and latest-activity panels beside inventory. Smaller screens stack them. Total-only Budget wallets warn that denomination counts need a real count. Reconciliation status is calculated, never an unconditional decorative success message. Latest activity has no age cutoff.
 

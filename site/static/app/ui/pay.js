@@ -31,6 +31,7 @@
       formatMoney,
       formatDenomValue,
       formatAmountDisplay,
+      getMinorScale,
       formatDateTimeEU,
       truncateNote,
       categoryLabel,
@@ -273,6 +274,7 @@
     
       const mode = app.paymentDraft.mode;
       const wallet = app.state.wallets[app.paymentDraft.walletId];
+      app.paymentDraft.amountDisplay = formatAmountDisplay(app.paymentDraft.amountInput || '', wallet.currency);
       const isBudgetMode = getAppMode() === 'budget';
       const budgetPrimaryActionsHtml = isBudgetMode ? `
         <section class="card">
@@ -411,10 +413,10 @@
           const remainingAvailable = mode === 'outgoing' ? Math.max(0, row.count - count) : row.count;
           const showRemaining = mode === 'outgoing';
           return `<article class="denom-row ${willExceed ? 'denom-row-deemphasis' : ''}">
-            <p class="denom-value">${formatDenomValue(row.value_minor, wallet.currency)}${showRemaining ? ` <span class="muted">[${remainingAvailable}]</span>` : ''}</p>
+            <p class="denom-value">${formatDenomValue(row.value_minor, wallet.currency)}${showRemaining ? ` <span class="denom-available muted">${t('pay.available_count', { count: remainingAvailable })}</span>` : ''}</p>
             <div class="denom-count-wrap">
               <button type="button" class="denom-step" aria-label="${t('app.decrease')}" data-alloc-step="-1" data-denom="${row.value_minor}">-</button>
-              <input type="text" inputmode="numeric" pattern="[0-9]*" class="denom-input" data-alloc-denom="${row.value_minor}" value="${count}" />
+              <input type="text" inputmode="numeric" pattern="[0-9]*" class="denom-input" aria-label="${t('cash.quantity')}: ${formatDenomValue(row.value_minor, wallet.currency)}" data-alloc-denom="${row.value_minor}" value="${count}" />
               <button type="button" class="denom-step ${disableAdd ? 'disabled' : ''}" aria-label="${t('app.increase')}" data-alloc-step="1" data-denom="${row.value_minor}" ${disableAdd ? 'disabled' : ''}>+</button>
             </div>
             <p class="denom-subtotal">${formatMoney(row.value_minor * count, wallet.currency)}</p>
@@ -507,7 +509,8 @@
               <div class="payment-entry-grid">
                 ${mode === 'outgoing' ? `
                 <label class="payment-amount-field">${t('pay.amount_label')}
-                  <input id="payment-amount" class="payment-amount-input" type="text" inputmode="decimal" value="${app.paymentDraft.amountDisplay || ''}" autocomplete="off" placeholder="${t('app.amount_placeholder')}" />
+                  <input id="payment-amount" class="payment-amount-input" type="text" inputmode="${getMinorScale(wallet.currency) === 1 ? 'numeric' : 'decimal'}" aria-describedby="payment-precision" value="${app.paymentDraft.amountDisplay || ''}" autocomplete="off" placeholder="${getMinorScale(wallet.currency) === 1 ? '0' : t('app.amount_placeholder')}" />
+                  <span id="payment-precision" class="payment-precision">${t(getMinorScale(wallet.currency) === 1 ? 'pay.amount_whole' : 'pay.amount_precision', { currency: wallet.currency })}</span>
                 </label>
                 ` : ''}
                 <label>${t('pay.note_label')}
@@ -528,6 +531,7 @@
                     <button type="button" class="segment ${activeTab === 'coins' ? 'active' : ''}" id="payment-coins">${t('cash.coins')}</button>
                   </div>
                 ` : ''}
+                <div class="denom-header-row"><p>${t('pay.denomination')}</p><p>${t('cash.quantity')}</p><p>${t('pay.subtotal')}</p></div>
                 <div class="denom-list">${allocationRows || `<p class="muted">${t('pay.no_denoms_available')}</p>`}</div>
               </section>
               <div class="payment-actions">
@@ -538,7 +542,8 @@
               ` : `
               <div class="payment-entry-grid">
                 <label class="payment-amount-field">${t('pay.amount_label')}
-                  <input id="payment-amount" class="payment-amount-input" type="text" inputmode="decimal" value="${app.paymentDraft.amountDisplay || ''}" autocomplete="off" placeholder="${t('app.amount_placeholder')}" />
+                  <input id="payment-amount" class="payment-amount-input" type="text" inputmode="${getMinorScale(wallet.currency) === 1 ? 'numeric' : 'decimal'}" aria-describedby="payment-precision" value="${app.paymentDraft.amountDisplay || ''}" autocomplete="off" placeholder="${getMinorScale(wallet.currency) === 1 ? '0' : t('app.amount_placeholder')}" />
+                  <span id="payment-precision" class="payment-precision">${t(getMinorScale(wallet.currency) === 1 ? 'pay.amount_whole' : 'pay.amount_precision', { currency: wallet.currency })}</span>
                 </label>
                 <label>${t('pay.note_label')}
                   <input id="payment-note" type="text" maxlength="30" value="${escapeBudgetHtml(app.paymentDraft.note)}" placeholder="${t('app.optional_note')}" />
@@ -595,6 +600,7 @@
                           <button type="button" class="segment ${activeTab === 'coins' ? 'active' : ''}" id="payment-coins">${t('cash.coins')}</button>
                         </div>
                       ` : ''}
+                      <div class="denom-header-row"><p>${t('pay.denomination')}</p><p>${t('cash.quantity')}</p><p>${t('pay.subtotal')}</p></div>
                       <div class="denom-list">${allocationRows || `<p class="muted">${t('pay.no_denoms_available_for_amount')}</p>`}</div>
                     ` : ''}
                     ${strategiesEnabled && !exactSuggestionState && !noExactSuggestionState && !coverSuggestionState ? '' : ''}
@@ -733,8 +739,16 @@
       if (paymentAmountEl) {
         paymentAmountEl.addEventListener('input', (e) => {
           const raw = e.target.value.replace(/[^0-9.,]/g, '');
-          app.paymentDraft.amountInput = raw;
-          const formatted = formatAmountDisplay(raw, wallet.currency);
+          let formatted;
+          try {
+            formatted = formatAmountDisplay(raw, wallet.currency);
+          } catch {
+            // Reject the extra digit/separator without changing the draft or
+            // interpreting an invalid fraction as a much larger whole amount.
+            e.target.value = app.paymentDraft.amountDisplay || '';
+            return;
+          }
+          app.paymentDraft.amountInput = formatted.replace(/[^0-9.,]/g, '');
           app.paymentDraft.amountDisplay = formatted;
           const cursorPos = e.target.selectionStart;
           const lenDiff = formatted.length - e.target.value.length;
@@ -1101,6 +1115,7 @@
       if (showManualEditor) {
         el.querySelectorAll('input[data-alloc-denom]').forEach((input) => {
           input.addEventListener('input', (evt) => {
+            const cursor = evt.target.selectionStart;
             const denom = Number(evt.target.dataset.allocDenom);
             const cleaned = String(evt.target.value || '').replace(/[^\d]/g, '');
             if (cleaned !== evt.target.value) evt.target.value = cleaned;
@@ -1109,7 +1124,7 @@
               : Infinity;
             const next = Math.max(0, Number.parseInt(cleaned || '0', 10) || 0);
             let capped = Math.min(next, maxAvail);
-            if (mode === 'incoming' && amountMinor !== null) {
+            if (mode === 'incoming' && !incomingManualDirect && amountMinor !== null) {
               const current = app.paymentDraft.allocation[denom] || 0;
               const totalWithout = effectiveAllocated - current * denom;
               const maxByAmount = Math.max(0, Math.floor((amountMinor - totalWithout) / denom));
@@ -1118,6 +1133,13 @@
             app.paymentDraft.allocation[denom] = capped;
             app.paymentDraft.manualEntry = true;
             rerenderPayment();
+            const nextInput = el.querySelector(`input[data-alloc-denom="${denom}"]`);
+            if (nextInput) {
+              if (!cleaned) nextInput.value = '';
+              nextInput.focus();
+              const position = Math.min(cursor ?? nextInput.value.length, nextInput.value.length);
+              nextInput.setSelectionRange(position, position);
+            }
           });
         });
         el.querySelectorAll('button[data-alloc-step]').forEach((btn) => {
@@ -1129,7 +1151,7 @@
               ? (wallet.denominations.find((d) => d.value_minor === denom)?.count || 0)
               : Infinity;
             let next = Math.max(0, Math.min(current + step, maxAvail));
-            if (mode === 'incoming' && amountMinor !== null) {
+            if (mode === 'incoming' && !incomingManualDirect && amountMinor !== null) {
               const totalWithout = effectiveAllocated - current * denom;
               const maxByAmount = Math.max(0, Math.floor((amountMinor - totalWithout) / denom));
               next = Math.min(next, maxByAmount);

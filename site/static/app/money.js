@@ -73,6 +73,30 @@
     return parseMajorToMinor(inputStringOrNumber, scale);
   }
 
+  // Editable amounts deliberately have no grouping separators. Keep incomplete
+  // fractions ("12." and "12.0") intact while the user is still typing.
+  function formatInput(input, options = {}) {
+    const raw = String(input).replace(/[^0-9.,]/g, '');
+    if (!raw) return '';
+    const scale = resolveScaleFromOptions(options);
+    const decimalPlaces = scale === 1 ? 0 : 2;
+    const separator = Math.max(raw.lastIndexOf('.'), raw.lastIndexOf(','));
+    const wholeRaw = separator < 0 ? raw : raw.slice(0, separator);
+    if (/[.,]/.test(wholeRaw)) {
+      const grouping = raw[separator] === '.' ? /^\d{1,3}(,\d{3})+$/ : /^\d{1,3}(\.\d{3})+$/;
+      if (!grouping.test(wholeRaw)) throw new TypeError('Invalid separators');
+    }
+    const whole = wholeRaw.replace(/[.,]/g, '');
+    const fraction = separator < 0 ? '' : raw.slice(separator + 1);
+    if ((separator >= 0 && decimalPlaces === 0) || fraction.length > decimalPlaces) {
+      throw new TypeError('Invalid precision for this currency');
+    }
+    const decimal = new Intl.NumberFormat(options.locale).formatToParts(1.1)
+      .find((part) => part.type === 'decimal')?.value || '.';
+    const digits = (whole || '0').replace(/^0+(?=\d)/, '');
+    return `${options.symbol || ''}${digits}${separator >= 0 ? decimal + fraction : ''}`;
+  }
+
   function fromMinor(minorInt, options = {}) {
     const parsedMinor = Number(minorInt);
     if (!Number.isFinite(parsedMinor)) {
@@ -146,6 +170,7 @@
 
   global.KontanaMoney = {
     toMinor,
+    formatInput,
     fromMinor,
     sumDenomsToMinor,
   };

@@ -28,6 +28,34 @@ test('toMinor rejects invalid numeric inputs', () => {
   assert.throws(() => money.toMinor('12.5', { currency: 'JPY' }));
 });
 
+test('editable amounts preserve a trailing separator and fractional zeros', () => {
+  for (const [locale, separator] of [['en-US', '.'], ['es-ES', ',']]) {
+    for (const typedSeparator of ['.', ',']) {
+      let display = '';
+      const states = ['€2', '€24', `€24${separator}`, `€24${separator}5`, `€24${separator}50`];
+      [...`24${typedSeparator}50`].forEach((key, i) => {
+        display = money.formatInput(display + key, { currency: 'EUR', locale, symbol: '€' });
+        assert.equal(display, states[i]);
+      });
+      assert.equal(money.toMinor(display, { currency: 'EUR' }), 2450);
+    }
+  }
+  assert.equal(money.formatInput('.', { currency: 'EUR', locale: 'en-US' }), '0.');
+  assert.equal(money.formatInput('0.01', { currency: 'EUR', locale: 'en-US' }), '0.01');
+  assert.equal(money.formatInput('1,234.50', { currency: 'EUR', locale: 'es-ES' }), '1234,50');
+});
+
+test('editable amounts reject unsupported precision instead of changing the amount', () => {
+  assert.throws(() => money.formatInput('24.501', { currency: 'EUR' }));
+  assert.throws(() => money.formatInput('24.5.', { currency: 'EUR' }));
+  assert.throws(() => money.formatInput('24,50.', { currency: 'EUR' }));
+  for (const currency of ['JPY', 'CLP', 'KRW', 'XOF']) {
+    assert.equal(money.formatInput('1200', { currency }), '1200');
+    assert.throws(() => money.formatInput('1200.', { currency }));
+    assert.throws(() => money.formatInput('1200.5', { currency }));
+  }
+});
+
 test('fromMinor formats with cents preference and zero-decimal currencies', () => {
   assert.equal(money.fromMinor(1200, { currency: 'USD', symbol: '$', showCents: false, locale: 'en-US' }), '$12');
   assert.equal(money.fromMinor(1200, { currency: 'USD', symbol: '$', showCents: true, locale: 'en-US' }), '$12.00');

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-const CACHE_NAME = 'kontana-v21';
+const CACHE_NAME = 'kontana-v22';
 const CORE_ASSETS = [
   '/app/',
   '/app',

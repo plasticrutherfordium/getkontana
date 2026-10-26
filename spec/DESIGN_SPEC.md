@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: MPL-2.0 -->
 # Kontana — design specification
 
-Status: implemented Phosphor design, 26 October 2026. The editable visual reference is [new-kontana-design.pen](../design/new-kontana-design.pen). This document supersedes `design-terminal.md` and the old screen-layout instructions. Product behavior belongs to [APP_SPEC.md](APP_SPEC.md).
+Status: implemented Phosphor design, 26 October 2026. The version 0.1.2 layout corrections below take precedence over the original canvas composition. The editable visual reference is [new-kontana-design.pen](../design/new-kontana-design.pen). This document supersedes `design-terminal.md` and the old screen-layout instructions. Product behavior belongs to [APP_SPEC.md](APP_SPEC.md).
 
 ## Direction and brand
 
@@ -66,15 +66,15 @@ At 768px and below, hide the sidebar and use a floating bottom bar inset 16px fr
 
 Wallet cards are approximately 240×132px on desktop and 200×124px on mobile, with currency/flag, wallet name, then a mono balance. The active card has an accent border and raised surface; its ellipsis action occupies a separate accessible target. New wallet uses a dashed outline and plus/label. Cards never shrink into illegibility.
 
-Below the cards, use a two-column workspace: inventory plus a 288px status/activity column. Stack below 1020px. Inventory has a small heading/ISO code, note/coin segmented control, Hide empty action, aligned denomination rows, and the visible-group total. Counts are read-only text until editing. Values, counts, and subtotals keep stable alignment. Missing denominations are visually subdued. The wallet-check panel presents real reconciliation state; latest activity is real saved data.
+Below the cards, use a two-column workspace: inventory plus a 288px status/activity column. Stack below 1020px. Inventory has a small heading/ISO code, note/coin segmented control, Hide empty action, aligned denomination rows, and the visible-group total. Counts are read-only text until editing. Values, counts, and subtotals keep stable alignment. Use explicit Denomination / Quantity / Subtotal headers and quantities such as “2 bills”. Separate holdings from “Not in your wallet”, with the configured order inside each group. Empty rows retain readable contrast; presence is communicated with text and grouping. The tabs count physical items and the footer names the selected group. The wallet-check panel presents real reconciliation state; latest activity is real saved data.
 
 Budget mode adds named envelope targets, current-period recorded spending progress, remaining values, and existing check-in/reconciliation actions. The remaining amount is an amount of recorded budget, not a claim to know unlogged spending. Over-budget amounts stay visible with warning text/color.
 
 ### Pay
 
-Wallet selection and direction remain above a single focused payment workspace. At wide widths, fields sit on the left and the suggested/manual breakdown sits on the right. Stack at 1020px. Give the amount field a clear visual hierarchy; notes and categories use regular controls.
+Wallet selection and direction remain above a single focused payment workspace. At every width, place the breakdown below the entry fields in a workspace capped at 880px. The amount spans the width. Note/category share a row above 768px and stack on phones. Count-first incoming payments use this same vertical flow; no empty left-hand column is reserved. Give the amount field a clear visual hierarchy; notes and categories use regular controls.
 
-Breakdowns are clean denomination × count / subtotal rows. Exact payment uses success text and a clear primary action; non-exact tender shows expected change and opens a separate confirmation. Manual controls reuse inventory geometry. An unfilled form shows useful guidance. Confirmation shows actual saved transaction details, never fabricated examples.
+Breakdowns are clean denomination × count / subtotal rows. Exact payment uses success text and a clear primary action; non-exact tender shows expected change and opens a separate confirmation. Manual controls reuse inventory geometry, with column headers and explicit available counts. Amounts preserve the separator while typing; a small localized precision hint accompanies the input. An unfilled form shows useful guidance. Confirmation shows actual saved transaction details, never fabricated examples.
 
 ### Transactions
 

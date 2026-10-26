@@ -1,5 +1,5 @@
 <!-- SPDX-License-Identifier: MPL-2.0 -->
-# Redesign implementation verification
+# Release verification
 
 Date: 26 October 2026. App version 0.1.1. Checked against the Phosphor design and [APP_SPEC.md](APP_SPEC.md) / [DESIGN_SPEC.md](DESIGN_SPEC.md).
 
@@ -60,3 +60,14 @@ The extended browser smoke check passed both languages/themes at 320/390/1440px,
 The licensing audit passed: root and served MPL text match, package/lock metadata agree, the original MIT notice is preserved byte-for-byte, original logo/isotype/PDF bundle bytes are unchanged, 66 application/test/template source files carry SPDX notices, and every precached path exists in the production build. Rendered design FAQ, footer and sidebar sections were visually checked; the canvas inspector reports false clipping flags for newly inserted text even though exports render it correctly.
 
 At verification time the native `.pen` editor still held unsaved changes. The Pencil connector exposes canvas mutation/export but no Save operation, and no computer-use surface is available. Updated PNG previews are persisted; saving the open native design tab with Ctrl+S is the remaining editor action. No encrypted `.pen` content was read or rewritten through filesystem tools.
+
+
+## Payment and inventory fixes — version 0.1.2
+
+26 October 2026. The amount formatter used to discard a trailing decimal separator on every input event, so typing `24.50` normally could not work even though programmatically assigning the full string passed the previous smoke check. The editable formatter now preserves separators and zeros, rejects excess precision without changing the amount, and follows the app language. The legacy parser fallback that could reinterpret invalid fractions as a larger integer was removed. The underlying currency scales and saved monetary data are unchanged.
+
+Payment fields always precede the breakdown in an 880px maximum workspace; note/category share one desktop row. This includes the count-first Incoming case from the reported screenshot. Inventory now labels Denomination / Quantity / Subtotal, explicitly names bill/coin quantities, separates holdings from unavailable denominations, explains ordering, and labels group totals. Zero rows remain readable. Empty wallets/groups have an inventory explanation. Manual outgoing availability is explicit; amount and count fields retain focus/caret, including after clearing a count. Count-first incoming also ignores a retained outgoing amount when capping inputs: the counted cash determines its total.
+
+Validation: Hugo production build, JavaScript syntax, `git diff --check`, and all 73 unit tests passed. The expanded isolated Chromium smoke check uses real WebDriver keystrokes, reacquiring rerendered inputs after each key. It checks EUR dot/comma entry with Show cents off, third-digit rejection, backspace and middle edits, JPY fraction rejection/numeric keyboard, Spanish decimal-comma formatting, multi-digit count entry, cent-valued incoming coins, and stacked layout at 320/390/1024/1440px. Existing exact/change/reversal, backup restore, 1990 history, Budget and offline checks remain covered. Screenshots are generated in `/tmp/kontana-fixes-qa/` and the production verification directory.
+
+Version metadata is 0.1.2 and the service-worker cache is `kontana-v22`. Existing installations receive the explicit update/reload notice; local wallets and history are retained. No data/schema migration is needed. The design specification records the revised layout; the older native canvas is a visual reference and its previous side-by-side Pay composition is superseded.

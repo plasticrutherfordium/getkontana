@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: MPL-2.0 -->
 # Kontana — application specification
 
-Status: implemented, version 0.1.1 (26 October 2026). This is the product behavior reference. [DESIGN_SPEC.md](DESIGN_SPEC.md) defines presentation. The numbered Budget documents describe the original workflow decisions; this document takes precedence where an earlier proposal conflicts with the shipped interface.
+Status: implemented, version 0.1.2 (26 October 2026). This is the product behavior reference. [DESIGN_SPEC.md](DESIGN_SPEC.md) defines presentation. The numbered Budget documents describe the original workflow decisions; this document takes precedence where an earlier proposal conflicts with the shipped interface.
 
 ## Product promise
 
@@ -43,7 +43,7 @@ App sections share the selected wallet. Navigation normally preserves wallet con
 
 Cash displays wallet cards, inventory, and a wallet-check/latest-activity panel. On smaller screens the supporting panels follow the inventory.
 
-Inventory shows denomination value, count, and subtotal. Notes and coins can be separated, or shown together according to Settings. Zero counts are de-emphasized; “Hide empty” filters presentation without deleting denominations. A bottom row totals the visible denomination group. The wallet card always shows the complete wallet balance.
+Inventory has Denomination / Quantity / Subtotal column labels, explicit quantities (“2 bills”, “3 coins”), and separate “In your wallet” / “Not in your wallet” groups. Both groups follow the configured order, explained above the list. Zero quantities remain readable. Notes/coins tabs show physical item counts, and their footer explicitly labels Bills total / Coins total. “Hide empty” filters the unavailable group without deleting data. Empty groups and wallets explain the absence of cash. The wallet card always shows the complete wallet balance. Editing exposes zero denominations regardless of the visibility filter.
 
 Ordinary inventory is read-only. Editing requires choosing Edit denominations and confirming entry. The edit draft exposes minus/count/plus controls, allocated total, ledger-expected total, and difference. Finish is enabled only when denomination total equals the expected balance. Finish records a zero-value `denominations_edited` event with before/after counts; Cancel discards the draft. This flow changes composition, never the amount of money owned.
 
@@ -53,7 +53,7 @@ The wallet check uses real ledger/count state. It shows a stale-count warning fo
 
 Pay handles incoming and outgoing cash. It starts from the active wallet; a zero-balance wallet defaults to Incoming. Wallet cards remain available above the mode selector. Switching direction clears allocation while retaining useful amount/note input.
 
-Entry contains amount, optional note (maximum 30 characters), and category. Amount uses decimal input without browser spinners, accepts locale formatting, and preserves editing order/caret. The breakdown is beside the fields on wide screens and below them on narrow screens. Invalid/empty amounts show guidance; no transaction can be recorded from an incomplete allocation.
+Entry contains amount, optional note (maximum 30 characters), and category. Amount uses decimal input without browser spinners, accepts dot/comma entry, and preserves separators, fractional zeros, editing order and caret. EUR allows up to two decimal places; configured whole-unit currencies such as JPY reject fractions. Extra precision is rejected rather than reinterpreted as a larger amount. The precision hint and keyboard follow the selected currency; Show cents controls presentation only. Numbers follow the app language. The breakdown always sits below the fields in a maximum 880px workspace; note and category share a row on desktop and stack on mobile. Invalid/empty amounts show guidance; no transaction can be recorded from an incomplete allocation.
 
 ### Outgoing
 

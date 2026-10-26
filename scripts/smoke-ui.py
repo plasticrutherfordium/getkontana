@@ -71,6 +71,18 @@ def fill(selector, value):
     js("const e=document.querySelector(arguments[0]);e.focus();e.value=arguments[1];e.dispatchEvent(new Event('input',{bubbles:true}))", selector, value)
 
 
+
+def type_keys(selector, keys):
+    # The app rerenders on input, so reacquire the element after every key.
+    for key in keys:
+        element = command('POST', '/element', {'using': 'css selector', 'value': selector})['element-6066-11e4-a52e-4f735466cecf']
+        command('POST', '/element/' + element + '/value', {'text': key, 'value': [key]})
+
+
+def assert_payment_stacked():
+    assert js("const fields=document.querySelector('.payment-entry-grid').getBoundingClientRect();const breakdown=document.querySelector('.payment-advanced-divider').getBoundingClientRect();return breakdown.top>=fields.bottom && Math.abs(fields.left-breakdown.left)<2"), 'Breakdown must be below the fields'
+
+
 def screenshot(name):
     (artifacts / (name + '.png')).write_bytes(base64.b64decode(command('GET', '/screenshot')))
 
@@ -120,16 +132,50 @@ try:
     # A deterministic old-history fixture in this fresh test profile only.
     js("""const s=JSON.parse(localStorage.getItem('kontana_state_v1'));const w=Object.values(s.wallets)[0];
       const counts={5000:4,2000:5,1000:2,200:2,50:1};w.denominations.forEach(d=>d.count=counts[d.value_minor]||0);
-      w.balance_minor=32450;s.settings.show_denominations_on_hand_only=true;s.settings.show_cents=true;
+      w.balance_minor=32450;s.settings.show_denominations_on_hand_only=true;s.settings.show_cents=false;
       s.settings.language='en';s.settings.appearance='dark';localStorage.setItem('kt-language','en');window.__ktSetTheme('dark');
       s.transactions=[{id:'old-opening',wallet_id:w.id,wallet_name:w.name,currency:'EUR',type:'incoming',amount_minor:32450,delta_minor:32450,created_at:'1990-01-01T12:00:00Z',category:'income',note:'Opening cash',breakdown:w.denominations.filter(d=>d.count)}];
       localStorage.setItem('kontana_state_v1',JSON.stringify(s));location.reload()""")
     wait("return !!document.querySelector('.inventory-card')")
+    # Holdings and unavailable values are labelled, even when zero rows are shown.
+    click('#toggle-denom-visibility')
+    assert js("return [...document.querySelectorAll('.inventory-group-heading')].map(e=>e.innerText)") == ['In your wallet', 'Not in your wallet']
+    assert js("return [...document.querySelectorAll('.cash-denom-table [role=columnheader]')].map(e=>e.innerText)") == ['Denomination', 'Quantity', 'Subtotal']
+    assert js("return document.querySelector('.cash-denom-table .has-count .denom-count-readonly').innerText") == '4 bills'
+    assert js("return document.querySelector('.cash-denom-table .missing-count .denom-count-readonly').innerText") == '0 bills'
+    assert js("return document.querySelector('.denom-total-row').innerText.includes('Bills total')")
+    click('#segment-coins')
+    assert js("return document.querySelector('.cash-denom-table .has-count .denom-count-readonly').innerText") == '2 coins'
+    assert js("return document.querySelector('.denom-total-row').innerText.includes('Coins total')")
+    screenshot('app-cash-coins-dark-desktop')
+    click('#segment-bills')
     screenshot('app-cash-dark-desktop')
     assert balance() == 32450
     click('.tab-btn[data-tab=pay]')
-    fill('#payment-amount', '24.50')
+    for amount in ['24.50', '24,50']:
+        fill('#payment-amount', '')
+        type_keys('#payment-amount', amount)
+        assert js("return document.querySelector('#payment-amount').value") == '€24.50'
+        type_keys('#payment-amount', '9')
+        assert js("return document.querySelector('#payment-amount').value") == '€24.50', 'Third decimal must be rejected'
+    type_keys('#payment-amount', '\ue003')  # Backspace preserves the first decimal digit.
+    assert js("return document.querySelector('#payment-amount').value") == '€24.5'
+    type_keys('#payment-amount', '0')
+    # Insert in the whole-number portion without jumping to the end.
+    js("const e=document.querySelector('#payment-amount');e.setSelectionRange(2,2)")
+    type_keys('#payment-amount', '1')
+    assert js("return document.querySelector('#payment-amount').value") == '€214.50'
+    assert js("return document.querySelector('#payment-amount').selectionStart") == 3
+    type_keys('#payment-amount', '\ue003')
+    assert js("return document.querySelector('#payment-amount').value") == '€24.50'
+    for width in [1440, 1024, 390, 320]:
+        viewport(width, 1100)
+        fits()
+        assert_payment_stacked()
+    viewport(1440, 1100)
+    print('PASS: real EUR decimal/comma typing, precision limit, deletion, caret editing, stacked payment at all widths')
     wait("return !!document.querySelector('#payment-use-suggested')")
+    js('window.scrollTo(0,0)')
     screenshot('app-pay-dark-desktop')
     click('#payment-use-suggested')
     wait("return !!document.querySelector('#new-transaction')")
@@ -186,19 +232,69 @@ try:
     assert balance() == 30000
     print('PASS: complete 1990 history, running ledger, JSON/PDF export, confirmed backup restore')
 
+    input_fixture = js("return localStorage.getItem('kontana_state_v1')")
+    # Currency-specific input limits, using a temporary fixture in this profile.
+    js("const s=JSON.parse(arguments[0]);const w=Object.values(s.wallets)[0];w.currency='JPY';localStorage.setItem('kontana_state_v1',JSON.stringify(s));location.reload()", input_fixture)
+    wait("return !!document.querySelector('.inventory-card')")
+    click('.tab-btn[data-tab=pay]')
+    type_keys('#payment-amount', '1200')
+    type_keys('#payment-amount', '.')
+    assert js("return document.querySelector('#payment-amount').value") == '¥1200'
+    assert js("return document.querySelector('#payment-amount').inputMode") == 'numeric'
+    js("const s=JSON.parse(arguments[0]);s.settings.language='es';s.settings.appearance='light';s.settings.payment_strategies=false;localStorage.setItem('kt-language','es');window.__ktSetTheme('light');localStorage.setItem('kontana_state_v1',JSON.stringify(s));location.reload()", input_fixture)
+    wait("return !!document.querySelector('.inventory-card')")
+    click('.tab-btn[data-tab=pay]')
+    type_keys('#payment-amount', '24,50')
+    assert js("return document.querySelector('#payment-amount').value") == '€24,50'
+    type_keys('#payment-amount', '9')
+    assert js("return document.querySelector('#payment-amount').value") == '€24,50'
+    js('window.scrollTo(0,0)')
+    screenshot('app-pay-light-es-desktop')
+    click('#mode-incoming')
+    assert not js("return !!document.querySelector('#payment-amount')"), 'Count-first incoming uses the counted total'
+    assert_payment_stacked()
+    fill('input[data-alloc-denom="2000"]', '')
+    type_keys('input[data-alloc-denom="2000"]', '12')
+    assert js('return document.activeElement.dataset.allocDenom') == '2000'
+    assert js("return document.querySelector('input[data-alloc-denom=\"2000\"]').value") == '12'
+    fill('input[data-alloc-denom="2000"]', '1')
+    click('#payment-coins')
+    fill('input[data-alloc-denom="50"]', '')
+    type_keys('input[data-alloc-denom="50"]', '3')
+    assert js("return document.querySelector('.allocation-summary').innerText.includes('21,50')")
+    click('#payment-bills')
+    js('window.scrollTo(0,0)')
+    screenshot('app-incoming-light-es-desktop')
+    for theme in ['light', 'dark']:
+        js('window.__ktSetTheme(arguments[0])', theme)
+        for width in [1440, 390, 320]:
+            viewport(width, 1100)
+            fits()
+            assert_payment_stacked()
+            assert js("return [...document.querySelectorAll('.payment-breakdown-inline .denom-header-row p')].map(e=>e.innerText)") == ['Denominación', 'Cantidad', 'Subtotal']
+        viewport(390, 844)
+        js('window.scrollTo(0,0)')
+        screenshot(f'app-incoming-{theme}-es-mobile')
+    viewport(1440, 1100)
+    js("localStorage.setItem('kontana_state_v1',arguments[0]);localStorage.setItem('kt-language','en');window.__ktSetTheme('dark');location.reload()", input_fixture)
+    wait("return !!document.querySelector('.inventory-card')")
+    print('PASS: JPY whole amounts, Spanish comma typing, count-first incoming layout in both themes at desktop/mobile widths')
+
     click('#tab-cash [data-wallet-action]')
     click('[data-modal-action=denoms]')
     wait("return !!document.querySelector('[data-modal-action=edit]')")
     click('[data-modal-action=edit]')
     wait("return !!document.querySelector('#cancel-edit-mode')")
-    fill('#tab-cash input[data-denom="2000"]', '12')
+    fill('#tab-cash input[data-denom="2000"]', '')
+    type_keys('#tab-cash input[data-denom="2000"]', '12')
+    assert js("return document.querySelector('#tab-cash input[data-denom=\"2000\"]').value") == '12'
     assert js("return document.activeElement.dataset.denom") == '2000'
     assert js("return document.querySelector('#finish-edit-mode').disabled")
     click('#cancel-edit-mode')
     assert balance() == 30000
     saved = js("return localStorage.getItem('kontana_state_v1')")
     js("""const s=JSON.parse(localStorage.getItem('kontana_state_v1'));const w=Object.values(s.wallets)[0];
-      s.settings.app_mode='budget';w.count_mode='total';w.balance_minor=27500;
+      s.settings.app_mode='budget';s.settings.show_cents=true;w.count_mode='total';w.balance_minor=27500;
       w.budget={enabled:true,cadence:'weekly',envelopes:[{id:'food',name:'Food',target_minor:10000,tracking_level:'all'}]};
       s.transactions.push({id:'budget-spend',wallet_id:w.id,wallet_name:w.name,currency:w.currency,type:'spend',amount_minor:2500,delta_minor:-2500,envelope_id:'food',created_at:new Date().toISOString(),category:'food'});
       localStorage.setItem('kontana_state_v1',JSON.stringify(s));location.reload()""")
@@ -240,7 +336,7 @@ try:
 
     visit('/es/app/')
     wait('return !!navigator.serviceWorker.controller')
-    cached = command('POST', '/execute/async', {'script': "const done=arguments[0];caches.open('kontana-v21').then(c=>c.keys()).then(keys=>done(keys.map(k=>new URL(k.url).pathname)))", 'args': []})
+    cached = command('POST', '/execute/async', {'script': "const done=arguments[0];caches.keys().then(keys=>caches.open(keys.filter(k=>k.startsWith('kontana-v')).at(-1))).then(c=>c.keys()).then(keys=>done(keys.map(k=>new URL(k.url).pathname)))", 'args': []})
     for asset in ['/app/', '/es/app/', '/fonts/fonts.css', '/app-phosphor.css', '/app/accessibility.js', '/open-source/', '/es/open-source/', '/licenses/MPL-2.0.txt', '/licenses/THIRD_PARTY_NOTICES.txt']:
         assert asset in cached, 'Missing offline asset: ' + asset
     errors = [entry for entry in command('POST', '/log', {'type': 'browser'}) if entry['level'] == 'SEVERE']

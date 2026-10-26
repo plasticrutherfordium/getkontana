@@ -34,7 +34,7 @@ npx wrangler pages deploy site/public --project-name getkontana --branch main
 
 Wrangler attaches the current Git commit metadata; `--commit-hash` can be provided explicitly. A production deployment updates the custom domains. The root `functions/` directory contains the legacy waitlist API and is compiled by Pages; preserve the existing project bindings/secrets. No database migration or secret rotation is needed for this redesign. Do not use `wrangler deploy --assets` to replace the Pages project with a Worker.
 
-Verify `/`, `/es/`, `/app/`, `/es/app/`, `/open-source/`, `/licenses/MPL-2.0.txt`, and `/sw.js` over HTTPS after deployment. Check app version 0.1.1, free-core/MPL wording, current assets and source links. Browser smoke checks can use the production URL in a fresh test profile without accessing user data; see `scripts/smoke-ui.py`.
+Verify `/`, `/es/`, `/app/`, `/es/app/`, `/open-source/`, `/licenses/MPL-2.0.txt`, and `/sw.js` over HTTPS after deployment. Check app version 0.1.2, free-core/MPL wording, current assets and source links. Browser smoke checks can use the production URL in a fresh test profile without accessing user data; see `scripts/smoke-ui.py`.
 
 ## Product and licence
 

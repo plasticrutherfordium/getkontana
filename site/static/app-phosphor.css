@@ -338,6 +338,50 @@ body {
 .inventory-heading .mono {
   font-size:10px
 }
+.denom-header-row p {
+  margin:0
+}
+.inventory-tab-count {
+  display:inline-block;
+  margin-left:6px;
+  font:11px var(--font-mono)
+}
+.inventory-order {
+  margin:0 0 12px;
+  font-size:11px
+}
+.inventory-group-heading {
+  padding:18px 0 8px;
+  color:var(--kt-accent);
+  font:500 11px/1.5 var(--font-body)
+}
+.inventory-empty {
+  padding:16px 0;
+  font-size:12px;
+  color:var(--kt-text-muted)
+}
+:is(.cash-denom-table,.payment-breakdown-inline) .denom-header-row {
+  min-height:32px;
+  padding:0 0 10px;
+  color:var(--kt-text-muted);
+  font:500 11px/1.5 var(--font-body)
+}
+:is(.cash-denom-table,.payment-breakdown-inline) .denom-header-row>:nth-child(2) {
+  text-align:center
+}
+:is(.cash-denom-table,.payment-breakdown-inline) .denom-header-row>:last-child {
+  text-align:right
+}
+.cash-denom-table .has-count .denom-count-readonly {
+  color:var(--kt-accent)
+}
+.cash-denom-table .missing-count :is(.denom-value,.denom-subtotal) {
+  color:var(--kt-text-muted)
+}
+#payment-form {
+  width:100%;
+  max-width:880px
+}
 .denom-controls {
   display:flex;
   justify-content:space-between;
@@ -439,8 +483,7 @@ body {
   color:var(--kt-text-muted)
 }
 .denom-count-readonly::before {
-  content:'× ';
-  color:var(--kt-text-muted)
+  content:none
 }
 .denom-subtotal {
   margin:0;
@@ -449,7 +492,7 @@ body {
   color:var(--kt-text)
 }
 .denom-row.missing-count {
-  opacity:.42
+  color:var(--kt-text-muted)
 }
 .denom-total-row {
   border:0;
@@ -621,21 +664,20 @@ body {
 }
 .payment-entry-pill {
   display:grid;
-  grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);
-  column-gap:48px;
+  grid-template-columns:minmax(0,1fr);
   row-gap:20px;
   align-items:start;
   padding:28px
 }
 .payment-entry-grid {
   display:grid;
-  grid-template-columns:1fr;
-  gap:24px;
-  grid-column:1;
-  grid-row:1/5;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:20px;
   align-content:start
 }
 .payment-entry-grid label {
+  grid-column:auto;
+  grid-row:auto;
   display:grid;
   gap:10px;
   font:500 12px/1.5 var(--font-body);
@@ -643,9 +685,15 @@ body {
   margin:0;
   max-width:100%
 }
-.payment-amount-field {
+.payment-entry-grid .payment-amount-field {
+  grid-column:1/-1;
   width:100%;
   max-width:100%
+}
+.payment-precision {
+  font:400 11px/1.5 var(--font-body);
+  letter-spacing:normal;
+  color:var(--kt-text-muted)
 }
 .payment-entry-grid .payment-amount-input {
   min-height:88px;
@@ -662,19 +710,21 @@ body {
   display:none
 }
 .payment-advanced-divider {
-  grid-column:2;
+  grid-column:1;
+  padding-top:24px;
+  border-top:1px solid var(--kt-border);
   font:10px var(--font-mono);
   margin:0;
   color:var(--kt-text-muted)
 }
 .payment-breakdown-inline {
-  grid-column:2;
+  grid-column:1;
   display:grid;
   gap:16px;
   opacity:1
 }
 .payment-breakdown-inline.disabled {
-  min-height:236px;
+  min-height:100px;
   align-content:center;
   opacity:1;
   border:1px dashed var(--kt-border);
@@ -699,7 +749,7 @@ body {
   font:11px/1.8 var(--font-mono)
 }
 .payment-actions {
-  grid-column:2
+  grid-column:1
 }
 .payment-actions:empty {
   display:none
@@ -727,11 +777,19 @@ body {
 .allocation-line {
   font:11px/1.8 var(--font-mono)
 }
-.payment-breakdown-inline .denom-row {
+.payment-breakdown-inline :is(.denom-row,.denom-header-row) {
   grid-template-columns:minmax(54px,1fr) 100px 86px
 }
 .payment-breakdown-inline .denom-count-wrap {
   width:100px
+}
+.payment-breakdown-inline .denom-value {
+  display:block
+}
+.denom-available {
+  display:block;
+  margin-top:6px;
+  font:10px/1.5 var(--font-body)
 }
 .tx-success-summary {
   display:grid;
@@ -1435,13 +1493,14 @@ label {
     gap:24px
   }
   .payment-entry-grid {
+    grid-template-columns:minmax(0,1fr);
     gap:20px
   }
   .payment-entry-grid .payment-amount-input {
     font-size:40px;
     min-height:80px
   }
-  .payment-breakdown-inline .denom-row {
+  .payment-breakdown-inline :is(.denom-row,.denom-header-row) {
     grid-template-columns:minmax(50px,1fr) 100px 86px
   }
   .payment-breakdown-inline.disabled {

@@ -3,9 +3,9 @@
 
 Canonical behavior: [APP_SPEC.md](APP_SPEC.md#pay). Presentation: [DESIGN_SPEC.md](DESIGN_SPEC.md#pay). Algorithm details remain in [ALGORITHMS.md](ALGORITHMS.md).
 
-Pay / Pagar is the single entry point for precise incoming/outgoing cash. It preserves the active wallet, provides wallet cards and an Outgoing/Incoming selector, and defaults a zero wallet to Incoming. Amount, optional note (30 characters), category, and denomination allocation form one workspace. Fields and breakdown sit side by side on wide screens and stack on mobile.
+Pay / Pagar is the single entry point for precise incoming/outgoing cash. It preserves the active wallet, provides wallet cards and an Outgoing/Incoming selector, and defaults a zero wallet to Incoming. Amount, optional note (30 characters), category, and denomination allocation form one workspace. The breakdown always follows the fields vertically, including count-first incoming payments. The form is at most 880px wide. On desktop, the note and category share one row; on mobile they stack.
 
-Amount accepts localized decimal/currency formatting without browser spinners. The prominent amount field and normal-size note/category controls use the shared visual system. Until the amount is valid, the breakdown provides guidance. Direction changes clear the allocation while retaining amount/note. Cancel resets the draft. Drafts do not alter cash or history.
+Amount accepts a dot or comma without browser spinners. Editable values keep a trailing separator and zeros (`24.` → `24.5` → `24.50`) and omit grouping separators to avoid editing ambiguity. EUR accepts up to two decimal places; configured whole-unit currencies such as JPY reject decimal separators. Extra fractional digits and malformed separators are rejected without changing the draft. A precision hint and decimal/numeric keyboard match the selected currency. The display-cents preference never disables fractional input. Input and money formatting follow the selected app language (English or Spanish). The prominent amount field and normal-size note/category controls use the shared visual system. Until the amount is valid, the breakdown provides guidance. Direction changes clear the allocation while retaining amount/note. Cancel resets the draft. Drafts do not alter cash or history.
 
 ## Outgoing
 
@@ -15,7 +15,7 @@ Tender may exceed the purchase amount only through the change flow. Use suggeste
 
 ## Incoming
 
-Incoming allocation must sum exactly to the amount before recording. Suggested/manual denomination counting is supported. In the existing count-first manual entry mode, the incoming amount can be derived from the allocation. Incoming counts are not limited by previous holdings. Confirmation adds the allocation and one incoming transaction.
+Incoming allocation must sum exactly to the amount before recording. Suggested/manual denomination counting is supported. In the existing count-first manual entry mode, the incoming amount is derived from the allocation. A retained outgoing amount is ignored in this mode and never caps the incoming count. Incoming counts are not limited by previous holdings. Manual rows label denomination, quantity, and subtotal; outgoing availability is written explicitly. Count inputs retain focus and caret through multi-digit typing. Confirmation adds the allocation and one incoming transaction.
 
 ## Completion
 
