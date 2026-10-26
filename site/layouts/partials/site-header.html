@@ -1,0 +1,22 @@
+{{/* SPDX-License-Identifier: MPL-2.0 */}}
+{{ $copy := index hugo.Data.website .Language.Lang }}
+{{ $home := .Site.Home.RelPermalink }}
+<a class="skip-link" href="#main-content">{{ $copy.skip }}</a>
+<header class="site-header">
+  <nav class="website-container website-nav" aria-label="{{ $copy.navigation }}">
+    <a class="brand" href="{{ $home }}" aria-label="Kontana"><img src="/kontana-logo3.svg" alt="Kontana" width="186" height="32"></a>
+    <div class="website-nav-links">
+      <a class="desktop-link" href="{{ $home }}#how-it-works">{{ $copy.how_link }}</a>
+      <a class="desktop-link" href="{{ $home }}#privacy">{{ $copy.privacy_link }}</a>
+      <a class="desktop-link" href="{{ $home }}#faq">{{ $copy.faq_link }}</a>
+      <button class="icon-button theme-toggle" type="button" data-theme-toggle data-dark-label="{{ $copy.dark_theme }}" data-light-label="{{ $copy.light_theme }}" aria-label="{{ $copy.light_theme }}">{{ partial "icon.html" (dict "name" "sun" "class" "theme-sun") }}{{ partial "icon.html" (dict "name" "moon" "class" "theme-moon") }}</button>
+      <details class="language-menu">
+        <summary aria-label="{{ $copy.language }}">{{ .Language.Lang | upper }} {{ partial "icon.html" (dict "name" "chevron-down") }}</summary>
+        <div class="language-options">
+          {{ range .AllTranslations }}<a href="{{ .RelPermalink }}" lang="{{ .Language.Lang }}" hreflang="{{ .Language.Lang }}" data-language-link="{{ .Language.Lang }}" {{ if eq $.Language.Lang .Language.Lang }}aria-current="page"{{ end }}>{{ (index hugo.Data.website .Language.Lang).language_name }}</a>{{ end }}
+        </div>
+      </details>
+      <a class="button button-primary" href="{{ with .Site.GetPage "app" }}{{ .RelPermalink }}{{ end }}">{{ $copy.open_app }} {{ partial "icon.html" (dict "name" "arrow-up-right") }}</a>
+    </div>
+  </nav>
+</header>

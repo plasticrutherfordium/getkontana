@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 (function attachKontanaMoney(global) {
   const ZERO_DECIMAL_CURRENCIES = new Set([
     'CLP', 'SEK', 'HUF', 'NOK', 'ARS', 'JPY', 'KRW', 'XOF',

@@ -1,5 +1,7 @@
+<!-- SPDX-License-Identifier: MPL-2.0 -->
 # Codex Context Snapshot
 
+> Historical planning/context. Current release behavior and presentation are defined in [APP_SPEC.md](APP_SPEC.md) and [DESIGN_SPEC.md](DESIGN_SPEC.md).
 Date: 2026-02-05
 
 ## Current State (What Was Changed)

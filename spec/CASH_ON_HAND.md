@@ -1,93 +1,24 @@
+<!-- SPDX-License-Identifier: MPL-2.0 -->
 # Cash
 
-## Naming
-- Sidebar label: `Cash`.
-- Screen header: `Cash`.
+Current implementation: [APP_SPEC.md](APP_SPEC.md#cash-in-precise-mode). Presentation: [DESIGN_SPEC.md](DESIGN_SPEC.md#cash).
 
-## Empty State
-If there are no wallets:
-- Show one prominent message: `No wallets yet. Create your first wallet to start tracking cash.`
-- Show create-wallet control prominently.
-- Do not show duplicate headings.
+## Wallet context
 
-## Wallet Selector
-- Wallet selector is horizontal wallet cards (not dropdown).
-- Card fields: flag, currency code, wallet name, wallet total.
-- Selecting a card switches active wallet immediately.
-- Selector lists existing wallets.
-- Wallet cards can be dragged to reorder. The order persists and is shared with Transactions.
-- On mobile, the wallet cards row scrolls horizontally; cards do not shrink and the rest of the page remains full-width.
-- Wallet row should never cause the page content to shrink; only the wallet row scrolls horizontally.
-- Wallet row is visually clipped within its container (no overflow into other sections).
+Cash / Efectivo opens on the active wallet, falling back to the first saved wallet. Cards display the original currency flag, unchanged ISO code, name, and full balance. The selected card has an accent border/surface and an ellipsis menu. Pointer and keyboard selection change context across Cash, Pay, and Transactions. Drag reordering persists. The final plus/label card opens wallet creation; maximum four wallets, name maximum 18 characters. Empty app state has one welcome message and a prominent creation button.
 
-## Cash Layout and Actions
-- Remove Cash header top-right wallet CTA button.
-- Wallet creation is triggered from a dedicated `+` wallet card shown as the last card in the wallet selector row.
-- Clicking the `+` wallet card opens an in-app modal to create a wallet (no inline panel).
-- If wallet count is already 4, keep the `+` wallet card visible; clicking it shows an in-app modal that maximum wallets are reached.
-- Create-wallet currency selector ordering:
-  - Priority first: `EUR`, then `USD`.
-  - Remaining currencies listed alphabetically after a clear visual separation.
-- Cash does not show an Add/Spend money CTA; payments are accessed from the `Pay` tab.
-- Wallet actions are accessed via a pencil/ellipsis icon on the selected wallet card (top-right).
-- Clicking the icon opens an in-app modal with actions only:
-  - Edit name
-  - Edit denominations
-  - Delete wallet (destructive)
-- The wallet actions modal has a Close control in the top-right (no in-list Cancel action).
-- Do not show Edit/Delete buttons inline on the Cash screen.
+Wallet actions are Rename, Edit denominations, and Delete wallet. Creation/rename/delete use in-app dialogs. Deletion requires confirmation. Cash money movement is handled through Pay rather than separate inline Add/Spend forms.
 
-## Totals
-- No oversized standalone total hero.
-- Wallet card displays wallet total.
-- Denomination section has bottom total row labeled `Bills total` or `Coins total` depending on the active tab, and shows the total count for that tab.
+## Inventory
 
-## Denominations View
-- Split by Bills/Coins toggle; only one category shown at a time.
-- If currency only has one category, hide the toggle.
-- Cash denomination rows use a three-column grid (value, count, subtotal) without header labels.
-  Semantics are implicit; labels are not shown.
-- Denomination rows use equal column widths for value, count, and subtotal to avoid cramped labels.
-- Row presentation must clearly distinguish denominations the user has vs missing denominations.
-- Zero-count denominations are always visually de-emphasized by default.
-- Default (not in Edit Mode): denomination rows are static/read-only.
-- Default (not in Edit Mode): do not show editable count controls (`- input +`) inline.
-- Denominations come from canonical per-currency mapping only.
-- Cash includes a minimal inline toggle in the denominations section to hide zero-count rows (show only denominations you have). No Settings control.
-- Wallet names are truncated with ellipsis to preserve uniform card size.
-- Selected wallet must be instantly distinguishable: 2px accent border, accent-colored currency header and total text.
+Read-only rows show value, count, and subtotal. Notes/coins can be split or combined according to Settings. The Hide empty control changes visibility, not stored counts. Zero counts are de-emphasized. The total row totals the visible group; the card totals the complete wallet.
 
-## Edit Mode
-### Entry
-- Entry requires in-app modal (not browser confirm).
-- `Edit wallet` modal offers:
-  - `Edit name` which opens an in-modal name prompt.
-  - `Edit denominations` which leads to a confirmation prompt.
-- Confirmation copy:
-  - Title/body prompt: `Edit denominations instead of entering a transaction?`
-  - Buttons: `Cancel`, `Enter edit mode`
+Desktop places real wallet-check and latest-activity panels beside inventory. Smaller screens stack them. Total-only Budget wallets warn that denomination counts need a real count. Reconciliation status is calculated, never an unconditional decorative success message. Latest activity has no age cutoff.
 
-### Active UI
-- Show clear `Edit mode active` status.
-- Show what is blocked (all except Settings).
-- Show reconciliation line: `Allocated: X / Expected: Y`.
-- Show a full-width reconciliation status pill directly tied to reconciliation state:
-  - unreconciled state uses a strong danger treatment (red container/pill)
-  - reconciled state uses a strong success treatment (green container/pill)
-- Show one clear mismatch message:
-  - `You're short by X`, or
-  - `You're over by X`.
-- In Edit Mode only, denomination rows expose stable controls `[-] [count input] [+]`.
-- In Edit Mode, count input supports normal editing behaviour: multi-digit typing, selection, replace, paste.
-- Show `Reason (optional)` input at start of edit mode.
-- Show `Finish edit` and `Cancel edit` next to each other.
+## Controlled editing
 
-### Behaviour
-- While active, navigation/actions are gated except Settings; Cash money-movement CTA is disabled.
-- Finish enabled only when `Allocated == Expected`.
-- Cancel discards edits and restores pre-edit counts.
-- Finishing records transaction:
-  - `type: denominations_edited`
-  - `amount: 0`
-  - optional note from reason.
-- Non-zero adjustment from edit mode is disallowed; user must use a proper transaction flow instead.
+Editing requires confirmation. Counts become minus/input/plus controls and the draft shows allocated amount versus ledger-expected amount. Finish remains disabled while these differ. Keyboard editing retains focus and caret after count changes. Cancel discards the draft. Finish saves counts and appends a zero-delta `denominations_edited` record with before/after breakdowns. This flow changes composition only; incoming/outgoing/adjustment flows change the amount owned. Navigation is gated during editing, with Settings still accessible.
+
+## Budget presentation
+
+Budget mode preserves wallet data and adds setup, check-in, quick reconciliation, and existing drift actions. Envelope targets show current-period remaining values and recorded-spending bars. Only explicitly envelope-linked outgoing/spend records in that cadence period count toward a target. Unlogged spending is not estimated. A period change changes the summary without deleting old entries.

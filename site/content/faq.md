@@ -2,22 +2,31 @@
 title: "FAQ"
 ---
 
-## Is Kontana really free?
+<!-- SPDX-License-Identifier: MPL-2.0 -->
+## Do I need an account?
 
-Yes. Free at launch, no hidden fees, no premium tier planned.
+No. Open Kontana, create a wallet, and you’re ready.
 
-## Does it connect to my bank?
+## Does it work without internet?
 
-No. Kontana is cash-only by design. No bank linking, no account aggregation.
+Yes. After loading the app once, you can use it offline on that device.
 
-## Where is my data stored?
+## What if my cash doesn’t match?
 
-On your device only. Nothing leaves your phone unless you explicitly export it.
+Reconcile and move on. Cash is real life, not a test. Precise mode tracks every note and coin; Budget mode lets you check in with a total.
 
-## Can I use it offline?
+## Will the core app stay free?
 
-Yes. Kontana is offline-first. Cash doesn't need Wi-Fi and neither does your tracker.
+Yes. The core cash tracker is free, forever, and open source under MPL-2.0. Wallets, payments, budgets, full history, and backups do not require a subscription. Optional paid extras may follow.
 
-## How do I get notified at launch?
+## What about Premium, MCP, and camera counting?
 
-Join the [waitlist](/) — email only, no tracking, unsubscribe anytime.
+We are exploring optional paid extras, including MCP connections to AI assistants and camera-assisted note and coin counting. These features are not available yet. The free core will remain useful on its own.
+
+## Can I inspect, modify, or self-host Kontana?
+
+Yes. The core source is available under the Mozilla Public License 2.0. You can inspect it, modify it, and self-host it while following the licence. Separate future paid components may have their own terms.
+
+## How long is my history kept?
+
+There is no time limit or automatic cleanup. History stays on your device until you delete the corresponding data. Clearing browser storage also removes it.

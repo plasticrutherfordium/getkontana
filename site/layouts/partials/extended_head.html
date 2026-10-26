@@ -1,9 +1,2 @@
-{{ if eq .Layout "app" }}
-  <link rel="stylesheet" href="{{ "kt-terminal.css" | relURL }}">
-  <link rel="stylesheet" href="{{ "app.css" | relURL }}">
-  <link rel="manifest" href="{{ "manifest.webmanifest" | relURL }}">
-  <meta name="theme-color" content="#0b1618">
-{{ end }}
-{{ if .IsHome }}
-  <link rel="stylesheet" href="{{ "landing.css" | absURL }}">
-{{ end }}
+{{/* SPDX-License-Identifier: MPL-2.0 */}}
+{{/* Styles are loaded in the shared head. */}}

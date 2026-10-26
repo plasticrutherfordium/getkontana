@@ -1,0 +1,9 @@
+{{/* SPDX-License-Identifier: MPL-2.0 */}}
+{{ define "main" }}
+<article class="prose-page website-container">
+  <p class="eyebrow">KONTANA / {{ .Title }}</p>
+  <h1>{{ .Title }}</h1>
+  <div class="prose">{{ .Content }}</div>
+  <a class="button button-primary" href="{{ with .Site.GetPage "app" }}{{ .RelPermalink }}{{ end }}">{{ if eq .Language.Lang "es" }}Usar gratis{{ else }}Open free app{{ end }} {{ partial "icon.html" (dict "name" "arrow-up-right") }}</a>
+</article>
+{{ end }}

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 (function attachKontanaBudgetInsights(global) {
   const VALID_CADENCE = new Set(['weekly', 'fortnightly', 'monthly']);
   const VALID_CATEGORIES = new Set(['fees', 'food', 'misc', 'transfer', 'loss', 'unknown']);

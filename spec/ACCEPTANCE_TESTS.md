@@ -1,3 +1,8 @@
+<!-- SPDX-License-Identifier: MPL-2.0 -->
+# Acceptance tests
+
+Current release behavior/presentation is defined in [APP_SPEC.md](APP_SPEC.md) and [DESIGN_SPEC.md](DESIGN_SPEC.md), which supersede older planning assertions below. Automated and browser checks are recorded in [RELEASE_VERIFICATION.md](RELEASE_VERIFICATION.md).
+
 Feature: Wallet model and selector
 
 Scenario: Maximum four wallets across the app
@@ -154,12 +159,20 @@ Scenario: Show all denominations reveals full list
   When I click Show all denominations
   Then I see all denominations for that currency
 
-Feature: Transactions view and retention
+Feature: Transactions view and complete history
 
-Scenario: Retention banner dismisses for 5 days
-  Given I am on Transactions
-  When I dismiss the retention banner
-  Then it stays hidden for 5 days
+Scenario: Old transactions remain available
+  Given my wallet has transactions from more than 30 days ago and from previous years
+  When I reopen the app and view its full ledger
+  Then all transactions remain available in date order
+  And their running balances include the complete wallet history
+  And JSON and PDF exports include those transactions
+  And no expiration notice or deletion countdown is shown
+
+Scenario: Old check-ins survive reloads and migration
+  Given I have check-ins and linked adjustments from previous years
+  When I reload or migrate my saved data
+  Then the check-ins, linked adjustments, and wallet balances are preserved
 
 Scenario: Transactions default vs details view
   Given I am on Transactions
@@ -177,12 +190,12 @@ Scenario: Transactions header updates with wallet selection
  
 Feature: Mobile navigation
 
-Scenario: Bottom nav shows Cash Pay Trx
+Scenario: Bottom nav shows Cash Pay Transactions
   Given I am on a mobile viewport
   When I view the app
-  Then the bottom nav shows exactly: Cash, Pay, Trx
+  Then the bottom nav shows exactly: Cash, Pay, Transactions
   And Pay is in the middle
-  And Pay is visually emphasized on mobile
+  And the active section is visually emphasized on mobile
 
 Scenario: Wallet row is the only horizontal scroll region
   Given I am on a mobile viewport
@@ -200,7 +213,7 @@ Scenario: Wallet actions are accessed via icon
 
 Scenario: Settings is accessible via gear icon
   Given I am on a mobile viewport
-  When I open Cash, Pay, or Trx
+  When I open Cash, Pay, or Transactions
   Then I see a top-right settings icon
   When I click the settings icon
   Then a Settings overlay opens

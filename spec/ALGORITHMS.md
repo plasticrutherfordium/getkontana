@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: MPL-2.0 -->
 # Algorithms
 
 ## Context & Shared Rules
@@ -116,12 +117,11 @@ Outgoing:
 - If `changeExpected > 0`, change confirmation required and must reconcile exactly.
 
 ## Wallet Reconciliation Rules
-- `expectedBalance = sum(deltaMinor across retained wallet transactions)`
+- `expectedBalance = sum(deltaMinor across all wallet transactions)`
 - `denominationsTotal = sum(valueMinor * count)`
 - Invariant: `denominationsTotal == expectedBalance`
 
-## Retention Countdown
-- Transactions older than 30 days are auto-deleted.
-- Banner values:
-  - `daysRemaining = max(0, 30 - ageInDays(oldestRetainedTransaction))`
-  - `nextDeletionCount = number of transactions scheduled in next deletion window`
+## History Preservation
+- Do not expire transactions or check-ins based on timestamps or record counts.
+- Compute running balances from the complete wallet ledger.
+- Budget period filtering is for summaries only and never mutates stored history.

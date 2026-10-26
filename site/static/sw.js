@@ -1,6 +1,40 @@
-const CACHE_NAME = 'kontana-v19';
+// SPDX-License-Identifier: MPL-2.0
+const CACHE_NAME = 'kontana-v21';
 const CORE_ASSETS = [
+  '/app/',
   '/app',
+  '/es/app/',
+  '/es/',
+  '/open-source/',
+  '/es/open-source/',
+  '/licenses/MPL-2.0.txt',
+  '/licenses/THIRD_PARTY_NOTICES.txt',
+  '/licenses/Apache-2.0.txt',
+  '/licenses/MIT-legacy.txt',
+  '/licenses/pdf-lib-MIT.txt',
+  '/licenses/pdf-lib-standard-fonts-MIT.txt',
+  '/licenses/upng-MIT.txt',
+  '/licenses/pako-MIT.txt',
+  '/licenses/terminal-MIT.txt',
+  '/fonts/Inter-OFL.txt',
+  '/fonts/Space-Grotesk-OFL.txt',
+  '/fonts/IBM-Plex-Mono-OFL.txt',
+  '/app-phosphor.css',
+  '/landing.css',
+  '/site.js',
+  '/app/accessibility.js',
+  '/fonts/fonts.css',
+  '/fonts/ibm-plex-mono-400.ttf',
+  '/fonts/ibm-plex-mono-500.ttf',
+  '/fonts/ibm-plex-mono-600.ttf',
+  '/fonts/inter-400.ttf',
+  '/fonts/inter-500.ttf',
+  '/fonts/inter-600.ttf',
+  '/fonts/inter-700.ttf',
+  '/fonts/space-grotesk-400.ttf',
+  '/fonts/space-grotesk-500.ttf',
+  '/fonts/space-grotesk-600.ttf',
+  '/fonts/space-grotesk-700.ttf',
   '/',
   '/favicon-kontana3.png',
   '/kontana-logo3.svg',
@@ -25,7 +59,6 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => cache.addAll(CORE_ASSETS))
-      .then(() => self.skipWaiting())
   );
 });
 

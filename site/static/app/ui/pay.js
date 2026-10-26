@@ -1,9 +1,11 @@
+// SPDX-License-Identifier: MPL-2.0
 (function attachKontanaPayUI(global) {
   function runPayRender(ctx) {
     if (!ctx || typeof ctx !== 'object') return;
     const {
       app,
       t,
+      escapeBudgetHtml,
       document,
       console,
       window,
@@ -62,9 +64,9 @@
       if (!wallets.length) {
         el.innerHTML = `
           <section class="panel">
-            <p class="empty-notice">${t('cash.no_wallets')}</p>
+            <div class="empty-state"><span class="eyebrow">${t('app.free')}</span><h2>${t('app.empty_title')}</h2><p>${t('app.empty_body')}</p></div>
             <div class="inline-actions">
-              <button type="button" id="open-create-wallet-pay" class="btn-secondary-soft">${t('cash.create_wallet')}</button>
+              <button type="button" id="open-create-wallet-pay" class="btn-primary-soft">${t('cash.create_wallet')}</button>
             </div>
           </section>
         `;
@@ -100,14 +102,12 @@
       const rerenderPayment = () => renderNewPayment(target, options);
       const showWalletSelector = Boolean(options.showWalletSelector);
       const wallets = getWalletList();
-      console.debug('[renderNewPayment] wallets.length', wallets.length, 'app.editMode', app.editMode);
       if (wallets.length === 0) {
-        console.debug('[renderNewPayment] early exit: no wallets');
         el.innerHTML = `
           <section class="panel">
-            <p class="empty-notice">${t('cash.no_wallets')}</p>
+            <div class="empty-state"><span class="eyebrow">${t('app.free')}</span><h2>${t('app.empty_title')}</h2><p>${t('app.empty_body')}</p></div>
             <div class="inline-actions">
-              <button type="button" id="open-create-wallet-payment" class="btn-secondary-soft">${t('cash.create_wallet')}</button>
+              <button type="button" id="open-create-wallet-payment" class="btn-primary-soft">${t('cash.create_wallet')}</button>
             </div>
           </section>
         `;
@@ -119,7 +119,6 @@
       }
     
       if (app.editMode) {
-        console.debug('[renderNewPayment] early exit: edit mode active', app.editMode);
         el.innerHTML = `
           <section class="panel">
             <section class="card">
@@ -414,9 +413,9 @@
           return `<article class="denom-row ${willExceed ? 'denom-row-deemphasis' : ''}">
             <p class="denom-value">${formatDenomValue(row.value_minor, wallet.currency)}${showRemaining ? ` <span class="muted">[${remainingAvailable}]</span>` : ''}</p>
             <div class="denom-count-wrap">
-              <button type="button" class="denom-step" data-alloc-step="-1" data-denom="${row.value_minor}">-</button>
+              <button type="button" class="denom-step" aria-label="${t('app.decrease')}" data-alloc-step="-1" data-denom="${row.value_minor}">-</button>
               <input type="text" inputmode="numeric" pattern="[0-9]*" class="denom-input" data-alloc-denom="${row.value_minor}" value="${count}" />
-              <button type="button" class="denom-step ${disableAdd ? 'disabled' : ''}" data-alloc-step="1" data-denom="${row.value_minor}" ${disableAdd ? 'disabled' : ''}>+</button>
+              <button type="button" class="denom-step ${disableAdd ? 'disabled' : ''}" aria-label="${t('app.increase')}" data-alloc-step="1" data-denom="${row.value_minor}" ${disableAdd ? 'disabled' : ''}>+</button>
             </div>
             <p class="denom-subtotal">${formatMoney(row.value_minor * count, wallet.currency)}</p>
           </article>`;
@@ -434,13 +433,13 @@
         return '';
       })();
       const allocationPreviewHtml = manualDirect
-        ? `<div class="preview allocation-summary"><p class="allocation-line">Allocated count: ${formatMoney(effectiveAllocated, wallet.currency)}</p></div>`
+        ? `<div class="preview allocation-summary"><p class="allocation-line">${t('pay.allocated_label')}: ${formatMoney(effectiveAllocated, wallet.currency)}</p></div>`
         : `
         <div class="preview allocation-summary ${allocToneClass}">
-          ${mode === 'outgoing' && usingSuggestion ? `<p class="allocation-line">Allocated (suggested): ${formatMoney(effectiveAllocated, wallet.currency)} / Expected: ${formatMoney(amountMinor || 0, wallet.currency)}</p>` : ''}
-          ${mode === 'outgoing' && usingSuggestion ? '' : `<p class="allocation-line">Allocated: ${formatMoney(effectiveAllocated, wallet.currency)}${amountMinor !== null ? ` / Expected: ${formatMoney(amountMinor, wallet.currency)}` : ''}</p>`}
-          ${allocOverOutgoing ? `<p class="status warn">Change: ${formatMoney(effectiveAllocated - amountMinor, wallet.currency)}</p>` : ''}
-          ${mode === 'outgoing' && outgoingOveruse ? '<p class="status danger">Allocation exceeds available counts.</p>' : ''}
+          ${mode === 'outgoing' && usingSuggestion ? `<p class="allocation-line">${t('pay.allocated_label')}: ${formatMoney(effectiveAllocated, wallet.currency)} / ${t('pay.expected_label')}: ${formatMoney(amountMinor || 0, wallet.currency)}</p>` : ''}
+          ${mode === 'outgoing' && usingSuggestion ? '' : `<p class="allocation-line">${t('pay.allocated_label')}: ${formatMoney(effectiveAllocated, wallet.currency)}${amountMinor !== null ? ` / ${t('pay.expected_label')}: ${formatMoney(amountMinor, wallet.currency)}` : ''}</p>`}
+          ${allocOverOutgoing ? `<p class="status warn">${t('common.change')}: ${formatMoney(effectiveAllocated - amountMinor, wallet.currency)}</p>` : ''}
+          ${mode === 'outgoing' && outgoingOveruse ? `<p class="status danger">${t('pay.allocation_exceeded')}</p>` : ''}
         </div>
       `;
     
@@ -464,7 +463,7 @@
         <section class="card payment-context-pill">
           <div class="payment-wallet-summary">
             <p class="muted">${t('pay.selected_wallet')}</p>
-            <p><strong>${CURRENCY_FLAGS[wallet.currency] || ''} ${wallet.name}</strong> · ${CURRENCY_NAMES[wallet.currency] || wallet.currency} · ${formatMoney(getWalletDisplayTotal(wallet), wallet.currency)}</p>
+            <p><strong>${CURRENCY_FLAGS[wallet.currency] || ''} ${escapeBudgetHtml(wallet.name)}</strong> · ${CURRENCY_NAMES[wallet.currency] || wallet.currency} · ${formatMoney(getWalletDisplayTotal(wallet), wallet.currency)}</p>
           </div>
           <div class="segmented-control" role="tablist" aria-label="${t('pay.payment_mode')}">
             <button type="button" id="mode-outgoing" class="segment ${mode === 'outgoing' ? 'active' : ''}">↑ ${t('pay.mode_outgoing')}</button>
@@ -480,16 +479,16 @@
             <section class="card payment-context-pill">
               <div class="payment-wallet-summary">
                 <p class="muted">${t('pay.selected_wallet')}</p>
-                <p><strong>${CURRENCY_FLAGS[wallet.currency] || ''} ${wallet.name}</strong> · ${CURRENCY_NAMES[wallet.currency] || wallet.currency} · ${formatMoney(getWalletDisplayTotal(wallet), wallet.currency)}</p>
+                <p><strong>${CURRENCY_FLAGS[wallet.currency] || ''} ${escapeBudgetHtml(wallet.name)}</strong> · ${CURRENCY_NAMES[wallet.currency] || wallet.currency} · ${formatMoney(getWalletDisplayTotal(wallet), wallet.currency)}</p>
               </div>
             </section>
             <section class="card">
               <p class="status ${successTone}">${app.paymentSuccessMessage}</p>
               <div class="tx-success-summary">
                 <div class="tx-success-row"><span>${t('common.date')}</span><span>${formatDateTimeEU(successSummary.created_at)}</span></div>
-                <div class="tx-success-row"><span>${t('common.wallet')}</span><span>${successSummary.wallet_name}</span></div>
+                <div class="tx-success-row"><span>${t('common.wallet')}</span><span>${escapeBudgetHtml(successSummary.wallet_name)}</span></div>
                 <div class="tx-success-row"><span>${t('common.amount')}</span><span class="tx-amount ${successSummary.type === 'incoming' ? 'incoming' : 'outgoing'}">${successAmountLabel}</span></div>
-                <div class="tx-success-row"><span>${t('common.note')}</span><span>${truncateNote(successSummary.note || '', 30) || '-'}</span></div>
+                <div class="tx-success-row"><span>${t('common.note')}</span><span>${escapeBudgetHtml(truncateNote(successSummary.note || '', 30) || '-')}</span></div>
                 <div class="tx-success-row"><span>${t('common.category')}</span><span>${categoryLabel(successSummary.category)}</span></div>
                 ${successSummary.change_expected_minor > 0 ? `<div class="tx-success-row"><span>${t('common.change')}</span><span>${formatMoney(successSummary.change_expected_minor, successSummary.currency)} / ${formatMoney(successSummary.change_received_minor, successSummary.currency)}</span></div>` : ''}
               </div>
@@ -508,11 +507,11 @@
               <div class="payment-entry-grid">
                 ${mode === 'outgoing' ? `
                 <label class="payment-amount-field">${t('pay.amount_label')}
-                  <input id="payment-amount" class="payment-amount-input" type="text" inputmode="decimal" value="${app.paymentDraft.amountDisplay || ''}" autocomplete="off" />
+                  <input id="payment-amount" class="payment-amount-input" type="text" inputmode="decimal" value="${app.paymentDraft.amountDisplay || ''}" autocomplete="off" placeholder="${t('app.amount_placeholder')}" />
                 </label>
                 ` : ''}
                 <label>${t('pay.note_label')}
-                  <input id="payment-note" type="text" maxlength="30" value="${app.paymentDraft.note}" />
+                  <input id="payment-note" type="text" maxlength="30" value="${escapeBudgetHtml(app.paymentDraft.note)}" placeholder="${t('app.optional_note')}" />
                 </label>
                 <label>${t('pay.category_label')}
                   <select id="payment-category">${renderCategoryOptions(category)}</select>
@@ -520,7 +519,7 @@
                 ${app.paymentDraft.note.length >= 25 ? `<p class="muted note-limit-hint">${t('pay.note_limit', { count: app.paymentDraft.note.length, suffix: app.paymentDraft.note.length >= 30 ? t('pay.note_limit_reached') : '' })}</p>` : ''}
               </div>
               <div class="payment-divider" aria-hidden="true"></div>
-              ${advancedDividerHtml}
+              <h3 class="payment-advanced-divider">${t('app.suggestion')}</h3>
               <section class="payment-breakdown-inline">
                 ${allocationPreviewHtml}
                 ${showToggle ? `
@@ -539,10 +538,10 @@
               ` : `
               <div class="payment-entry-grid">
                 <label class="payment-amount-field">${t('pay.amount_label')}
-                  <input id="payment-amount" class="payment-amount-input" type="text" inputmode="decimal" value="${app.paymentDraft.amountDisplay || ''}" autocomplete="off" />
+                  <input id="payment-amount" class="payment-amount-input" type="text" inputmode="decimal" value="${app.paymentDraft.amountDisplay || ''}" autocomplete="off" placeholder="${t('app.amount_placeholder')}" />
                 </label>
                 <label>${t('pay.note_label')}
-                  <input id="payment-note" type="text" maxlength="30" value="${app.paymentDraft.note}" />
+                  <input id="payment-note" type="text" maxlength="30" value="${escapeBudgetHtml(app.paymentDraft.note)}" placeholder="${t('app.optional_note')}" />
                 </label>
                 <label>${t('pay.category_label')}
                   <select id="payment-category">${renderCategoryOptions(category)}</select>
@@ -550,7 +549,7 @@
                 ${app.paymentDraft.note.length >= 25 ? `<p class="muted note-limit-hint">${t('pay.note_limit', { count: app.paymentDraft.note.length, suffix: app.paymentDraft.note.length >= 30 ? t('pay.note_limit_reached') : '' })}</p>` : ''}
               </div>
               <div class="payment-divider" aria-hidden="true"></div>
-              ${advancedDividerHtml}
+              <h3 class="payment-advanced-divider">${t('app.suggestion')}</h3>
               <section class="payment-breakdown-inline ${validAmount ? '' : 'disabled'}">
                 ${validAmount ? `
                   ${insufficientOutgoing ? `
@@ -617,7 +616,6 @@
           `}
         </section>
       `;
-      console.debug('[renderNewPayment] rendered payment form, includes category select');
     
       if (showWalletSelector) {
         bindWalletCards('pay-wallet', (walletId) => {

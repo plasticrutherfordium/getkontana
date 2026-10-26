@@ -1,5 +1,7 @@
+<!-- SPDX-License-Identifier: MPL-2.0 -->
 # /spec/60-rollout.md
 
+> Historical planning/context. Current release behavior and presentation are defined in [APP_SPEC.md](APP_SPEC.md) and [DESIGN_SPEC.md](DESIGN_SPEC.md).
 ## Rollout (staged, PR-sized)
 Phase 1: Foundations
 - `schema_version:2`
@@ -26,7 +28,7 @@ Phase 4: Budgeter essentials
 Phase 5: Hardening + optional upgrades
 - Refactor: extract modules + dedupe strategies
 - Debug log gating/removal
-- Optional retention controls (off by default)
+- Verify complete history survives reloads, migration, and backup/import without automatic pruning
 - Optional service worker improvements for offline resilience
 
 ## Backwards compatibility rules

@@ -1,48 +1,36 @@
+{{/* SPDX-License-Identifier: MPL-2.0 */}}
 {{ define "main" }}
+{{ $c := index hugo.Data.website .Language.Lang }}
+<a class="skip-link" href="#main-content">{{ $c.skip }}</a>
 <div class="app-frame">
+  <header class="app-topbar">
+    <a class="brand" href="{{ .Site.Home.RelPermalink }}" aria-label="Kontana"><img src="/kontana-logo3.svg" alt="Kontana" width="170" height="29"></a>
+    <div class="app-topbar-actions"><span class="local-badge" data-app-i18n="app.local">{{ $c.local }}</span><button type="button" class="icon-button settings-icon-btn" id="open-settings" aria-label="{{ if eq .Language.Lang "es" }}Ajustes{{ else }}Settings{{ end }}">{{ partial "icon.html" (dict "name" "settings") }}</button></div>
+  </header>
   <aside class="app-sidebar">
-    <div class="app-brand-lockup">
-      <a href="/" aria-label="Kontana home">
-        <picture>
-          <source media="(max-width: 768px)" srcset="/favicon-kontana3.png" />
-          <img src="/kontana-logo3.svg" alt="Kontana" class="app-brand-logo" />
-        </picture>
-      </a>
-    </div>
-
-    <nav class="app-tabs" aria-label="App sections">
-      <button class="tab-btn active" data-tab="cash">Cash</button>
-      <button class="tab-btn" data-tab="pay">Pay</button>
-      <button class="tab-btn" data-tab="transactions">Trx</button>
+    <nav class="app-tabs" aria-label="{{ $c.navigation }}">
+      <button type="button" class="tab-btn active" data-tab="cash">{{ partial "icon.html" (dict "name" "wallet") }}<span data-nav-label>Cash</span></button>
+      <button type="button" class="tab-btn" data-tab="pay">{{ partial "icon.html" (dict "name" "arrow-up-right") }}<span data-nav-label>Pay</span></button>
+      <button type="button" class="tab-btn" data-tab="transactions">{{ partial "icon.html" (dict "name" "transactions") }}<span data-nav-label>Transactions</span></button>
     </nav>
+    <div class="sidebar-footer">{{ partial "icon.html" (dict "name" "shield-check") }}<p data-app-i18n="app.private">Your cash stays yours.</p><span data-app-i18n="app.free">{{ $c.free }}</span><a class="app-source-link" data-app-i18n="app.open_source" href="{{ .Site.Params.sourceRepository }}">{{ $c.open_source }} · MPL-2.0</a></div>
   </aside>
-
-  <main class="app-main">
-    <main class="app-shell">
-      <header class="page-header">
-        <div class="page-header-spacer" aria-hidden="true"></div>
-        <div class="page-title-wrap">
-          <h1 id="page-title">Cash</h1>
-          <button type="button" id="app-mode-pill" class="app-mode-pill btn-secondary-soft" aria-label="Open app mode settings">Precise mode</button>
-        </div>
-        <button type="button" class="settings-icon-btn" id="open-settings" aria-label="Open Settings">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M30.48 20.57H32v7.62h-1.52Zm0-18.29h-1.53V.76H3.05v1.52H1.53v1.53H0v7.62h1.53v1.52h1.52v1.52h25.9v-1.52h1.53v-1.52H32V3.81h-1.52ZM12.19 9.9h-1.52v1.53H9.15v1.52H4.57v-1.52H3.05V9.9H1.53V5.33h1.52V3.81h1.52V2.28h4.58v1.53h1.52v1.52h1.52Zm16.76 18.29h1.53v1.52h-1.53Zm0-9.15h1.53v1.53h-1.53Zm-1.52 3.05h1.52v3.05h-1.52Zm-6.09 7.62v-1.52h-1.53v1.52H3.05v1.53h25.9v-1.53zm4.57-9.14h1.52v1.52h-1.52Zm-7.62 0h1.52v7.62h-1.52Z"/><path d="M9.15 5.33h1.52v3.05H9.15ZM7.62 3.81h1.53v1.52H7.62Zm12.19 15.23v1.53h1.53v-1.53h7.61v-1.52H3.05v1.52zM1.53 28.19h1.52v1.52H1.53Zm0-9.15h1.52v1.53H1.53ZM0 20.57h1.53v7.62H0Z"/></svg>
-        </button>
-      </header>
-
-      <section id="tab-cash" class="tab-panel active"></section>
-      <section id="tab-pay" class="tab-panel"></section>
-      <section id="tab-transactions" class="tab-panel"></section>
+  <main class="app-main" id="main-content">
+    <div class="app-shell">
+      <header class="page-header"><div class="page-title-wrap"><h1 id="page-title">{{ if eq .Language.Lang "es" }}Efectivo{{ else }}Cash{{ end }}</h1><p id="page-subtitle"></p></div><button type="button" id="app-mode-pill" class="app-mode-pill btn-secondary-soft">Precise mode</button></header>
+      <section id="tab-cash" class="tab-panel active" aria-labelledby="page-title"></section>
+      <section id="tab-pay" class="tab-panel" aria-labelledby="page-title"></section>
+      <section id="tab-transactions" class="tab-panel" aria-labelledby="page-title"></section>
       <section id="tab-settings" class="tab-panel"></section>
-      <div id="app-modal-root"></div>
       <div id="settings-overlay-root"></div>
-    </main>
+      <div id="app-modal-root"></div>
+    </div>
   </main>
-
-  <nav class="app-bottom-nav" aria-label="Primary">
-    <a href="/app/" class="bottom-nav-link" data-tab="cash"><span>Cash</span></a>
-    <a href="/app/" class="bottom-nav-link" data-tab="pay"><span>Pay</span></a>
-    <a href="/app/" class="bottom-nav-link" data-tab="transactions"><span>Trx</span></a>
+  <nav class="app-bottom-nav" aria-label="{{ $c.navigation }}">
+    <a href="{{ .RelPermalink }}" class="bottom-nav-link active" data-tab="cash">{{ partial "icon.html" (dict "name" "wallet") }}<span>Cash</span></a>
+    <a href="{{ .RelPermalink }}" class="bottom-nav-link" data-tab="pay">{{ partial "icon.html" (dict "name" "arrow-up-right") }}<span>Pay</span></a>
+    <a href="{{ .RelPermalink }}" class="bottom-nav-link" data-tab="transactions">{{ partial "icon.html" (dict "name" "transactions") }}<span>Transactions</span></a>
   </nav>
+  <noscript><p class="empty-notice">{{ if eq .Language.Lang "es" }}Activa JavaScript para usar Kontana. Tus datos se guardan en este navegador.{{ else }}Enable JavaScript to use Kontana. Your data is stored in this browser.{{ end }}</p></noscript>
 </div>
 {{ end }}

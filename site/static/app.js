@@ -1,4 +1,5 @@
-const APP_VERSION = '0.0.2';
+// SPDX-License-Identifier: MPL-2.0
+const APP_VERSION = '0.1.1';
 const ZERO_DECIMAL_CURRENCIES = new Set([
   'CLP', 'SEK', 'HUF', 'NOK', 'ARS', 'JPY', 'KRW', 'XOF',
   'VND', 'UYU', 'ISK', 'BIF', 'DJF', 'GNF', 'KPW', 'LAK',
@@ -485,11 +486,56 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
     const TX_CATEGORIES = [...PAYMENT_CATEGORIES, ...DRIFT_CATEGORIES];
     const I18N = {
       en: {
+        "app.open_source": "Open source · MPL-2.0",
+        "app.source_title": "Free core. Open source.",
+        "app.source_body": "Wallets, payments, budgets, full history, and backups stay free. Optional paid extras may follow. MCP and camera counting are not available yet.",
+        "app.view_source": "View source",
+        "app.license": "Licence",
+        "app.open_source_path": "/open-source/",
+
+        "app.remaining": "Remaining",
+        "app.envelopes_help": "This period · Based on spending recorded against each envelope.",
+        "pay.allocated_label": "Allocated",
+        "pay.expected_label": "Expected",
+        "pay.allocation_exceeded": "Allocation exceeds available counts.",
+        "app.local": "LOCAL ONLY",
+        "app.private": "Your cash stays yours.",
+        "app.free": "Free core. Forever.",
+        "app.cash.subtitle": "Everything in your wallet. Nothing in the cloud.",
+        "app.pay.subtitle": "A little less cash. A little more control.",
+        "app.transactions.subtitle": "Your complete cash history. No expiry date.",
+        "app.new_wallet": "New wallet",
+        "app.inventory": "Cash inventory",
+        "app.accuracy": "Wallet check",
+        "app.in_balance": "In balance",
+        "app.counted": "Notes and coins match your recorded balance.",
+        "app.last_activity": "Last activity",
+        "app.no_activity": "Your next transaction will appear here.",
+        "app.local_history": "Full history · Stored on this device",
+        "app.money_in": "Money in",
+        "app.money_out": "Money out",
+        "app.current_balance": "Current balance",
+        "app.all_time": "ALL TIME",
+        "app.history_help": "History has no time limit or automatic cleanup. Export a JSON backup to protect it. Clearing browser storage removes your local data.",
+        "app.general": "General",
+        "app.assistance": "Payment assistance",
+        "app.data": "Data & backup",
+        "app.suggestion": "Your payment breakdown",
+        "app.suggestion_help": "Review the notes and coins before recording your payment.",
+        "app.backup": "Yours to keep. Yours to back up.",
+        "app.empty_title": "Your cash starts here.",
+        "app.empty_body": "One wallet, a quick count, and you’re ready. No account. The open-source core stays free, forever.",
+        "app.optional_note": "What was it for? (optional)",
+        "app.amount_placeholder": "0.00",
+        "app.increase": "Increase count",
+        "app.decrease": "Decrease count",
+        "app.count": "Count",
+
         'tab.cash': 'Cash',
         'tab.pay': 'Pay',
         'tab.transactions': 'Transactions',
         'tab.settings': 'Settings',
-        'tab.transactions_short': 'Trx',
+        'tab.transactions_short': 'Transactions',
         'nav.tab.cash': 'Cash',
         'nav.wallet_selector': 'Wallet selector',
         'nav.create_wallet': 'Create wallet',
@@ -896,12 +942,57 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
         'category.unknown': 'Unknown',
       },
       es: {
+        "app.open_source": "Código abierto · MPL-2.0",
+        "app.source_title": "App principal gratis. Código abierto.",
+        "app.source_body": "Los monederos, pagos, presupuestos, el historial completo y las copias siguen gratis. Podrán llegar extras de pago opcionales. MCP y el recuento con cámara aún no están disponibles.",
+        "app.view_source": "Ver código",
+        "app.license": "Licencia",
+        "app.open_source_path": "/es/open-source/",
+
+        "app.remaining": "Disponible",
+        "app.envelopes_help": "Este periodo · Según los gastos registrados en cada sobre.",
+        "pay.allocated_label": "Asignado",
+        "pay.expected_label": "Esperado",
+        "pay.allocation_exceeded": "La asignación supera el efectivo disponible.",
+        "app.local": "SOLO LOCAL",
+        "app.private": "Tu efectivo se queda contigo.",
+        "app.free": "App principal gratis. Para siempre.",
+        "app.cash.subtitle": "Todo tu efectivo. Siempre en tu dispositivo.",
+        "app.pay.subtitle": "Cada pago, bajo control.",
+        "app.transactions.subtitle": "Todo tu historial. Sin fecha de caducidad.",
+        "app.new_wallet": "Nuevo monedero",
+        "app.inventory": "Inventario de efectivo",
+        "app.accuracy": "Revisión del monedero",
+        "app.in_balance": "Todo cuadra",
+        "app.counted": "Los billetes y monedas coinciden con tu saldo registrado.",
+        "app.last_activity": "Último movimiento",
+        "app.no_activity": "Tu próximo movimiento aparecerá aquí.",
+        "app.local_history": "Historial completo · En este dispositivo",
+        "app.money_in": "Entradas",
+        "app.money_out": "Salidas",
+        "app.current_balance": "Saldo actual",
+        "app.all_time": "TODO EL HISTORIAL",
+        "app.history_help": "El historial no caduca ni se borra automáticamente. Exporta una copia JSON para protegerlo. Borrar el almacenamiento del navegador elimina tus datos locales.",
+        "app.general": "General",
+        "app.assistance": "Ayuda con los pagos",
+        "app.data": "Datos y copias",
+        "app.suggestion": "Desglose de tu pago",
+        "app.suggestion_help": "Revisa los billetes y monedas antes de registrar el pago.",
+        "app.backup": "Tus datos. Tus copias de seguridad.",
+        "app.empty_title": "Tu efectivo empieza aquí.",
+        "app.empty_body": "Crea un monedero, cuenta lo que llevas y empieza. Sin cuenta. La app principal de código abierto sigue gratis, para siempre.",
+        "app.optional_note": "¿En qué lo has gastado? (opcional)",
+        "app.amount_placeholder": "0,00",
+        "app.increase": "Aumentar cantidad",
+        "app.decrease": "Reducir cantidad",
+        "app.count": "Cantidad",
+
         'tab.cash': 'Efectivo',
         'tab.pay': 'Pagar',
         'tab.transactions': 'Movimientos',
         'tab.settings': 'Ajustes',
-        'tab.transactions_short': 'Mov.',
-        'nav.tab.cash': 'Cash',
+        'tab.transactions_short': 'Movimientos',
+        'nav.tab.cash': 'Efectivo',
         'nav.wallet_selector': 'Selector de monederos',
         'nav.create_wallet': 'Crear monedero',
         'time.today': 'Hoy',
@@ -1348,10 +1439,16 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
     };
 
     function getInitialAppearance() {
-      const storedTheme = localStorage.getItem('theme');
-      if (storedTheme === 'light' || storedTheme === 'dark') return storedTheme;
-      const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)')?.matches ?? false;
-      return prefersDark ? 'dark' : 'light';
+      // The shared head applies the saved preference before the first paint.
+      return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+    }
+
+    function getInitialLanguage() {
+      try {
+        const language = localStorage.getItem('kt-language');
+        if (language === 'en' || language === 'es') return language;
+      } catch { /* Language still follows the page when storage is unavailable. */ }
+      return document.documentElement.lang.startsWith('es') ? 'es' : 'en';
     }
 
     function makeDefaultState() {
@@ -1371,7 +1468,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
             default_tracking_level: 'big_only',
             default_big_spend_threshold_minor: 2000,
           },
-          language: 'en',
+          language: getInitialLanguage(),
           payment_strategies: true,
           change_suggestions: true,
           default_strategy: 'greedy',
@@ -1551,7 +1648,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
 
     function renderCurrencyOptions(selectedCode = '') {
       const { priority, rest } = getCurrencyOrder();
-      const renderOption = (code) => `<option value="${code}" ${selectedCode === code ? 'selected' : ''}>${CURRENCY_FLAGS[code] || '🏳️'} ${CURRENCY_NAMES[code] || code}</option>`;
+      const renderOption = (code) => `<option value="${code}" ${selectedCode === code ? 'selected' : ''}>${CURRENCY_NAMES[code] || code}</option>`;
       return `
         <optgroup label="${t('currency.most_used')}">
           ${priority.map(renderOption).join('')}
@@ -2976,8 +3073,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
       pdfLibLoadPromise = (async () => {
         const primary = await loadScript('/lib/pdf-lib.min.js');
         if (primary || window.PDFLib) return true;
-        const fallback = await loadScript('https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js');
-        return Boolean(fallback || window.PDFLib);
+        return false;
       })();
 
       const loaded = await pdfLibLoadPromise;
@@ -3168,6 +3264,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
         await modalAlert(t('alerts.pdf_lib_unavailable'));
         return;
       }
+      const formatPdfMoney = (minor, currency) => `${currency} ${formatMoney(minor, currency).replace(getCurrencySymbol(currency), '').trim()}`;
       const date = new Date().toISOString().slice(0, 10);
       const txs = [...state.transactions].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       const wallets = Object.values(state.wallets || {});
@@ -3314,7 +3411,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
             ensureSpace(16);
             drawTableRowBackground(16, idx % 2 ? rowAltBg : rgb(1, 1, 1));
             const walletName = wrapCellText(walletLabelForPdf(wallet), walletCols[0].width - 12, 1)[0];
-            const totalText = formatMoney(getWalletDisplayTotal(wallet), wallet.currency);
+            const totalText = formatPdfMoney(getWalletDisplayTotal(wallet), wallet.currency);
             drawTextLine(walletName, walletColX[0] + 6, y - 11);
             drawTextLine(totalText, walletColX[1] + walletCols[1].width - 6 - regular.widthOfTextAtSize(totalText, bodySize), y - 11);
             y -= 16;
@@ -3363,7 +3460,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
         } else {
           txs.forEach((tx, idx) => {
             const amountMinor = Number.isFinite(tx.requested_amount_minor) ? tx.requested_amount_minor : (tx.amount_minor || 0);
-            const paidMinor = Number.isFinite(tx.paid_amount_minor) ? tx.paid_amount_minor : 0;
+            const paidMinor = Number.isFinite(tx.paid_amount_minor) ? tx.paid_amount_minor : (tx.paid_breakdown || tx.breakdown || []).reduce((sum, row) => sum + row.value_minor * row.count, 0);
             const txTypeKey = ['incoming', 'outgoing', 'transfer_in', 'transfer_out', 'adjustment', 'spend'].includes(tx.type)
               ? tx.type
               : 'outgoing';
@@ -3372,8 +3469,8 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
               wallet: tx.wallet_name || '-',
               type: t(`tx.type.${txTypeKey}`),
               category: categoryLabel(tx.category || 'uncategorized'),
-              amount: formatMoney(amountMinor, tx.currency),
-              paid: formatMoney(paidMinor, tx.currency),
+              amount: formatPdfMoney(amountMinor, tx.currency),
+              paid: formatPdfMoney(paidMinor, tx.currency),
               strategy: strategyDisplayName(tx.strategy),
               note: tx.note || '-',
             };
@@ -3793,6 +3890,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
       modal: null,
       modalResolver: null,
       settingsOpen: false,
+      settingsSection: 'general',
       settingsFocusTarget: null,
       isLocked: false,
       lockedAt: null,
@@ -3807,6 +3905,13 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
       swRefreshPending: false,
       blocking: initialStateLoad.blocking || null,
     };
+
+    try {
+      const sharedTheme = localStorage.getItem('kt-theme');
+      const sharedLanguage = localStorage.getItem('kt-language');
+      if (['dark', 'light'].includes(sharedTheme)) app.state.settings.appearance = sharedTheme;
+      if (['en', 'es'].includes(sharedLanguage)) app.state.settings.language = sharedLanguage;
+    } catch { /* Storage errors are handled by the state persistence layer. */ }
 
     function setBlockingState(reason, raw = null, schemaVersion = null) {
       const blocking = {
@@ -3937,13 +4042,9 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
     }
 
     function setAppearance(theme) {
-      const nextTheme = theme === 'dark' ? 'dark' : 'light';
-      document.documentElement.dataset.theme = nextTheme;
-      try {
-        localStorage.setItem('theme', nextTheme);
-      } catch {
-        // Ignore theme persistence failures and keep UI usable.
-      }
+      const nextTheme = theme === 'light' ? 'light' : 'dark';
+      if (window.__ktSetTheme) window.__ktSetTheme(nextTheme);
+      else document.documentElement.dataset.theme = nextTheme;
     }
 
     function getPaymentContext() {
@@ -4225,9 +4326,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
             closeModal({ id: 'cancel' });
           });
         }
-        document.addEventListener('keydown', (event) => {
-          if (event.key === 'Escape') closeModal({ id: 'cancel' });
-        }, { once: true });
+
 
         root.querySelectorAll('[data-modal-close]').forEach((btn) => {
           btn.addEventListener('click', () => closeModal({ id: 'cancel' }));
@@ -4352,9 +4451,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
           }
         });
       });
-      document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') closeModal('cancel');
-      }, { once: true });
+
     }
 
     function setupTabs() {
@@ -4364,9 +4461,9 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
         btn.classList.toggle('active', btn.dataset.tab === app.activeTab);
         const blocked = gated && btn.dataset.tab !== app.activeTab;
         btn.disabled = Boolean(blocked);
-        if (btn.dataset.tab === 'cash') btn.textContent = t('nav.tab.cash');
-        if (btn.dataset.tab === 'pay') btn.textContent = t('tab.pay');
-        if (btn.dataset.tab === 'transactions') btn.textContent = t('tab.transactions_short');
+        const label = btn.querySelector('[data-nav-label]') || btn;
+        label.textContent = t(btn.dataset.tab === 'cash' ? 'nav.tab.cash' : `tab.${btn.dataset.tab}`);
+        btn.setAttribute('aria-current', btn.dataset.tab === app.activeTab ? 'page' : 'false');
       });
       document.querySelectorAll('.bottom-nav-link').forEach((link) => {
         link.classList.toggle('active', link.dataset.tab === app.activeTab);
@@ -4384,6 +4481,11 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
       const meta = PAGE_META[app.activeTab] || PAGE_META.cash;
       const titleEl = document.getElementById('page-title');
       if (titleEl) titleEl.textContent = t(meta.titleKey || 'tab.cash');
+
+      document.documentElement.lang = app.state.settings.language;
+      document.querySelectorAll('[data-app-i18n]').forEach((node) => { node.textContent = t(node.dataset.appI18n); });
+      const subtitle = document.getElementById('page-subtitle');
+      if (subtitle) subtitle.textContent = t(`app.${app.activeTab}.subtitle`);
 
       const settingsBtn = document.getElementById('open-settings');
       if (settingsBtn) settingsBtn.setAttribute('aria-label', t('tab.settings'));
@@ -4418,12 +4520,12 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
             data-wallet-add="1"
             aria-label="${t('nav.create_wallet')}"
           >
-            <span class="wallet-card-add-plus">+</span>
+            <span class="wallet-card-add-plus">+</span><span>${t('app.new_wallet')}</span>
           </button>
         `
         : '';
       return `
-        <div class="wallet-cards" role="radiogroup" aria-label="${t('nav.wallet_selector')}">
+        <div class="wallet-cards" role="group" aria-label="${t('nav.wallet_selector')}">
           ${wallets.map((wallet) => {
             const active = wallet.id === activeWalletId;
             return `
@@ -4439,14 +4541,14 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
                     tabindex="0"
                     aria-pressed="${active ? 'true' : 'false'}"
                   >
-                    <p class="wallet-card-head">${CURRENCY_FLAGS[wallet.currency] || '🏳️'}</p>
-                    <p class="wallet-card-name">${wallet.name}</p>
+                    <p class="wallet-card-head">${CURRENCY_FLAGS[wallet.currency] || '🏳️'} <span>${wallet.currency}</span></p>
+                    <p class="wallet-card-name">${escapeBudgetHtml(wallet.name)}</p>
                     <p class="wallet-card-total">${formatMoney(getWalletDisplayTotal(wallet), wallet.currency)}</p>
                   </div>
                 </div>
                 ${showActions && active ? `
                   <button type="button" class="wallet-card-action" data-wallet-action="1" aria-label="${t('wallet.actions_title')}">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M30.47 6.1H32v4.57h-1.53Zm-1.52 4.57h1.52v1.52h-1.52Zm0-6.1h1.52V6.1h-1.52Zm-1.52 7.62h1.52v1.52h-1.52Zm0-9.14h1.52v1.52h-1.52ZM25.9 13.71h1.53v1.53H25.9Zm0-3.04h1.53v1.52H25.9Zm0-9.15h1.53v1.53H25.9Zm-1.52 13.72h1.52v1.52h-1.52Zm0-6.1h1.52v1.53h-1.52Zm-1.53 7.62h1.53v1.53h-1.53Zm0-6.09h1.53v1.52h-1.53Zm0-3.05h1.53v1.52h-1.53ZM21.33 0h4.57v1.52h-4.57Zm0 18.29h1.52v1.52h-1.52Zm0-6.1h1.52v1.52h-1.52Zm0-6.09h1.52v1.52h-1.52Zm-1.52 13.71h1.52v1.52h-1.52Zm0-6.1h1.52v1.53h-1.52Zm0-6.09h1.52v1.52h-1.52Zm0-3.05h1.52V6.1h-1.52Zm0-3.05h1.52v1.53h-1.52Zm-1.53 19.81h1.53v1.53h-1.53Zm0-6.09h1.53v1.52h-1.53Zm0-6.1h1.53v1.53h-1.53Zm0-6.09h1.53v1.52h-1.53Zm-1.52 19.81h1.52v1.52h-1.52Zm0-6.1h1.52v1.53h-1.52Zm0-6.09h1.52v1.52h-1.52Zm0-6.1h1.52V6.1h-1.52Zm-1.52 19.81h1.52v1.52h-1.52Zm0-6.09h1.52v1.52h-1.52Zm0-6.1h1.52v1.52h-1.52Zm0-6.09h1.52v1.52h-1.52Zm-1.53 19.8h1.53v1.53h-1.53Zm0-6.09h1.53v1.52h-1.53Zm0-6.1h1.53v1.53h-1.53Zm0-6.09h1.53v1.52h-1.53Zm-1.52 19.81h1.52v1.52h-1.52Zm0-6.1h1.52v1.53h-1.52Zm0-6.09h1.52v1.52h-1.52Zm0-6.1h1.52v1.53h-1.52Zm-1.53 13.72h1.53v1.52h-1.53Zm0-6.1h1.53v1.53h-1.53Zm0-6.09h1.53v1.52h-1.53Zm0 19.81h1.53v-1.53h-1.53v-4.57H7.62v-3.05H3.05v-1.52H1.52v1.52H0V32h10.66Zm-1.52 0H4.57v-1.53H3.05v-1.52H1.52v-4.57h4.57v3.04h3.05Zm0-12.19h1.52v1.52H9.14Zm0-6.1h1.52v1.52H9.14Zm-1.52 7.62h1.52v1.52H7.62Zm0-6.1h1.52v1.53H7.62Zm-1.53 1.53h1.53v1.52H6.09Zm-1.52 1.52h1.52v1.53H4.57Zm-1.52 1.53h1.52v1.52H3.05Z"/></svg>
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
                   </button>
                 ` : ''}
               </div>
@@ -4459,6 +4561,9 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
 
     function bindWalletCards(selectorId, onSelect) {
       document.querySelectorAll(`[data-wallet-selector="${selectorId}"][data-wallet-id]`).forEach((btn) => {
+        btn.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); btn.click(); }
+        });
         btn.addEventListener('click', () => {
           if (app.walletDragActive) return;
           onSelect(btn.dataset.walletId);
@@ -4600,7 +4705,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
 
     function breakdownHtml(wallet, breakdown) {
       if (!breakdown || breakdown.length === 0) return `<p class="muted">${t('pay.no_auto_suggestion')}</p>`;
-      return `<ul class="breakdown">${breakdown.map((row) => `<li>${formatDenomValue(row.value_minor, wallet.currency)} x ${row.count}</li>`).join('')}</ul>`;
+      return `<ul class="breakdown">${breakdown.map((row) => `<li><span>${formatDenomValue(row.value_minor, wallet.currency)} <span class="muted">× ${row.count}</span></span><strong>${formatMoney(row.value_minor * row.count, wallet.currency)}</strong></li>`).join('')}</ul>`;
     }
 
     async function promptManualChangeAllocation(wallet, expectedChangeMinor, initialAllocation = {}) {
@@ -4691,13 +4796,14 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
       const el = document.getElementById('tab-cash');
       const wallet = getActiveWallet();
       const wallets = getWalletList();
+      const focusedCount = document.activeElement?.matches?.('#tab-cash input[data-denom]') ? { denom: document.activeElement.dataset.denom, start: document.activeElement.selectionStart, end: document.activeElement.selectionEnd } : null;
 
       if (!wallet) {
         el.innerHTML = `
           <section class="panel">
-            <p class="empty-notice">${t('cash.no_wallets')}</p>
+            <div class="empty-state"><span class="eyebrow">${t('app.free')}</span><h2>${t('app.empty_title')}</h2><p>${t('app.empty_body')}</p></div>
             <div class="inline-actions">
-              <button type="button" id="open-create-wallet" class="btn-secondary-soft">${t('cash.create_wallet')}</button>
+              <button type="button" id="open-create-wallet" class="btn-primary-soft">${t('cash.create_wallet')}</button>
             </div>
           </section>
         `;
@@ -4730,12 +4836,19 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
         wallet.currency,
       );
       const denomsStale = isWalletDenomsStale(wallet);
-      const envelopeListHtml = walletEnvelopes.map((envelope) => `
-        <article class="budget-envelope-row">
-          <p class="budget-envelope-name">${escapeBudgetHtml(envelope.name || '')}</p>
-          <p class="budget-envelope-target">${t('budget.envelopes.target')}: ${formatMoney(envelope.target_minor || 0, wallet.currency)}</p>
-        </article>
-      `).join('');
+      const envelopePeriod = getBudgetInsightsHelper()?.getCurrentPeriod?.({ cadence: getWalletBudgetCadence(wallet), weekStart: getBudgetWeekStart() });
+      const envelopeListHtml = walletEnvelopes.map((envelope) => {
+        const target = Math.max(0, Number(envelope.target_minor) || 0);
+        const spent = app.state.transactions.filter((tx) => {
+          const ts = new Date(tx.created_at).getTime() / 1000;
+          return tx.wallet_id === wallet.id && tx.envelope_id === envelope.id
+            && ['spend', 'outgoing'].includes(tx.type)
+            && envelopePeriod && ts >= envelopePeriod.start_ts && ts < envelopePeriod.end_ts;
+        }).reduce((total, tx) => total + Math.max(0, Number(tx.amount_minor) || 0), 0);
+        const remaining = target - spent;
+        const percent = target > 0 ? Math.min(100, Math.round(spent / target * 100)) : (spent > 0 ? 100 : 0);
+        return `<article class="envelope-card ${remaining < 0 ? 'over-budget' : ''}"><div><p class="budget-envelope-name">${escapeBudgetHtml(envelope.name || '')}</p><p class="budget-envelope-target">${t('budget.envelopes.target')}: ${formatMoney(target, wallet.currency)}</p></div><div class="envelope-progress" role="meter" aria-label="${escapeBudgetHtml(envelope.name || '')}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}" aria-valuetext="${t('app.remaining')}: ${formatMoney(remaining, wallet.currency)}"><span style="width:${percent}%"></span></div><p class="envelope-remaining">${t('app.remaining')} <strong>${formatMoney(remaining, wallet.currency)}</strong></p></article>`;
+      }).join('');
       const expectedTotal = getExpectedWalletTotal(wallet.id);
       const currentTotal = getWalletDraftTotal(wallet);
       const difference = currentTotal - expectedTotal;
@@ -4765,18 +4878,21 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
           const presenceClass = count > 0 ? 'has-count' : 'missing-count deemphasis';
           const countCell = isEditMode
             ? `<div class="denom-count-wrap">
-                <button type="button" class="denom-step" data-denom-step="-1" data-denom="${row.value_minor}" aria-label="Decrease count">-</button>
-                <input type="text" inputmode="numeric" pattern="[0-9]*" data-denom="${row.value_minor}" value="${count}" class="denom-input" />
-                <button type="button" class="denom-step" data-denom-step="1" data-denom="${row.value_minor}" aria-label="Increase count">+</button>
+                <button type="button" class="denom-step" data-denom-step="-1" data-denom="${row.value_minor}" aria-label="${t('app.decrease')}">-</button>
+                <input type="text" inputmode="numeric" pattern="[0-9]*" data-denom="${row.value_minor}" value="${count}" class="denom-input" aria-label="${t('app.count')}: ${formatDenomValue(row.value_minor, wallet.currency)}" />
+                <button type="button" class="denom-step" data-denom-step="1" data-denom="${row.value_minor}" aria-label="${t('app.increase')}">+</button>
               </div>`
             : `<p class="denom-count-readonly">${count}</p>`;
           return `<article class="denom-row ${presenceClass}">
-            <p class="denom-value">${formatDenomValue(row.value_minor, wallet.currency)} ${count > 0 ? '<svg class="denom-presence-icon have" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M23.914 6.914L8.5 22.328L.086 13.914l2.828-2.828L8.5 16.672L21.086 4.086z" clip-rule="evenodd"/></svg>' : '<svg class="denom-presence-icon missing" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M7 1L1 7l5 5l-5 5l6 6l5-5l5 5l6-6l-5-5l5-5l-6-6l-5 5z" clip-rule="evenodd"/></svg>'}</p>
+            <p class="denom-value"><span class="denom-glyph" aria-hidden="true">${row.type === 'note' ? '▭' : '◉'}</span>${formatDenomValue(row.value_minor, wallet.currency)}</p>
             ${countCell}
             <p class="denom-subtotal">${formatMoney(row.value_minor * count, wallet.currency)}</p>
           </article>`;
         })
         .join('');
+
+      const lastActivity = getLatestTransactionForWallet(wallet.id);
+      const statusHtml = `<aside class="cash-aside"><section class="card wallet-health"><p class="eyebrow">${t('app.accuracy')}</p><div class="health-symbol" aria-hidden="true">${denomsStale || difference !== 0 ? '!' : '✓'}</div><h3>${denomsStale ? t('cash.denoms_not_counted') : (difference === 0 ? t('app.in_balance') : t('cash.edit_mode_active'))}</h3><p class="muted">${denomsStale ? t('cash.denoms_stale_warning') : (difference === 0 ? t('app.counted') : t('cash.allocated_expected', { allocated: formatMoney(currentTotal, wallet.currency), expected: formatMoney(expectedTotal, wallet.currency) }))}</p></section><section class="card last-activity"><p class="eyebrow">${t('app.last_activity')}</p>${lastActivity ? `<h3>${formatMoney(lastActivity.amount_minor || 0, wallet.currency)}</h3><p>${escapeBudgetHtml(lastActivity.note || categoryLabel(lastActivity.category || 'other'))}</p><p class="muted">${formatDateTimeEU(lastActivity.created_at)}</p>` : `<p class="muted">${t('app.no_activity')}</p>`}</section><p class="local-footnote">${t('app.local_history')}</p></aside>`;
 
       el.innerHTML = `
         <section class="panel">
@@ -4824,15 +4940,17 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
             ` : ''}
           </section>
 
+          <div class="cash-workspace"><div class="cash-inventory">
           ${showBudgetEnvelopeList ? `
             <section class="card">
-              <h3>${t('budget.envelopes.title')}</h3>
+              <h3>${t('budget.envelopes.title')}</h3><p class="muted envelope-help">${t('app.envelopes_help')}</p>
               <div class="budget-envelope-list">${envelopeListHtml}</div>
             </section>
           ` : ''}
 
           ${!isEditMode && currentTotal === 0 ? '' : `
-            <section class="card">
+            <section class="card inventory-card">
+              <div class="inventory-heading"><h3>${t('app.inventory')}</h3><span class="mono muted">${wallet.currency}</span></div>
               <div class="denom-controls">
                 ${showToggle ? `
                   <div class="segmented-control" role="tablist" aria-label="${t('cash.denomination_type')}">
@@ -4850,6 +4968,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
               </div>
             </section>
           `}
+          </div>${statusHtml}</div>
         </section>
       `;
 
@@ -5091,12 +5210,18 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
         });
       }
 
+      if (focusedCount) {
+        const input = el.querySelector(`input[data-denom="${focusedCount.denom}"]`);
+        if (input) { input.focus({ preventScroll: true }); input.setSelectionRange(focusedCount.start, focusedCount.end); }
+      }
+
     }
 
     function getPayUiContext() {
       return {
         app,
         t,
+        escapeBudgetHtml,
         document,
         console,
         window,
@@ -5163,9 +5288,9 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
       if (!wallets.length) {
         el.innerHTML = `
           <section class="panel">
-            <p class="empty-notice">${t('cash.no_wallets')}</p>
+            <div class="empty-state"><span class="eyebrow">${t('app.free')}</span><h2>${t('app.empty_title')}</h2><p>${t('app.empty_body')}</p></div>
             <div class="inline-actions">
-              <button type="button" id="open-create-wallet-transactions" class="btn-secondary-soft">${t('cash.create_wallet')}</button>
+              <button type="button" id="open-create-wallet-transactions" class="btn-primary-soft">${t('cash.create_wallet')}</button>
             </div>
           </section>
         `;
@@ -5233,6 +5358,8 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
       });
       const balanceById = new Map();
       let runningBalance = 0;
+      let allTimeIn = 0;
+      let allTimeOut = 0;
       chronological.forEach((tx) => {
         const deltaMinor = Number.isFinite(tx.delta_minor)
           ? tx.delta_minor
@@ -5242,6 +5369,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
               ? -(tx.amount_minor || 0)
               : (tx.amount_minor || 0)));
         runningBalance += deltaMinor;
+        if (deltaMinor >= 0) allTimeIn += deltaMinor; else allTimeOut -= deltaMinor;
         balanceById.set(tx.id, runningBalance);
       });
 
@@ -5317,15 +5445,15 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
              ${transferDetailsHtml}
              ${isCheckinAdjustment ? `<div class="tx-detail"><span>${t('tx.detail.source')}</span><span>${t('tx.source.checkin')}</span></div>` : ''}
              ${isCheckinAdjustment ? `<div class="tx-detail"><span>${t('tx.detail.checkin_id')}</span><span>${tx.checkin_id}</span></div>` : ''}
-             <div class="tx-detail"><span>${t('tx.detail.note')}</span><span>${noteText || '-'}</span></div>
+             <div class="tx-detail"><span>${t('tx.detail.note')}</span><span>${escapeBudgetHtml(noteText || '-')}</span></div>
              <div class="tx-detail"><span>${t('tx.detail.category')}</span><span>${categoryLabel(tx.category || 'uncategorized')}</span></div>
              ${isLatestForWallet ? `<button type="button" class="btn-danger-soft tx-revert-btn" data-revert-tx-id="${tx.id}">${t('tx.revert_button')}</button>` : ''}`;
         return `
           ${groupHeader}
-          <tr class="tx-row ${amountClass}" data-tx-id="${tx.id}" role="button" tabindex="0">
+          <tr class="tx-row ${amountClass}" data-tx-id="${tx.id}" role="button" tabindex="0" aria-expanded="false">
             <td class="tx-desc">
-              <div class="tx-desc-main">${titleText}</div>
-              <div class="tx-desc-sub">${secondaryText}</div>
+              <div class="tx-desc-main">${escapeBudgetHtml(titleText)}</div>
+              <div class="tx-desc-sub">${escapeBudgetHtml(secondaryText)}</div>
             </td>
             <td class="tx-amount ${amountClass}">${amountLabel}${formatMoney(amountMinor, tx.currency)}</td>
             <td class="tx-balance">${balanceLabel}</td>
@@ -5501,6 +5629,8 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
               ${wallets.length > 0 ? renderWalletCards(wallets, filters.wallet, 'tx-wallet', false, { showCreateCard: true, showActions: true }) : '<p class="muted">No wallets yet.</p>'}
             </div>
           </section>
+          <div class="history-summary" aria-label="${t('app.all_time')}"><article><p>${t('app.money_in')} <span>${t('app.all_time')}</span></p><strong class="incoming">+${formatMoney(allTimeIn, txWallet.currency)}</strong></article><article><p>${t('app.money_out')} <span>${t('app.all_time')}</span></p><strong>−${formatMoney(allTimeOut, txWallet.currency)}</strong></article><article><p>${t('app.current_balance')} <span>${txWallet.currency}</span></p><strong>${formatMoney(getWalletDisplayTotal(txWallet), txWallet.currency)}</strong></article></div>
+          <div class="history-heading"><h2>${t('tab.transactions')}</h2><span class="mono muted">${t('app.local_history')}</span></div>
           ${showBudgetDashboard ? budgetDashboardHtml : ledgerSectionHtml}
         </section>
       `;
@@ -5528,6 +5658,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
           const willOpen = !detailsRow.classList.contains('open');
           detailsRow.classList.toggle('open', willOpen);
           row.classList.toggle('is-expanded', willOpen);
+          row.setAttribute('aria-expanded', String(willOpen));
         };
         row.addEventListener('click', toggle);
         row.addEventListener('keydown', (event) => {
@@ -5694,11 +5825,12 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
         <div class="modal-backdrop" id="settings-backdrop">
           <section class="modal-card settings-modal" role="dialog" aria-modal="true" aria-label="${t('settings.title')}">
             <div class="settings-title-bar">
-              <div></div>
+              <span class="eyebrow">${t('app.free')}</span>
               <h3 class="settings-title">${t('settings.title')}</h3>
-              <button type="button" class="modal-close-btn" id="settings-close" aria-label="${t('common.close')}"><svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path fill-rule="evenodd" d="M7 1L1 7l5 5l-5 5l6 6l5-5l5 5l6-6l-5-5l5-5l-6-6l-5 5z" clip-rule="evenodd"/></svg></button>
+              <button type="button" class="modal-close-btn" id="settings-close" aria-label="${t('common.close')}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
             </div>
-            <section class="settings-section">
+            <nav class="settings-tabs" aria-label="${t('settings.title')}">${['general','assistance','data'].map((tab) => `<button type="button" data-settings-tab="${tab}" class="${app.settingsSection === tab ? 'active' : ''}" aria-pressed="${app.settingsSection === tab}">${t('app.' + tab)}</button>`).join('')}</nav>
+            <section class="settings-section" data-settings-panel="general">
               <h3>${t('settings.section.behaviour')}</h3>
               <p class="muted">${t('settings.behaviour.helper')}</p>
 
@@ -5711,6 +5843,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
                 </div>
               </div>
 
+            </section><section class="settings-section" data-settings-panel="assistance">
               <div class="settings-item">
                 <div class="settings-item-title">${t('settings.suggestions.title')}</div>
                 <p class="muted">${t('settings.suggestions.body')}</p>
@@ -5804,7 +5937,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
               </div>
             </section>
 
-            <section class="settings-section">
+            <section class="settings-section" data-settings-panel="general">
               <h3>${t('settings.section.appearance')}</h3>
               <div class="settings-item">
                 <div class="settings-item-title">${t('settings.appearance.title')}</div>
@@ -5824,7 +5957,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
               </div>
             </section>
 
-            <section class="settings-section">
+            <section class="settings-section" data-settings-panel="general">
               <h3>${t('settings.section.security')}</h3>
               <div class="settings-item">
                 <div class="settings-item-title">${t('settings.security.title')}</div>
@@ -5838,8 +5971,8 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
               </div>
             </section>
 
-            <section class="settings-section">
-              <h3>${t('settings.section.data')}</h3>
+            <section class="settings-section" data-settings-panel="data">
+              <h3>${t('app.backup')}</h3><p class="history-retention-note">${t('app.history_help')}</p>
               <div class="settings-item">
                 <div class="settings-item-title">${t('settings.export.title')}</div>
                 <div class="inline-actions">
@@ -5863,15 +5996,10 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
               </div>
             </section>
 
-            <section class="settings-section">
-              <h3>${t('settings.newsletter.title')}</h3>
-              <p class="muted">${t('settings.newsletter.body')}</p>
-              <form id="launch-updates-form" class="stack-form">
-                <label>${t('settings.newsletter.email')} <input type="email" id="launch-email" required /></label>
-                <label class="check-row"><input type="checkbox" id="launch-consent" /> ${t('settings.newsletter.consent')}</label>
-                <button type="submit" class="btn-secondary-soft">${t('settings.newsletter.signup')}</button>
-              </form>
-              ${app.launchSignupMessage ? `<p>${app.launchSignupMessage}</p>` : ''}
+            <section class="settings-section app-open-source" data-settings-panel="general">
+              <h3>${t('app.source_title')}</h3>
+              <p class="muted">${t('app.source_body')}</p>
+              <div class="inline-actions"><a class="btn-secondary-soft" href="https://github.com/plasticrutherfordium/getkontana">${t('app.view_source')}</a><a class="btn-secondary-soft" href="${t('app.open_source_path')}">${t('app.license')} · MPL-2.0</a></div>
             </section>
             <section class="settings-section">
               <div class="settings-item">
@@ -5884,6 +6012,13 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
         </div>
       `;
 
+      const applySettingsSection = () => {
+        el.querySelectorAll('[data-settings-panel]').forEach((panel) => { panel.hidden = panel.dataset.settingsPanel !== app.settingsSection; });
+        el.querySelectorAll('[data-settings-tab]').forEach((button) => { const active = button.dataset.settingsTab === app.settingsSection; button.classList.toggle('active', active); button.setAttribute('aria-pressed', String(active)); });
+      };
+      if (app.settingsFocusTarget === 'app-mode') app.settingsSection = 'general';
+      applySettingsSection();
+      el.querySelectorAll('[data-settings-tab]').forEach((button) => button.addEventListener('click', () => { app.settingsSection = button.dataset.settingsTab; applySettingsSection(); }));
       const newModal = el.querySelector('.settings-modal');
       if (newModal && savedScroll) newModal.scrollTop = savedScroll;
 
@@ -5969,6 +6104,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
           const next = btn.dataset.language === 'es' ? 'es' : 'en';
           if (app.state.settings.language === next) return;
           app.state.settings.language = next;
+          try { localStorage.setItem('kt-language', next); } catch { /* Keep the in-memory preference. */ }
           saveState();
           renderSettings();
           render();
@@ -6034,9 +6170,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
           closeSettings();
         });
       }
-      document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') closeSettings();
-      }, { once: true });
+
 
       if (app.state.settings.payment_strategies) {
         el.querySelectorAll('button[data-change-suggest]').forEach((btn) => {
@@ -6112,44 +6246,6 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
         render();
       });
 
-      document.getElementById('launch-updates-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('launch-email').value.trim();
-        const consent = document.getElementById('launch-consent').checked;
-        if (!email || !consent) {
-          app.launchSignupMessage = t('alerts.launch_email_consent');
-          renderSettings();
-          return;
-        }
-
-        app.state.settings.launch_updates_signups.push({
-          email,
-          consent: true,
-          created_at: nowIso(),
-          sync_status: 'pending',
-        });
-        saveState();
-
-        const endpoint = app.state.settings.launch_updates_endpoint;
-        if (!endpoint) {
-          app.launchSignupMessage = t('alerts.launch_saved_local');
-          renderSettings();
-          return;
-        }
-
-        try {
-          await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, consent }),
-          });
-          app.launchSignupMessage = t('alerts.launch_saved_and_sent');
-        } catch {
-          app.launchSignupMessage = t('alerts.launch_saved_sync_failed');
-        }
-        renderSettings();
-      });
-
       if (app.settingsFocusTarget === 'app-mode') {
         const appModeSection = document.getElementById('settings-app-mode');
         const appModeButton = appModeSection?.querySelector(`button[data-app-mode="${appMode}"]`)
@@ -6161,6 +6257,12 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
         app.settingsFocusTarget = null;
       }
     }
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      if (app.modal) { closeModal('cancel'); return; }
+      if (app.settingsOpen) { app.settingsOpen = false; renderSettings(); }
+    });
 
     let previousTab = app.activeTab;
     document.querySelectorAll('.tab-btn').forEach((btn) => {

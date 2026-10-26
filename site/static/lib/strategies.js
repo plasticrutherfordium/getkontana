@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 export const ORDER_LARGEST_FIRST = 'largest_first';
 export const ORDER_SMALLEST_FIRST = 'smallest_first';
 

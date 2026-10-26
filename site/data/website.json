@@ -1,0 +1,266 @@
+{
+  "en": {
+    "language_name": "English",
+    "skip": "Skip to content",
+    "navigation": "Main navigation",
+    "footer_navigation": "Legal links",
+    "language": "Choose language",
+    "dark_theme": "Switch to dark theme",
+    "light_theme": "Switch to light theme",
+    "how_link": "How it works",
+    "privacy_link": "Privacy",
+    "faq_link": "FAQ",
+    "terms": "Terms",
+    "open_app": "Open free app",
+    "free": "Free core. Forever.",
+    "headline_one": "Your cash.",
+    "headline_two": "Your rules.",
+    "intro": "Know what’s in your wallet. Track what leaves it. Keep the whole thing to yourself.",
+    "start": "Start tracking for free",
+    "see_how": "See how it works ↓",
+    "promise": "No account needed / Core stays free",
+    "preview_title": "KONTANA / CASH",
+    "local": "LOCAL ONLY",
+    "wallet": "Everyday wallet",
+    "balance": "€324.50",
+    "counts": "11 NOTES / 3 COINS",
+    "in_balance": "IN BALANCE",
+    "note50": "€50 × 4",
+    "total50": "€200.00",
+    "note20": "€20 × 5",
+    "total20": "€100.00",
+    "other_cash": "Other notes + coins",
+    "other_total": "€24.50",
+    "record_payment": "Record a payment",
+    "offline": "WORKS OFFLINE",
+    "example": "An example wallet. Your actual data stays on your device.",
+    "trust": [
+      {
+        "icon": "unlink",
+        "label": "No bank connections"
+      },
+      {
+        "icon": "user-round-x",
+        "label": "No account"
+      },
+      {
+        "icon": "shield-check",
+        "label": "No tracking"
+      },
+      {
+        "icon": "hard-drive",
+        "label": "On your device"
+      }
+    ],
+    "how_title": "Less admin. More living.",
+    "how_marker": "01 / THE EVERYDAY",
+    "steps": [
+      {
+        "icon": "wallet",
+        "title": "Count it.",
+        "body": "Add a wallet and the cash you carry. Notes, coins, any supported currency."
+      },
+      {
+        "icon": "arrow-up-right",
+        "title": "Spend it.",
+        "body": "Record a payment in seconds. Get a useful suggestion for which notes to use."
+      },
+      {
+        "icon": "scan-line",
+        "title": "Stay in control.",
+        "body": "See what’s left, check your spending, and reconcile whenever life gets messy."
+      }
+    ],
+    "privacy_marker": "02 / YOUR DATA IS YOURS",
+    "privacy_one": "Offline.",
+    "privacy_two": "On purpose.",
+    "privacy_body": "Your money doesn’t need an audience. The core app works on your device, even when the internet doesn’t. Any future cloud extra will be optional.",
+    "privacy_points": [
+      {
+        "title": "Your device is the database.",
+        "body": "Your cash log stays in your browser. No cloud account."
+      },
+      {
+        "title": "Your bank stays out of it.",
+        "body": "No credentials, connections, or transaction feeds."
+      },
+      {
+        "title": "You decide what leaves.",
+        "body": "Export a backup when you want. Nothing is sent by default."
+      }
+    ],
+    "faq_marker": "03 / GOOD QUESTIONS",
+    "faq_title": "A little clarity.",
+    "faq_intro": "Simple answers. No fine print.",
+    "faqs": [
+      {
+        "question": "Do I need an account?",
+        "answer": "No. Open Kontana, create a wallet, and you’re ready."
+      },
+      {
+        "question": "Does it work without internet?",
+        "answer": "Yes. After loading the app once, you can use it offline on that device."
+      },
+      {
+        "question": "What if my cash doesn’t match?",
+        "answer": "Reconcile and move on. Cash is real life, not a test. Precise mode tracks every note and coin; Budget mode lets you check in with a total."
+      },
+      {
+        "question": "Will the core app stay free?",
+        "answer": "Yes. The core cash tracker is free, forever, and open source under MPL-2.0. Wallets, payments, budgets, full history, and backups do not require a subscription. Optional paid extras may follow."
+      },
+      {
+        "question": "What about Premium, MCP, and camera counting?",
+        "answer": "We are exploring optional paid extras, including MCP connections to AI assistants and camera-assisted note and coin counting. These features are not available yet. The free core will remain useful on its own."
+      },
+      {
+        "question": "Can I inspect, modify, or self-host Kontana?",
+        "answer": "Yes. The core source is available under the Mozilla Public License 2.0. You can inspect it, modify it, and self-host it while following the licence. Separate future paid components may have their own terms."
+      },
+      {
+        "question": "How long is my history kept?",
+        "answer": "There is no time limit or automatic cleanup. History stays on your device until you delete the corresponding data. Clearing browser storage also removes it."
+      }
+    ],
+    "final_body": "Open-source cash tracking. Optional paid extras may follow.",
+    "signature": "CASH FIRST. PRIVACY ALWAYS.",
+    "open_source": "Open source",
+    "open_source_badge": "OPEN SOURCE / MPL-2.0",
+    "view_source": "View source",
+    "license": "Licence",
+    "open_core_title": "Free core. Open future.",
+    "source_url": "https://github.com/plasticrutherfordium/getkontana"
+  },
+  "es": {
+    "language_name": "Español",
+    "skip": "Ir al contenido",
+    "navigation": "Navegación principal",
+    "footer_navigation": "Enlaces legales",
+    "language": "Elegir idioma",
+    "dark_theme": "Cambiar al tema oscuro",
+    "light_theme": "Cambiar al tema claro",
+    "how_link": "Cómo funciona",
+    "privacy_link": "Privacidad",
+    "faq_link": "Preguntas",
+    "terms": "Términos",
+    "open_app": "Usar gratis",
+    "free": "App principal gratis. Para siempre.",
+    "headline_one": "Tu efectivo.",
+    "headline_two": "Tus reglas.",
+    "intro": "Ten claro cuánto llevas. Controla lo que gastas. Tus datos se quedan contigo.",
+    "start": "Empieza gratis",
+    "see_how": "Así funciona ↓",
+    "promise": "Sin crear una cuenta / La app principal sigue gratis",
+    "preview_title": "KONTANA / EFECTIVO",
+    "local": "SOLO LOCAL",
+    "wallet": "Monedero diario",
+    "balance": "324,50 €",
+    "counts": "11 BILLETES / 3 MONEDAS",
+    "in_balance": "CUADRA",
+    "note50": "50 € × 4",
+    "total50": "200,00 €",
+    "note20": "20 € × 5",
+    "total20": "100,00 €",
+    "other_cash": "Otros billetes y monedas",
+    "other_total": "24,50 €",
+    "record_payment": "Registrar un pago",
+    "offline": "FUNCIONA SIN INTERNET",
+    "example": "Un monedero de ejemplo. Tus datos reales se quedan en tu dispositivo.",
+    "trust": [
+      {
+        "icon": "unlink",
+        "label": "Sin conectar tu banco"
+      },
+      {
+        "icon": "user-round-x",
+        "label": "Sin cuenta"
+      },
+      {
+        "icon": "shield-check",
+        "label": "Sin rastreo"
+      },
+      {
+        "icon": "hard-drive",
+        "label": "En tu dispositivo"
+      }
+    ],
+    "how_title": "Menos líos. Más vida.",
+    "how_marker": "01 / EN EL DÍA A DÍA",
+    "steps": [
+      {
+        "icon": "wallet",
+        "title": "Cuéntalo.",
+        "body": "Añade un monedero y el efectivo que llevas. Billetes, monedas y varias divisas."
+      },
+      {
+        "icon": "arrow-up-right",
+        "title": "Gástalo.",
+        "body": "Registra un pago en segundos. Kontana te sugiere qué billetes y monedas usar."
+      },
+      {
+        "icon": "scan-line",
+        "title": "Mantén el control.",
+        "body": "Consulta lo que te queda, revisa tus gastos y ajusta el saldo cuando haga falta."
+      }
+    ],
+    "privacy_marker": "02 / TUS DATOS SON TUYOS",
+    "privacy_one": "Sin conexión.",
+    "privacy_two": "A propósito.",
+    "privacy_body": "Tu dinero no necesita espectadores. La app principal funciona en tu dispositivo, incluso sin internet. Cualquier futuro extra en la nube será opcional.",
+    "privacy_points": [
+      {
+        "title": "Tus datos viven en tu dispositivo.",
+        "body": "Tu registro de efectivo se queda en tu navegador. Sin cuentas en la nube."
+      },
+      {
+        "title": "Tu banco se queda al margen.",
+        "body": "Sin claves bancarias, conexiones ni movimientos importados."
+      },
+      {
+        "title": "Tú decides qué sale.",
+        "body": "Exporta una copia cuando quieras. No se envía nada por defecto."
+      }
+    ],
+    "faq_marker": "03 / BUENAS PREGUNTAS",
+    "faq_title": "Todo claro.",
+    "faq_intro": "Respuestas claras. Sin letra pequeña.",
+    "faqs": [
+      {
+        "question": "¿Necesito una cuenta?",
+        "answer": "No. Abre Kontana, crea un monedero y empieza."
+      },
+      {
+        "question": "¿Funciona sin internet?",
+        "answer": "Sí. Tras cargar la app una vez, puedes usarla sin conexión en ese dispositivo."
+      },
+      {
+        "question": "¿Y si mi efectivo no cuadra?",
+        "answer": "Ajusta el saldo y sigue adelante. El efectivo es la vida real, no un examen. El modo preciso registra cada billete y moneda; el modo presupuesto permite revisar solo el total."
+      },
+      {
+        "question": "¿La app principal seguirá siendo gratis?",
+        "answer": "Sí. La app principal de efectivo es gratis, para siempre, y de código abierto bajo MPL-2.0. Los monederos, pagos, presupuestos, el historial completo y las copias no requieren suscripción. Podrán llegar extras de pago opcionales."
+      },
+      {
+        "question": "¿Y Premium, MCP y el recuento con cámara?",
+        "answer": "Estamos explorando extras de pago opcionales, como conexiones MCP con asistentes de IA y el recuento de billetes y monedas con cámara. Aún no están disponibles. La app principal gratuita seguirá siendo útil por sí sola."
+      },
+      {
+        "question": "¿Puedo revisar, modificar o alojar Kontana?",
+        "answer": "Sí. El código de la app principal está disponible bajo Mozilla Public License 2.0. Puedes revisarlo, modificarlo y alojarlo cumpliendo la licencia. Los futuros componentes de pago independientes podrán tener sus propias condiciones."
+      },
+      {
+        "question": "¿Cuánto tiempo se guarda mi historial?",
+        "answer": "No hay límite de tiempo ni borrado automático. El historial se queda en tu dispositivo hasta que elimines los datos correspondientes. Borrar el almacenamiento del navegador también lo elimina."
+      }
+    ],
+    "final_body": "Control de efectivo de código abierto. Podrán llegar extras de pago opcionales.",
+    "signature": "EFECTIVO PRIMERO. PRIVACIDAD SIEMPRE.",
+    "open_source": "Código abierto",
+    "open_source_badge": "CÓDIGO ABIERTO / MPL-2.0",
+    "view_source": "Ver código",
+    "license": "Licencia",
+    "open_core_title": "App principal gratis. Para siempre.",
+    "source_url": "https://github.com/plasticrutherfordium/getkontana"
+  }
+}

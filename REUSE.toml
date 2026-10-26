@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MPL-2.0
+version = 1
+
+# Hugo treats every file below site/data as data; attach licensing here instead
+# of placing a .license sidecar in that directory.
+[[annotations]]
+path = ["site/data/website.json"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Xavi"
+SPDX-License-Identifier = "MPL-2.0"

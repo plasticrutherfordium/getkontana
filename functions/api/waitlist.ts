@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 function normaliseEmail(email: string) {
   return email.trim().toLowerCase();
 }

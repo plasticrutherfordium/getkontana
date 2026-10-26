@@ -1,242 +1,40 @@
+{{/* SPDX-License-Identifier: MPL-2.0 */}}
 {{ define "main" }}
+{{ $c := index hugo.Data.website .Language.Lang }}
+{{ $app := (.Site.GetPage "app").RelPermalink }}
 <div class="landing">
-
-  <!-- Hero -->
-  <section class="landing-hero">
-    <h1>F*ck your bank.<br>Use cash!</h1>
-    <p class="landing-subtitle">
-      Banks track you. “Free” finance apps trade you.  
-      Kontana doesn’t. It’s a cash-first tracker that runs on your phone.
-      No bank linking. No logins. No cloud. No profiling.
-    </p>
-    <ul class="landing-bullets">
-      <li>On-device storage only</li>
-      <li>No bank accounts required</li>
-      <li>Free at launch</li>
-    </ul>
-    <a href="#waitlist" class="landing-btn">Join the waitlist</a>
-  </section>
-
-  <div class="landing-divider">────────────────────────────────</div>
-
-  <!-- Problem -->
-  <section class="landing-section">
-    <h2>Stop funding surveillance.</h2>
-    <p class="landing-section-sub">
-      Card payments are convenient. Great. They’re also a tracking system.
-      Cash is the opposite: simple, private, and hard to monitor.
-      The problem is cash is hard to track — unless you have the right tool.
-    </p>
-    <div class="landing-grid landing-grid--3">
-      <div class="landing-card">
-        <h3>They watch everything</h3>
-        <p>Spending data becomes scoring, targeting, “risk”, and monetisation. That’s the business.</p>
+  <section class="website-container hero" aria-labelledby="hero-title">
+    <div class="hero-copy">
+      <p class="free-label"><span></span>{{ $c.free }}</p>
+      <a class="source-badge" href="{{ $c.source_url }}">{{ $c.open_source_badge }} {{ partial "icon.html" (dict "name" "arrow-up-right") }}</a>
+      <h1 id="hero-title">{{ $c.headline_one }}<br><span>{{ $c.headline_two }}</span></h1>
+      <p class="hero-intro">{{ $c.intro }}</p>
+      <div class="hero-actions"><a class="button button-primary" href="{{ $app }}">{{ $c.start }} {{ partial "icon.html" (dict "name" "arrow-up-right") }}</a><a class="text-link" href="#how-it-works">{{ $c.see_how }}</a></div>
+      <p class="hero-promise">{{ $c.promise }}</p>
+    </div>
+    <div class="product-stage">
+      <div class="product-preview">
+        <div class="preview-top"><span>{{ $c.preview_title }}</span><span class="local-badge">{{ $c.local }}</span></div>
+        <div class="preview-wallet"><span>{{ partial "icon.html" (dict "name" "wallet") }} {{ $c.wallet }}</span><span class="preview-currency">EUR</span></div>
+        <div class="preview-balance">{{ $c.balance }}</div>
+        <div class="preview-meta"><span>{{ $c.counts }}</span><span class="balance-status">● {{ $c.in_balance }}</span></div>
+        <div class="preview-denominations"><div><span>{{ $c.note50 }}</span><strong>{{ $c.total50 }}</strong></div><div><span>{{ $c.note20 }}</span><strong>{{ $c.total20 }}</strong></div><div><span>{{ $c.other_cash }}</span><strong>{{ $c.other_total }}</strong></div></div>
+        <a class="button button-primary" href="{{ $app }}">{{ $c.record_payment }} {{ partial "icon.html" (dict "name" "arrow-up-right") }}</a>
       </div>
-      <div class="landing-card">
-        <h3>Cash fights back</h3>
-        <p>No feed. No profile. No “insights” built from your life.</p>
-      </div>
-      <div class="landing-card">
-        <h3>But cash disappears</h3>
-        <p>If you don’t track it, it becomes a blind spot. Kontana fixes that, fast.</p>
-      </div>
+      <span class="offline-stamp">{{ partial "icon.html" (dict "name" "wifi-off") }} {{ $c.offline }}</span>
+      <p class="preview-caption">{{ $c.example }}</p>
     </div>
   </section>
-
-  <div class="landing-divider">────────────────────────────────</div>
-
-  <!-- Features -->
-  <section class="landing-section">
-    <h2>Why Kontana?</h2>
-    <p class="landing-section-sub">
-      One job: help you manage cash spending without selling your privacy to banks or data brokers.
-    </p>
-    <div class="landing-grid landing-grid--3">
-      <div class="landing-card">
-        <h3>💵 Cash-first tracking</h3>
-        <p>Built for cash. Not bank feeds. Not account aggregation. Not “connect everything”.</p>
-      </div>
-      <div class="landing-card">
-        <h3>🔒 On-device only</h3>
-        <p>Your data stays on your phone. No cloud sync. No analytics. No third-party access.</p>
-      </div>
-      <div class="landing-card">
-        <h3>📤 Export when you choose</h3>
-        <p>Optional export when you want it. Nothing leaves your device by default.</p>
-      </div>
-    </div>
+  <div class="website-container trust-strip">{{ range $c.trust }}<span>{{ partial "icon.html" (dict "name" .icon) }}{{ .label }}</span>{{ end }}</div>
+  <section class="website-container how-section" id="how-it-works" aria-labelledby="how-title">
+    <div class="section-heading"><p class="eyebrow">{{ $c.how_marker }}</p><h2 id="how-title">{{ $c.how_title }}</h2></div>
+    <div class="steps">{{ range $i, $step := $c.steps }}<article class="step"><div class="step-top">{{ partial "icon.html" (dict "name" .icon) }}<span>0{{ add $i 1 }}</span></div><h3>{{ .title }}</h3><p>{{ .body }}</p></article>{{ end }}</div>
   </section>
-
-  <div class="landing-divider">────────────────────────────────</div>
-
-  <!-- How it works -->
-  <section class="landing-section">
-    <h2>How it works</h2>
-    <p class="landing-section-sub">
-      Fast, simple, and realistic. Cash tracking will never be perfect — so Kontana is built for reconciliation, not guilt.
-    </p>
-    <div class="landing-grid landing-grid--3">
-      <div class="landing-card">
-        <h3>1. Cash</h3>
-        <p>See what you have. Keep it simple. Know where you stand.</p>
-      </div>
-      <div class="landing-card">
-        <h3>2. Pay</h3>
-        <p>Record spending quickly. No forms. No nonsense. Done in seconds.</p>
-      </div>
-      <div class="landing-card">
-        <h3>3. Trx</h3>
-        <p>Review your transactions and categories. Spot the leaks. Spend less.</p>
-      </div>
-    </div>
-  </section>
-
-  <div class="landing-divider">────────────────────────────────</div>
-
-  <!-- Privacy -->
-  <section class="landing-section">
-    <h2>Privacy-first by design</h2>
-    <p class="landing-section-sub">
-      This is not a “trust us” product. The model is simple: no logins, no bank access, no tracking.
-      You are not the product.
-    </p>
-    <div class="landing-grid landing-grid--3">
-      <div class="landing-card">
-        <h3>No bank linking</h3>
-        <p>We don’t connect to banks. We don’t want your credentials. We don’t build profiles.</p>
-      </div>
-      <div class="landing-card">
-        <h3>Local storage</h3>
-        <p>Data stays on your device. Not on our servers. Not in a warehouse.</p>
-      </div>
-      <div class="landing-card">
-        <h3>You choose what leaves</h3>
-        <p>Export is optional. Sharing is optional. Everything is your call.</p>
-      </div>
-    </div>
-  </section>
-
-  <div class="landing-divider">────────────────────────────────</div>
-
-  <!-- Pricing -->
-  <section class="landing-section">
-    <h2>Free</h2>
-    <p class="landing-section-sub">
-      Free at launch. No ads. No data resale. No “free” trap.
-    </p>
-    <div class="landing-grid landing-grid--3">
-      <div class="landing-card landing-card--featured">
-        <span class="landing-badge">Launch</span>
-        <h3>Kontana</h3>
-        <div class="landing-price">$0</div>
-        <ul class="landing-features">
-          <li>✓ On-device cash log</li>
-          <li>✓ Categories and notes</li>
-          <li>✓ Offline-first</li>
-          <li>✓ Optional exports</li>
-        </ul>
-        <a href="#waitlist" class="landing-btn">Join waitlist</a>
-      </div>
-      <div class="landing-card">
-        <h3>What we’re not</h3>
-        <div class="landing-price">Nope</div>
-        <ul class="landing-features">
-          <li>✕ No bank linking</li>
-          <li>✕ No cloud accounts</li>
-          <li>✕ No analytics trackers</li>
-          <li>✕ No data brokerage</li>
-        </ul>
-        <a href="#waitlist" class="landing-btn landing-btn--outline">Join waitlist</a>
-      </div>
-      <div class="landing-card">
-        <h3>Built for trust</h3>
-        <div class="landing-price">Serious</div>
-        <ul class="landing-features">
-          <li>✓ Designed for cash reality</li>
-          <li>✓ Built to reconcile, not punish</li>
-          <li>✓ Clear, calm interface</li>
-          <li>✓ Feedback-driven roadmap</li>
-        </ul>
-        <a href="#waitlist" class="landing-btn landing-btn--outline">Join waitlist</a>
-      </div>
-    </div>
-  </section>
-
-  <div class="landing-divider">────────────────────────────────</div>
-
-  <!-- FAQ -->
-  <section class="landing-section">
-    <h2>FAQ</h2>
-    <p class="landing-section-sub">Straight answers.</p>
-    <div class="landing-faq">
-      <details class="landing-faq-item">
-        <summary>Does it connect to my bank?</summary>
-        <div class="landing-faq-body">No. Never. That’s the whole point.</div>
-      </details>
-      <details class="landing-faq-item">
-        <summary>Where is my data stored?</summary>
-        <div class="landing-faq-body">On your device only. Nothing leaves unless you export it.</div>
-      </details>
-      <details class="landing-faq-item">
-        <summary>What if my cash doesn’t match?</summary>
-        <div class="landing-faq-body">It happens. Cash is real life. The goal is control, not perfection. Reconcile and move on.</div>
-      </details>
-      <details class="landing-faq-item">
-        <summary>Is Kontana really free?</summary>
-        <div class="landing-faq-body">Yes. Free at launch. No hidden fees.</div>
-      </details>
-      <details class="landing-faq-item">
-        <summary>How do I get notified at launch?</summary>
-        <div class="landing-faq-body">Join the waitlist below. Email only. No tracking. Unsubscribe anytime.</div>
-      </details>
-    </div>
-  </section>
-
-  <div class="landing-divider">────────────────────────────────</div>
-
-  <!-- CTA / Waitlist -->
-  <section id="waitlist" class="landing-section landing-cta">
-    <h2>Stop being the product.</h2>
-    <p class="landing-section-sub">
-      If you want a cash tracker that doesn’t spy on you, join the waitlist.
-      One email at launch. That’s it.
-    </p>
-    <form id="waitlist-form" class="landing-form">
-      <input type="email" name="email" placeholder="your@email.com" required />
-      <div class="cf-turnstile" data-sitekey="0x4AAAAAACXPTpqdso7QmAhX"></div>
-      <button type="submit" class="landing-btn">Join waitlist</button>
-      <p class="landing-form-note">Email only. No tracking. Unsubscribe anytime.</p>
-    </form>
-    <div id="waitlist-msg"></div>
-  </section>
-
+  <section class="privacy-section" id="privacy" aria-labelledby="privacy-title"><div class="website-container privacy-grid">
+    <div><p class="eyebrow">{{ $c.privacy_marker }}</p><h2 id="privacy-title">{{ $c.privacy_one }}<br>{{ $c.privacy_two }}</h2><p class="privacy-intro">{{ $c.privacy_body }}</p></div>
+    <div class="privacy-points">{{ range $c.privacy_points }}<article>{{ partial "icon.html" (dict "name" "check") }}<div><h3>{{ .title }}</h3><p>{{ .body }}</p></div></article>{{ end }}</div>
+  </div></section>
+  <section class="website-container faq-section" id="faq" aria-labelledby="faq-title"><div><p class="eyebrow">{{ $c.faq_marker }}</p><h2 id="faq-title">{{ $c.faq_title }}</h2><p class="muted">{{ $c.faq_intro }}</p></div><div class="faq-list">{{ range $c.faqs }}<details><summary>{{ .question }}<span aria-hidden="true">+</span></summary><p>{{ .answer }}</p></details>{{ end }}</div></section>
+  <section class="website-container final-cta"><div><h2>{{ $c.open_core_title }}</h2><p>{{ $c.final_body }}</p></div><a class="button button-primary" href="{{ $app }}">{{ $c.start }} {{ partial "icon.html" (dict "name" "arrow-up-right") }}</a></section>
 </div>
-
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-<script>
-  document.getElementById('waitlist-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    var form = e.target;
-    var msg = document.getElementById('waitlist-msg');
-    var email = form.querySelector('input[name="email"]').value;
-    var tokenInput = document.querySelector('input[name="cf-turnstile-response"]');
-    var turnstileToken = tokenInput ? tokenInput.value : '';
-    msg.textContent = '';
-    var res = await fetch('/api/waitlist', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: email, turnstileToken: turnstileToken }),
-    });
-    var result = await res.json().catch(function() { return { ok: false }; });
-    if (result.ok) {
-      msg.innerHTML = '<p class="landing-msg landing-msg--ok">OK: You\'re on the list.</p>';
-      form.style.display = 'none';
-    } else {
-      var message = 'ERR: Something went wrong. Please try again.';
-      if (res.status === 400) message = 'ERR: Please enter a valid email.';
-      if (res.status === 403) message = 'ERR: Captcha verification failed.';
-      msg.innerHTML = '<p class="landing-msg landing-msg--err">' + message + '</p>';
-    }
-  });
-</script>
 {{ end }}

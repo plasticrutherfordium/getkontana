@@ -1,66 +1,120 @@
-# Kontana App Specification (MVP)
+<!-- SPDX-License-Identifier: MPL-2.0 -->
+# Kontana — application specification
 
-## Table of Contents
-- [Scope](#scope)
-- [Global Rules](#global-rules)
-- [Screens](#screens)
-- [Supporting Specs](#supporting-specs)
-- [Non-goals](#non-goals)
+Status: implemented, version 0.1.1 (26 October 2026). This is the product behavior reference. [DESIGN_SPEC.md](DESIGN_SPEC.md) defines presentation. The numbered Budget documents describe the original workflow decisions; this document takes precedence where an earlier proposal conflicts with the shipped interface.
 
-## Scope
-Kontana is a local-first cash wallet tracker for physical cash, denomination counts, and transactions.
+## Product promise
 
-## Global Rules
-- Maximum wallets: 4 total across the whole app.
-- Wallet shape: `{ id, name, currency, denominations, transactions }`.
-- Currency catalogue is fixed to: `EUR USD GBP CLP SEK CHF HUF DKK NOK PLN CAD ARS PEN BRL MXN CZK RON CNY JPY INR SGD KRW EGP ZAR NGN XOF AUD NZD`.
-- Denominations come from one canonical mapping keyed by currency.
-- Wallet expected balance is transaction-derived.
-- Denominations total must always reconcile to expected balance.
-- All cash movement must be represented by transactions (`incoming`, `outgoing`, `transfer`, `loss`, `adjustment`, `denominations_edited`).
-- Direct denomination editing is allowed only in controlled Edit Mode.
-- Edit Mode and payment allocation enforce exact reconciliation; no partial save.
-- Edit Mode and allocation enforce exact reconciliation; no partial save.
-- All confirmations use in-app modals (no browser `confirm`/`prompt`/`alert`).
-- In-app modals close on outside click and on Escape (desktop).
-- Cancel actions are neutral (not red). Red is reserved for destructive actions (Delete/Revert/etc.).
-- Transactions older than 30 days are auto-deleted.
-- Transactions are viewed per wallet (no "all wallets" view).
-- Retention banner is dismissible for 5 days (persisted locally).
-- Revert is allowed only for the latest transaction per wallet.
-- App sidebar brand uses logo only (no surrounding pill/callout copy).
-- Mobile layout (<= 768px):
-  - Sidebar is hidden.
-  - Bottom navigation bar is fixed to the bottom with tabs: Cash | Pay | Trx (Pay centered).
-  - Settings is accessed via a top-right gear icon in the header.
-  - Settings gear icon is a large tap target.
-  - Settings opens as an overlay (popup) and closes on outside click and Escape; includes a Close (X) control.
-  - Pay is visually emphasized in the mobile bottom nav.
-  - Content has bottom padding to avoid overlap with the bottom nav.
-  - Wallet cards row scrolls horizontally; page content does not shrink or scale.
-  - No global horizontal scrolling; only the wallet cards row can scroll horizontally.
-  - Wallet cards row is clipped inside its container (no overflow into other sections).
-- PWA support:
-  - Provide `manifest.webmanifest` with app name, icons, theme color, and `display: standalone`.
-  - Register a service worker for basic offline caching of app shell/assets.
-  - Use the site favicon as the app icon.
-  - App page header shows the logo on mobile only; desktop relies on the sidebar brand.
+Kontana tracks physical cash on the user's device. **The core is free, forever, and open source under MPL-2.0.** Wallets, payments, budgets, complete local history, backups/import and reports do not require an account, subscription or purchase. The same core features work in both themes and languages, with no bank connections or advertisements.
 
-## Screens
-- Cash: `spec/CASH_ON_HAND.md`
-- Pay: `spec/NEW_PAYMENT.md`
-- Transactions: `spec/TRANSACTIONS.md`
-- Settings: `spec/SETTINGS.md`
+Optional paid extras may be offered separately. MCP connections, managed AI services and camera-assisted note/coin counting are exploratory, not shipped functionality. There is no active Premium entitlement, billing, checkout or availability date. Separate future components may have other explicit terms while covered core files remain MPL-2.0. See [OPEN_CORE_SPEC.md](OPEN_CORE_SPEC.md) and [LICENSING.md](../LICENSING.md).
 
-## Supporting Specs
-- Data model: `spec/DATA_MODEL.md`
-- Algorithms: `spec/ALGORITHMS.md`
-- Privacy and security: `spec/PRIVACY_SECURITY.md`
-- Technical decisions: `spec/TECH_DECISIONS.md`
-- Acceptance tests: `spec/ACCEPTANCE_TESTS.md`
+The application imposes no age or record-count limit on transaction or check-in history. There is no 30-day purge, expiry message, or retention countdown. Browser storage capacity still applies. Clearing browser storage, removing the browser profile, or losing the device can remove local data; JSON backups are the recovery mechanism. Kontana never deletes old entries to make room for a new one.
 
-## Non-goals
-- User accounts or multi-user support.
-- Device sync in MVP.
-- Bank/open-banking connections.
-- Import in MVP.
+## Entry, language, and appearance
+
+| Surface | English | Spanish |
+| --- | --- | --- |
+| Website | `/` | `/es/` |
+| App | `/app/` | `/es/app/` |
+| Supporting pages | `/about/`, `/faq/`, `/privacy/`, `/terms/`, `/open-source/` | Corresponding `/es/…/` routes |
+
+The website language selector opens the equivalent translated page. A fresh app follows the page language, or an explicitly saved language preference. Existing app language settings are preserved unless the user selects another language on the website or in Settings. `kt-language` stores an explicit shared preference; the app also stores `settings.language` in its state.
+
+Dark is the first-visit default. Light and dark are complete themes, available through the website header or app Settings. Theme selection applies before first paint and persists across website/app navigation and reloads. `kt-theme` and the legacy `theme` key stay aligned with `settings.appearance`. Neither preference changes financial data.
+
+## Application structure
+
+Three sections: Cash / Pay / Transactions, translated as Efectivo / Pagar / Movimientos. Desktop uses a left sidebar; screens at or below 768px use a floating bottom navigation. A persistent top bar contains the original Kontana logo, local-storage indicator, and Settings button. The mode pill opens General settings at the mode selector.
+
+App sections share the selected wallet. Navigation normally preserves wallet context. Controlled denomination editing gates navigation until finished or cancelled. Payment drafts are temporary; only confirmed transactions persist. Settings is an overlay, with General, Payment assistance, and Data & backup sections. Dialogs support keyboard focus containment, close controls, Escape, and clicking the backdrop; a foreground confirmation takes precedence over Settings.
+
+## Wallets and currency
+
+- Up to four wallets, each with a trimmed name of 1–18 characters and a fixed currency.
+- The supported catalogue remains `EUR USD GBP CLP SEK CHF HUF DKK NOK PLN CAD ARS PEN BRL MXN CZK RON CNY JPY INR SGD KRW EGP ZAR NGN XOF AUD NZD`. Currency ISO codes, existing denomination mappings, logo, and isotype are unchanged.
+- New wallets start at zero. Record an incoming payment to add cash.
+- Wallet cards show flag, ISO code, name, and actual balance. Selection works with pointer or keyboard. Reordering by drag persists in `wallet_order` and applies across all sections.
+- The final “New wallet” card opens creation. Attempting a fifth wallet explains the limit in a dialog.
+- The active wallet's ellipsis opens rename, edit denominations, and delete actions. Destructive operations require confirmation. Wallet deletion removes that wallet and its associated ledger entries.
+- Currency totals are never added across wallets with different currencies. Amounts are integer minor units; presentation follows the selected language and existing currency scaling rules.
+
+## Cash in Precise mode
+
+Cash displays wallet cards, inventory, and a wallet-check/latest-activity panel. On smaller screens the supporting panels follow the inventory.
+
+Inventory shows denomination value, count, and subtotal. Notes and coins can be separated, or shown together according to Settings. Zero counts are de-emphasized; “Hide empty” filters presentation without deleting denominations. A bottom row totals the visible denomination group. The wallet card always shows the complete wallet balance.
+
+Ordinary inventory is read-only. Editing requires choosing Edit denominations and confirming entry. The edit draft exposes minus/count/plus controls, allocated total, ledger-expected total, and difference. Finish is enabled only when denomination total equals the expected balance. Finish records a zero-value `denominations_edited` event with before/after counts; Cancel discards the draft. This flow changes composition, never the amount of money owned.
+
+The wallet check uses real ledger/count state. It shows a stale-count warning for total-only wallets, and never presents estimated denomination counts as a confirmed count. Latest activity comes from the selected wallet's actual newest record, with no age cutoff. Empty wallets explain how to add cash.
+
+## Pay
+
+Pay handles incoming and outgoing cash. It starts from the active wallet; a zero-balance wallet defaults to Incoming. Wallet cards remain available above the mode selector. Switching direction clears allocation while retaining useful amount/note input.
+
+Entry contains amount, optional note (maximum 30 characters), and category. Amount uses decimal input without browser spinners, accepts locale formatting, and preserves editing order/caret. The breakdown is beside the fields on wide screens and below them on narrow screens. Invalid/empty amounts show guidance; no transaction can be recorded from an incomplete allocation.
+
+### Outgoing
+
+1. Enter amount, optional note, and category.
+2. If assistance is enabled, compute tender from actual available denominations using the global strategy and coin preferences.
+3. An exact suggestion offers “Use and finalize”. Manual editing is always available.
+4. Tender above the purchase amount offers “Use suggested” and opens a change confirmation. Suggested or manually entered change must equal the expected change before anything is committed.
+5. Deduct tender, add received change, and append one outgoing record whose net delta is the purchase amount negated.
+
+Insufficient cash produces a clear error and prevents finalization. Manual outgoing counts cannot exceed availability. A cancelled change dialog leaves wallet balances and history untouched.
+
+### Incoming
+
+Allocate the notes/coins received, using a suggestion or manual counts. The allocation must equal the entered amount before confirmation. Manual counting may derive the incoming amount from the count when that existing entry mode is selected. Confirmation adds denominations and one incoming record.
+
+### Completion and reversal
+
+Completion shows actual date, wallet, signed amount, note, category, and expected/received change where relevant. Offer New transaction and Revert transaction. Reversal is limited to the latest transaction in the affected wallet and restores its cash effects. Historical records cannot be independently edited in ways that break the ledger.
+
+## Budget mode
+
+Budget mode reduces routine counting while keeping the same local wallets and ledger. Switching modes does not discard data.
+
+The onboarding wizard chooses a wallet, check-in cadence, envelope targets, and tracking coverage. The starting balance is the existing wallet balance; use an incoming payment or reconciliation to set cash. Supported cadences are weekly, fortnightly, and monthly. Envelopes contain named targets in the wallet's currency. Cash shows target, remaining amount, and a progress bar for the current period. Only outgoing/spend records explicitly assigned to that envelope reduce its remaining amount; the UI states this basis. Unlogged spending is not inferred. An overspent envelope keeps the negative remaining amount and a warning treatment.
+
+Budget actions include quick spend, same-currency wallet transfer, adjustment, scheduled check-in, and quick reconciliation. Quick spend records the amount/category/note and optional envelope. Transfers create paired ledger entries; adjustments record a signed delta. Total-only changes mark denomination counts stale until a real count reconciles them.
+
+Check-in choices are confirm the expected total, enter an actual total, or skip counting. A mismatch records the actual/expected amounts, drift and explanation when confirmed, with a linked ledger adjustment where needed. Small drift can be ignored explicitly. Reminders and drift alerts follow cadence/threshold/snooze preferences; they do not imply a background cloud service.
+
+The Transactions summary may show the current period and a small set of recent check-ins/top spends. “View full ledger” opens complete history. These summaries never trim stored records. See [20-workflows.md](20-workflows.md) and the tested Budget helper modules for detailed calculations.
+
+## Transactions and retention
+
+Transactions are scoped to the selected wallet, newest first, grouped by calendar day. Every saved entry remains reachable, including opening balances and entries older than 30 days. Rows show description, signed amount, and running balance; expansion reveals the underlying details and any allowed latest-record reversal.
+
+Three summary values use the full wallet ledger: money in (sum of positive deltas), money out (absolute sum of negative deltas), and current wallet balance. They are explicitly labeled all time. Opening adjustments and transfers are included in the direction of their delta. Running balances accumulate the complete ledger chronologically before display sorting. Check-in summaries and period filters do not redefine retention.
+
+## Settings and data ownership
+
+| Section | Controls |
+| --- | --- |
+| General | Precise/Budget mode; complete Light/Dark themes; English/Español; existing device-dependent biometric lock control; free-core/Premium availability wording, source link and MPL-2.0 licensing link |
+| Payment assistance | Suggestions on/off; Minimise (`greedy`), Preserve (`lex`), Balance (`equalisation`); single-cover overpayment; change suggestions; coin rules; denomination ordering; notes/coins grouping; cents display |
+| Data & backup | Full-history explanation; Export JSON; Export PDF; Import JSON; confirmed Delete all data |
+
+Disabling suggestions also disables dependent coin/change suggestions. The three strategy implementations and their cash math remain unchanged. Red indicates destructive actions or errors; cancelling is neutral.
+
+JSON export contains the complete application state, including settings, wallets, transactions, check-ins, and budgets. It is the restorable backup. PDF is a human-readable wallet/transaction report, not a restore file. Import validates JSON, recognizes legacy state, previews counts, and offers Merge or Replace. Merge reports wallet-ID collisions; Replace requires an additional confirmation. Existing raw state is backed up before migration/import. Unsupported schemas or failed storage writes show recovery/export controls rather than overwriting usable data.
+
+Delete all data requires the explicit confirmation token `DELETE ALL DATA` and resets local app state. It does not delete previously exported files. No launch/waitlist signup form is offered by the redesigned site or app; previous locally saved signup fields remain compatible with old backups.
+
+The existing biometric control depends on browser/platform authenticator support and is not storage encryption. Physical-device/WebAuthn validation is separate from the desktop browser checks for this release.
+
+## Persistence, offline behavior, and updates
+
+State remains under `kontana_state_v1`, schema version 2, with `kontana_state_v1_backup` for recovery. No redesign migration or new account is required. Denomination math, migration, import/export, check-in calculations, and ledger helpers retain their existing module boundaries.
+
+The service worker precaches both app-language routes, shared/site/app CSS, original brand assets, all local fonts, PDF library, and app helper scripts. It uses network-first retrieval with cached fallback. After a successful initial load/cache install, the app works offline on the same origin/device. Production installation requires HTTPS (localhost is supported during development). A newly installed worker waits; an update notice offers explicit reload or dismissal. Refreshing does not clear local financial state.
+
+The app makes no cash-data upload requests. Fonts and PDF dependencies are served locally. Export only creates a user-requested file. Browser cache and local application state are distinct; service-worker cache replacement never purges history.
+
+## Verification
+
+Automated checks cover money parsing, denomination integrity, strategies, ledger operations, Budget onboarding/check-ins/insights, migration, import/export, worker contracts, and history preservation through save/reload, migration, and backup/import across decades. UI release checks cover both languages/themes, responsive navigation, wallet creation, exact/non-exact payment, cancellation/reversal, full old history, exports, settings, and offline reload. See [RELEASE_VERIFICATION.md](RELEASE_VERIFICATION.md) for the recorded implementation checks.

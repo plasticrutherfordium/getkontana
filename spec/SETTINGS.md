@@ -1,52 +1,18 @@
+<!-- SPDX-License-Identifier: MPL-2.0 -->
 # Settings
 
-## Required Controls
-- Suggestions (global On/Off).
-  - This is the top-level toggle for all suggestion features.
-  - Helper: Suggestions show recommended denominations; you still confirm or edit manually.
-  - When OFF, no denomination suggestions are shown in the payment modal (manual entry only).
-  - When OFF, coin usage and change suggestions are disabled.
-- Payment strategy selector (`greedy`, `lex`, or `equalisation`) shown as selectable strategy pills/cards when Suggestions are ON.
-  - Helper: Defines how suggestions are calculated.
-  - Strategy selection must include a clear plain-language explanation card for each option.
-  - `greedy`: fast heuristic that takes as many units as possible in the current ordering.
-  - `lex`: optimal bounded change (min overpay, then min items, then ordering tie-break).
-  - `equalisation`: optimal bounded change with a balance tie-break on remaining counts.
-- Coins rules (global, only when Suggestions are ON):
-  - Toggle: `Avoid coins` (default OFF).
-  - When enabled, user must choose one of:
-    - `Avoid coins entirely`
-    - `Prefer notes where possible. Coins used only if needed to pay exactly (or to make change).`
-- Change suggestions for overpay (global, only when Suggestions are ON):
-  - Helper: Suggests a change breakdown when overpaying; when OFF, change is manual-only.
-  - Toggle: `Change suggestions` On/Off.
-  - When OFF, change is always entered manually in the confirmation step.
-  - When ON, suggested change is offered with an option to enter manually.
-- Theme selector: Light / Dark (configured only in Settings within the app).
-  - Match the app theme to the website (`light` / `dark`).
-  - Persist to local theme preference so website/app stay visually aligned.
+See [APP_SPEC.md](APP_SPEC.md#settings-and-data-ownership) for the canonical behavior and [DESIGN_SPEC.md](DESIGN_SPEC.md#settings-and-dialogs) for layout.
 
-## Access
-- On mobile, Settings is accessed via a top-right gear icon in the header (not via bottom nav).
-- Gear icon is a large tap target for mobile usability and uses a proper gear/cog icon.
-- Settings opens as an in-app overlay (modal/popup), not as a separate navigated tab.
-- Settings overlay closes on outside click and on Escape (desktop).
-- Settings overlay includes a Close (X) control in the top-right.
+Settings opens through the top-right gear on desktop/mobile. The mode pill opens General focused on mode selection. It is a centered desktop dialog and full-height mobile sheet with three section buttons. Close, backdrop click, and Escape dismiss it; keyboard focus is contained and returns to the trigger. A foreground confirmation has priority over Settings.
 
-## Data and Recovery
-- Export JSON.
-- Export PDF.
-- No import for now.
-- Delete all local data.
+| Section | Controls |
+| --- | --- |
+| General | Precise/Budget mode, Light/Dark theme, English/Español, platform-dependent biometric lock; source/licence links and exploratory Premium disclosure |
+| Payment assistance | Suggestions; strategy; single-cover overpayment; change suggestions; coin preference; denomination ordering; notes/coins split; cents display |
+| Data & backup | No-expiry/full-local-history explanation; JSON export; PDF report; JSON import; Delete all data |
 
-## Launch-news Signup
-- Collected directly in-app.
-- No external redirect.
-- Local capture required; optional endpoint sync if configured.
+Suggestions are global. When disabled, dependent coin/change suggestions are disabled. Strategy choices retain the existing `greedy`, `lex`, and `equalisation` algorithms and plain-language descriptions. Preferences persist and apply across screens. Theme/language preferences are shared with the website.
 
-## Cross-page Effects
-- Strategy initializes Payments suggestions globally.
-- Zero-count denominations are always de-emphasized on Cash by default (no Settings toggle).
+JSON is the complete restorable backup, including old transactions and check-ins. Import validates, previews counts and collisions, and offers Merge or confirmed Replace. PDF is a readable report. Delete all data requires the explicit `DELETE ALL DATA` token and does not remove previously downloaded files. The danger area is separate from routine backup actions.
 
-## Footer
-- Show app version at the bottom of Settings (e.g., `Version 0.0.1`).
+There is no history retention selector because there is no expiry. Browser capacity remains finite; a failed save offers recovery instead of pruning. The retired local email-capture form is no longer offered. General also identifies the free core, MPL-2.0 source and licence, and exploratory paid extras that are not available yet. Version/build information appears at the bottom. Existing biometric support is device dependent and does not encrypt browser storage.

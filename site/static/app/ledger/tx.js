@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 (function attachKontanaLedgerTx(global) {
   const ADJUSTMENT_CATEGORIES = ['loss', 'unknown'];
   const TRACKING_LEVELS = ['none', 'big_only', 'all'];

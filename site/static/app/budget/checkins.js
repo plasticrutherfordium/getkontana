@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 (function attachKontanaBudgetCheckins(global) {
   const DRIFT_CATEGORIES = ['fees', 'food', 'misc', 'transfer', 'loss', 'unknown'];
   const VALID_METHODS = new Set(['confirm', 'count_total', 'skip', 'quick_reconcile']);

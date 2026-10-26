@@ -1,0 +1,13 @@
+{{/* SPDX-License-Identifier: MPL-2.0 */}}
+{{ $copy := index hugo.Data.website .Language.Lang }}
+<footer class="site-footer"><div class="website-container footer-inner">
+  <a class="brand" href="{{ .Site.Home.RelPermalink }}" aria-label="Kontana"><img src="/kontana-logo3.svg" alt="Kontana" width="145" height="25"></a>
+  <p class="footer-signature">{{ $copy.signature }}</p>
+  <nav aria-label="{{ $copy.footer_navigation }}">
+    {{ with .Site.GetPage "privacy" }}<a href="{{ .RelPermalink }}">{{ $copy.privacy_link }}</a>{{ end }}
+    {{ with .Site.GetPage "terms" }}<a href="{{ .RelPermalink }}">{{ $copy.terms }}</a>{{ end }}
+    <a href="{{ .Site.Params.sourceRepository }}">{{ $copy.view_source }}</a>
+    {{ with .Site.GetPage "open-source" }}<a href="{{ .RelPermalink }}">{{ $copy.license }}</a>{{ end }}
+  </nav>
+  <span class="copyright">© {{ now.Year }} Kontana</span>
+</div></footer>

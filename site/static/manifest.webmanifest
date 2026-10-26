@@ -1,16 +1,17 @@
 {
   "name": "Kontana",
   "short_name": "Kontana",
-  "description": "Privacy-first cash tracker that runs on your device.",
-  "start_url": "/app",
+  "description": "Free core. Forever. Open source under MPL-2.0. Private cash tracking on your device.",
+  "start_url": "/app/",
   "display": "standalone",
-  "background_color": "#0b1618",
-  "theme_color": "#0b1618",
+  "background_color": "#0a100d",
+  "theme_color": "#0a100d",
   "icons": [
     {
       "src": "/favicon-kontana3.png",
       "sizes": "512x512",
       "type": "image/png"
     }
-  ]
+  ],
+  "scope": "/"
 }

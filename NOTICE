@@ -1,0 +1,35 @@
+Kontana
+Copyright (c) 2026 Xavi and the respective contributors.
+Current first-party core: Mozilla Public License 2.0 (MPL-2.0).
+Complete licence: LICENSE. Scope and exceptions: LICENSING.md.
+Source: https://github.com/plasticrutherfordium/getkontana
+
+Earlier MIT releases and incorporated earlier MIT-covered material retain
+existing permissions. Their original notice is in LICENSES/MIT-legacy.txt.
+Original brand artwork and standalone legacy SVG icons keep those MIT terms.
+
+Third-party material keeps its own licences and copyright notices:
+
+- Hugo Terminal theme, copyright (c) 2024 panr: MIT.
+  The submodule's site/themes/terminal/LICENSE.md remains unchanged.
+  A distributed copy is at site/static/licenses/terminal-MIT.txt.
+- pdf-lib, copyright (c) 2019 Andrew Dillon: MIT.
+  See site/static/licenses/pdf-lib-MIT.txt.
+- @pdf-lib/standard-fonts, copyright (c) 2018 Andrew Dillon: MIT.
+  See site/static/licenses/pdf-lib-standard-fonts-MIT.txt.
+- @pdf-lib/upng, copyright (c) 2017 Photopea: MIT.
+  See site/static/licenses/upng-MIT.txt.
+- pako, copyright (C) 2014-2017 Vitaly Puzrin and Andrei Tuputcyn: MIT,
+  with the embedded zlib terms and author notices preserved in the bundle.
+  See site/static/licenses/pako-MIT.txt.
+- The PDF bundle also retains its embedded Microsoft/TypeScript Apache-2.0
+  notices and third-party notices. It is not relicensed MPL.
+  See site/static/licenses/Apache-2.0.txt.
+- Inter: SIL Open Font License 1.1. See site/static/fonts/Inter-OFL.txt.
+- Space Grotesk: SIL Open Font License 1.1.
+  See site/static/fonts/Space-Grotesk-OFL.txt.
+- IBM Plex Mono: SIL Open Font License 1.1.
+  See site/static/fonts/IBM-Plex-Mono-OFL.txt.
+
+Installed development/build dependencies retain the licence files in their
+own packages. This notice does not claim ownership of third-party material.

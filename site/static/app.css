@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+@layer app-base {
 .app-frame {
   min-height: 100vh;
   display: grid;
@@ -41,10 +43,10 @@ body {
   height: 26px;
   width: auto;
   display: block;
-  border: 0 !important;
-  padding: 0 !important;
+  border: 0;
+  padding: 0;
   margin: 0;
-  border-radius: 0 !important;
+  border-radius: 0;
 }
 
 .app-main {
@@ -1854,11 +1856,11 @@ tbody tr:nth-child(even):not(.tx-details) {
   }
 
   .tx-table tr.tx-details-row {
-    display: none !important;
+    display: none;
   }
 
   .tx-table tr.tx-details-row.open {
-    display: block !important;
+    display: block;
   }
 
   .tx-row {
@@ -1967,23 +1969,23 @@ tbody tr:nth-child(even):not(.tx-details) {
 
   /* Mobile denomination improvements */
   .denom-count-wrap {
-    min-width: 100px !important;
-    grid-template-columns: 1fr 2fr 1fr !important;
-    gap: 2px !important;
+    min-width: 100px;
+    grid-template-columns: 1fr 2fr 1fr;
+    gap: 2px;
   }
 
   .denom-input {
-    min-width: 40px !important;
-    font-size: 1rem !important;
+    min-width: 40px;
+    font-size: 1rem;
   }
 
   .denom-step {
-    min-width: 28px !important;
-    min-height: 32px !important;
+    min-width: 28px;
+    min-height: 32px;
   }
 
   .payment-breakdown-inline .denom-row {
-    padding: 10px !important;
+    padding: 10px;
   }
 
   .modal-payment .denom-header-row,
@@ -2145,4 +2147,6 @@ tbody tr:nth-child(even):not(.tx-details) {
 
 .lock-screen .btn-primary:active {
   transform: scale(0.98);
+}
+
 }

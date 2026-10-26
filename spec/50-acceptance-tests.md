@@ -1,5 +1,7 @@
+<!-- SPDX-License-Identifier: MPL-2.0 -->
 # /spec/50-acceptance-tests.md
 
+> Historical planning/context. Current release behavior and presentation are defined in [APP_SPEC.md](APP_SPEC.md) and [DESIGN_SPEC.md](DESIGN_SPEC.md).
 ## Migration + state (v1 -> v2, same storage key)
 - Existing `kontana_state_v1` loads, migrates to `schema_version:2`, and preserves:
   - wallet totals
@@ -15,6 +17,12 @@
 - Settings toggle persists.
 - Switching modes does not delete/transform/hide data.
 - Precise workflows remain reachable in Budget mode (under “Advanced” where appropriate).
+
+## Full local history
+- Transactions and check-ins older than 30 days or several years survive reloads, migration, and JSON backup/import unchanged.
+- The full ledger and PDF export include older transactions, with running balances based on the complete ledger.
+- Budget period summaries do not remove records outside the displayed period.
+- No automatic expiry, history-count cap, retention setting, or deletion countdown is present.
 
 ## Budget onboarding
 - Budget mode with no envelopes shows “Set up envelopes (2 minutes)”.

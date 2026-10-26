@@ -1,10 +1,11 @@
+// SPDX-License-Identifier: MPL-2.0
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const appJs = readFileSync(new URL('../site/static/app.js', import.meta.url), 'utf8');
 const payUiJs = readFileSync(new URL('../site/static/app/ui/pay.js', import.meta.url), 'utf8');
-const headPartial = readFileSync(new URL('../site/layouts/partials/extended_head.html', import.meta.url), 'utf8');
+const headPartial = readFileSync(new URL('../site/layouts/partials/head.html', import.meta.url), 'utf8');
 const footerPartial = readFileSync(new URL('../site/layouts/partials/extended_footer.html', import.meta.url), 'utf8');
 const swJs = readFileSync(new URL('../site/static/sw.js', import.meta.url), 'utf8');
 const appSurfaceJs = `${appJs}\n${payUiJs}`;
@@ -50,7 +51,7 @@ test('Service worker caches app money helper script', () => {
   assert.equal(/SKIP_WAITING/.test(swJs), true);
   const installMatch = swJs.match(/self\.addEventListener\('install'[\s\S]*?\n\}\);/);
   assert.equal(Boolean(installMatch), true);
-  assert.equal(/skipWaiting\(\)/.test(installMatch ? installMatch[0] : ''), true);
+  assert.equal(/skipWaiting\(\)/.test(installMatch ? installMatch[0] : ''), false);
   assert.equal(/self\.addEventListener\('message'[\s\S]*?skipWaiting\(\)/.test(swJs), true);
 });
 

@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: MPL-2.0 -->
 # Data Model
 
 ## Fixed Currency Catalogue
@@ -146,7 +147,7 @@ Rules:
   - `breakdown` is paid/tendered denominations.
   - `changeAmountMinor` records expected/received change.
   - `deltaMinor` remains net wallet change (requested amount impact).
-- `expectedBalance(wallet) = sum(deltaMinor of retained wallet transactions)`.
+- `expectedBalance(wallet) = sum(deltaMinor of all wallet transactions)`.
 - `denominationsTotal(wallet) = sum(valueMinor * count)`.
 - Reconciliation invariant: `denominationsTotal == expectedBalance`.
 
@@ -188,5 +189,6 @@ Rules:
 `Settings = { defaultStrategy, theme, txColumns, launchUpdatesQueue? }`
 
 ## Retention
-- Keep transactions for 30 days.
-- Auto-delete transactions older than 30 days.
+- Keep complete transaction and check-in history on the device, regardless of age.
+- Do not impose an age or record-count cutoff or automatically prune old records.
+- Loading, migration, mode switching, and export must preserve old entries.

@@ -1,124 +1,24 @@
-# Payments (Pay Tab)
+<!-- SPDX-License-Identifier: MPL-2.0 -->
+# Payments
 
-## Role
-- Single entry point for both outgoing and incoming cash transactions.
-- Replaces separate add-money flows.
+Canonical behavior: [APP_SPEC.md](APP_SPEC.md#pay). Presentation: [DESIGN_SPEC.md](DESIGN_SPEC.md#pay). Algorithm details remain in [ALGORITHMS.md](ALGORITHMS.md).
 
-## Defaults
-- Default mode: `Outgoing` (unless the selected wallet has 0 total, then default to `Incoming`).
-- Mode control: segmented toggle `Outgoing | Incoming`.
-- Default wallet from active Cash wallet context (fallback to first wallet).
-- Strategy is global-only from `Settings.defaultStrategy` (not selectable per payment).
-- Outgoing strategy options: `greedy`, `lex`, `equalisation`.
+Pay / Pagar is the single entry point for precise incoming/outgoing cash. It preserves the active wallet, provides wallet cards and an Outgoing/Incoming selector, and defaults a zero wallet to Incoming. Amount, optional note (30 characters), category, and denomination allocation form one workspace. Fields and breakdown sit side by side on wide screens and stack on mobile.
 
-## Entry Points
-- Payments is a first-class `Pay` tab.
-- Entry from Cash/Trx preserves the active wallet and shows a wallet summary (no wallet selector in Pay).
-- Mode is selected in the Pay tab via `Outgoing | Incoming` toggle.
-- Switching between Incoming and Outgoing preserves the entered Amount and Note/Reference, but clears any denomination allocation or suggestion state.
+Amount accepts localized decimal/currency formatting without browser spinners. The prominent amount field and normal-size note/category controls use the shared visual system. Until the amount is valid, the breakdown provides guidance. Direction changes clear the allocation while retaining amount/note. Cancel resets the draft. Drafts do not alter cash or history.
 
-## Inputs
-- Required: amount, denomination allocation.
-- Note/reference is optional for both Incoming and Outgoing (max 30 characters).
-- When the user approaches or reaches the max length (25+ chars), show an inline character count hint (e.g., "28/30 characters"). At 30, show "limit reached".
-- Amount and Note/Reference controls follow Cash input styling:
-  - rounded control style consistent with app inputs
-  - control height aligned with standard inputs (no oversized hero field)
-  - label style matches other form labels
-- Amount field width is constrained to avoid full-width stretching on desktop (target max-width around 420-520px).
-- Amount input must behave like a normal editable field (multi-digit typing, select/replace, paste).
-- Amount input must never reorder digits; typing order must be preserved.
-- Amount input formats as currency while typing (thousands separators, two decimals, currency symbol).
-- Amount input accepts formatted strings and preserves caret.
-- Amount input must not use browser spinner UI.
-- Amount + Note live at the top of a single pill; the breakdown and allocation UI sits below inside the same pill, separated by a divider.
-- Cancel only appears after any entry has started, and sits at the bottom of the pill.
-- After a transaction is recorded, show only a success banner in mode color (green incoming, red outgoing) plus a compact summary (Date, Wallet, Amount, Note) matching the default Transactions view. Also show the selected wallet summary (flag/name/currency/total) without the mode toggle. Hide the payment mode toggle and the amount/note inputs on this success screen. If change was received, include a `Change` line in the summary showing expected/received. Provide `Go to Transactions` and `New transaction` actions.
-- `Go to Transactions` must open the Transactions view filtered to the wallet used for the recorded transaction.
+## Outgoing
 
-## Allocation Requirement (Both Modes)
-- Flow order is fixed:
-  1) wallet selection + outgoing/incoming mode
-  2) amount first
-  3) note/reference
-  4) denomination allocation/breakdown
-- After amount + note are entered, user allocates denominations.
-- Before amount is valid, show placeholder text: `Enter an amount to allocate denominations.`
-- Denominations are shown only after amount is entered.
-- Suggestions ON: may filter to denominations `<= amount` and available (count > 0) by default.
-  - Provide `Show all denominations` to reveal the full list for manual allocation.
-- Suggestions OFF (manual mode): show all denominations for the currency, including zero-count rows.
-- Manual allocation shows `Allocated` vs `Expected` (expected = entered amount).
-- The `Allocated / Expected` summary must be prominent and clearly communicate the need to reconcile.
-- Allocation status color-coding:
-  - Yellow box when allocated ≠ expected.
-  - Red only for outgoing insufficient funds, showing "Missing …".
-  - Incoming never shows red.
-  - Do not show "Allocation is incomplete" text.
-- In manual allocation, denomination availability labels must reflect remaining availability (available minus allocated count).
-- When Suggestions are OFF, show the `Allocated / Expected` summary in the breakdown area (no “Suggestions disabled” banner).
-- Suggestions ON: denominations that exceed the remaining amount are visually de-emphasized and disabled.
-- Suggestions OFF: denominations are never disabled by amount (overpay is allowed; change flow handles it).
-  - Outgoing: count cannot exceed available.
-  - Incoming: count is unrestricted.
-- When allocated > expected, show a warning message stating that change will be received.
-- If outgoing amount exceeds total wallet cash, show a danger notice and hide denomination allocation (regardless of Suggestions setting).
-- Incoming allocation must sum exactly to entered amount.
-- Outgoing allocation must be at least entered amount (`allocated >= entered`) to allow non-exact tender with change.
-- No partial save.
-- Allocation requires exact completion before finalize; navigation is not gated.
+Suggestions use actual wallet denominations, global strategy (`greedy`, `lex`, `equalisation`), denomination order, overpayment, and coin settings. Exact suggestions offer Use and finalize. Edit manually reveals count controls. Outgoing counts cannot exceed actual availability. Insufficient cash blocks confirmation.
 
-## Outgoing Flow
-- Keep existing strategy logic (`greedy` / `lex`) and include `equalisation` for assistance.
-- Suggestions are computed using global Settings strategy only when Suggestions are ON.
-- When Suggestions are OFF, no suggested denominations are shown (manual entry only).
-- If exact composition is unavailable, no suggested breakdown is shown (manual entry only).
-- In non-exact outgoing, UI must show expected change (`allocated - entered`).
-- Suggestion severity surfaces keep semantic colors in both themes:
-  - warning (sufficient but not exact) uses amber treatment that remains readable in dark mode
-  - danger (insufficient funds) uses red treatment that remains readable in dark mode
-- If suggestion is exact, primary action label is `Use and finalize`.
-- If suggestion is non-exact, primary action label is `Use suggested`.
-- Suggested paid breakdown can be accepted as a one-click starting point and finalized through the outgoing flow.
-- When suggestion is active, manual denomination editor remains hidden by default.
-- Manual denomination editor becomes available only after explicit user action to reject suggestion (`Edit manually`).
-- Bills/Coins toggle and denomination editor are shown only in manual-edit mode.
-- Payments form includes explicit pre-submit cancellation action (`Cancel`) to abandon in-progress entry.
-- If outgoing is tender-above-amount (change expected), Apply transitions to a required change-confirmation step before transaction is finalized.
-- Change-confirmation step requirements:
-  - Trigger as a popup/dialog first (expected change + suggested received-change breakdown).
-  - User can confirm suggested received change directly in popup.
-  - User can reject suggested change and continue to manual received-change entry.
-  - Show expected change amount clearly.
-  - Provide default suggested change breakdown.
-  - Allow override/edit of received change denominations only after choosing manual path.
-  - Editable change denomination list must be constrained to denominations `<= expectedChange`.
-  - Manual received-change popup starts with zero counts (no prefilled suggestion).
-  - Manual received-change popup supports Bills/Coins switching where applicable.
-  - Final confirmation requires `receivedChangeTotal == expectedChange`.
-  - If Payment strategies are OFF or Change suggestions are OFF, skip suggested change and go directly to manual received-change entry.
-- Outgoing final confirmation records one `outgoing` transaction and updates counts.
-## Revert Safety
-- Only the most recent transaction in the app can be reverted.
-- Revert action lives in Transactions (not inside the payment modal).
-- Reverting removes that transaction and restores wallet denominations to pre-transaction state.
+Tender may exceed the purchase amount only through the change flow. Use suggested opens a dialog showing expected and suggested change, with Confirm suggested, Enter manually, and Cancel. Manual received change must equal the expected amount. Nothing is deducted before confirmation. Commit deducts tender, adds change received, and records one outgoing transaction with the net negative purchase delta and both breakdowns. Cancelling leaves the wallet untouched.
 
-## Incoming Flow
-- Incoming defaults to suggestion-first flow (no change logic).
-- If a valid incoming suggestion exists, primary action label is `Use and finalize`.
-- Incoming manual denomination editor is hidden by default and shown only after explicit `Edit manually`.
-- Incoming manual mode starts with zero counts.
-- User allocates incoming denominations exactly to amount.
-- Incoming final confirmation records one `incoming` transaction and updates counts.
+## Incoming
 
-## Blocking Rules
-- Payments is blocked if Cash Edit Mode is active.
-- Cash actions are blocked while allocation modal/step is incomplete.
+Incoming allocation must sum exactly to the amount before recording. Suggested/manual denomination counting is supported. In the existing count-first manual entry mode, the incoming amount can be derived from the allocation. Incoming counts are not limited by previous holdings. Confirmation adds the allocation and one incoming transaction.
 
-## Denomination UI Parity With Cash
-- Breakdown card uses the same Bills/Coins tab pattern as Cash.
-- Denomination rows use a three-column grid (value, count, subtotal) without header labels.
-- Row control structure mirrors Cash: stable count controls with `- input +` and matching spacing/alignment.
-- Manual allocation count inputs must be visually prominent and easy to read.
-- Denomination rows use equal column widths for Denomination, Count, and Subtotal.
-- Payments does not show last outgoing/incoming summaries.
+## Completion
+
+The completion view replaces entry controls with actual saved date, wallet, signed amount, category, optional note, and expected/received change where applicable. Actions are New transaction and Revert transaction. Revert is allowed only for that wallet's latest transaction and restores cash effects.
+
+The algorithms, integer minor-unit math, cash constraints, and existing change-confirmation rules remain unchanged by the redesign. Zero-count inventory and saved history are never automatically removed.

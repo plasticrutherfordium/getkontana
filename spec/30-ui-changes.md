@@ -1,5 +1,7 @@
+<!-- SPDX-License-Identifier: MPL-2.0 -->
 # /spec/30-ui-changes.md
 
+> Historical planning/context. Current release behavior and presentation are defined in [APP_SPEC.md](APP_SPEC.md) and [DESIGN_SPEC.md](DESIGN_SPEC.md).
 ## Mode switch pattern
 - Settings: “App mode” selector
   - “Precise (log everything)”

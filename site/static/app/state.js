@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 (function attachKontanaStateIO(global) {
   const DEFAULT_STORAGE_KEY = 'kontana_state_v1';
   const DEFAULT_BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';

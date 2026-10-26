@@ -1,5 +1,7 @@
+<!-- SPDX-License-Identifier: MPL-2.0 -->
 # /spec/10-data-model.md
 
+> Historical planning/context. Current release behavior and presentation are defined in [APP_SPEC.md](APP_SPEC.md) and [DESIGN_SPEC.md](DESIGN_SPEC.md).
 ## Storage key and schema versioning
 - Keep localStorage key: `kontana_state_v1` (backwards compatibility).
 - Add `schema_version` field inside the stored object.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 (function attachKontanaMigrate(global) {
   const LATEST_SCHEMA_VERSION = 2;
   const ZERO_DECIMAL_CURRENCIES = new Set([

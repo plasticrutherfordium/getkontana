@@ -1,3 +1,4 @@
+{{/* SPDX-License-Identifier: MPL-2.0 */}}
 {{ if eq .Layout "app" }}
   <script src="{{ "lib/pdf-lib.min.js" | relURL }}"></script>
   <script type="module" src="{{ "lib/strategies.js" | relURL }}"></script>
@@ -11,4 +12,5 @@
   <script src="{{ "app/ledger/tx.js" | relURL }}"></script>
   <script src="{{ "app/ui/pay.js" | relURL }}"></script>
   <script src="{{ "app.js" | relURL }}"></script>
+  <script src="{{ "app/accessibility.js" | relURL }}"></script>
 {{ end }}

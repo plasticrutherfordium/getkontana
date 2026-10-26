@@ -1,5 +1,7 @@
+<!-- SPDX-License-Identifier: MPL-2.0 -->
 # /spec/00-overview.md
 
+> Historical planning/context. Current release behavior and presentation are defined in [APP_SPEC.md](APP_SPEC.md) and [DESIGN_SPEC.md](DESIGN_SPEC.md).
 ## Purpose
 - Upgrade Kontana into a **dual-mode** cash app:
   - **Precise mode (existing):** denomination-accurate tracking, Pay flows, ledger strategies, forced reconciliation where it exists today.
@@ -17,7 +19,7 @@
 - Transactions: per-wallet ledger.
 - Settings: behaviour toggles + export JSON/PDF + delete all data + language/appearance + mobile-only biometric toggle.
 - PWA service worker: network-first.
-- Known gaps: no retention purge, no import flow, no transfer/loss UI, theme key mismatch, stubs/debug logs, currency/denoms inconsistencies. :contentReference[oaicite:3]{index=3}
+- Known gaps: no import flow, no transfer/loss UI, theme key mismatch, stubs/debug logs, currency/denoms inconsistencies. :contentReference[oaicite:3]{index=3}
 
 ## Product model
 ### Two modes, one dataset
@@ -47,6 +49,7 @@
 - “Budgets drift” is normal; UX must be **forgiving** and **non-judgemental**.
 - Reconciliation-first: “reset to reality” beats perfect itemisation.
 - Local-first and data minimisation.
+- Full local transaction and check-in history, with no automatic expiry or pruning.
 
 ## Out of scope (explicit)
 - AI/camera counting (v2+).

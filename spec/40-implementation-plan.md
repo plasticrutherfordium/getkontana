@@ -1,5 +1,7 @@
+<!-- SPDX-License-Identifier: MPL-2.0 -->
 # /spec/40-implementation-plan.md
 
+> Historical planning/context. Current release behavior and presentation are defined in [APP_SPEC.md](APP_SPEC.md) and [DESIGN_SPEC.md](DESIGN_SPEC.md).
 ## Refactor plan (no build-step assumptions)
 Goal: modularise progressively while keeping `site/static/app.js` as entrypoint initially.
 
@@ -45,10 +47,10 @@ Keep existing:
 - Remove debug logs in production (or gate behind DEBUG flag)
 - Theme key mismatch: fix in migration or settings normalisation
 
-## Optional (off by default)
-Retention:
-- “Keep full history” (default)
-- Or “Keep last N months of transactions/check-ins; keep rolled-up monthly summaries”
+## History preservation
+- Keep complete transaction and check-in history on the device.
+- Do not add automatic expiry, age cutoffs, record-count caps, or retention settings.
+- Period summaries may filter what is displayed but must never prune stored history.
 
 ## PWA service worker (optional improvement)
 - Consider app-shell caching strategy improvements if offline experience is inconsistent, but not required for Budget mode.

@@ -1,0 +1,10 @@
+{{/* SPDX-License-Identifier: MPL-2.0 */}}
+<!DOCTYPE html>
+<html lang="{{ .Language.Lang }}">
+<head><title>{{ if .IsHome }}Kontana — {{ .Title }}{{ else }}{{ .Title }} · Kontana{{ end }}</title>{{ partial "head.html" . }}</head>
+<body class="website-page">
+  {{ partial "site-header.html" . }}
+  <main id="main-content">{{ block "main" . }}{{ end }}</main>
+  {{ partial "site-footer.html" . }}
+</body>
+</html>
