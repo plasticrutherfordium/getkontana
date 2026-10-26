@@ -30,6 +30,24 @@ Scenario: Wallet cards are reorderable
   Then the wallet order is updated and persisted
   And the same order is shown in Transactions
 
+Scenario: Wallet dragging keeps the grab point and previews the new space
+  Given I grab a wallet away from its upper-left corner
+  When I move it across another wallet
+  Then the card follows the same grab point
+  And the neighboring wallet slides aside around a visible drop slot
+  And the saved wallet order and selected wallet remain unchanged until release
+
+Scenario: Cancelling wallet dragging preserves the order
+  Given I am previewing a new wallet order
+  When I press Escape or release outside the wallet strip
+  Then the original order is restored without changing cash or history
+
+Scenario: Reordering a long wallet strip
+  Given I have 20 wallets
+  When I hold a dragged wallet near the strip edge
+  Then the strip scrolls to reveal more wallets
+  And dropping retains the scrolled position and saves the new order
+
 Scenario: Cash wallet selector includes add-wallet card
   Given I am on Cash
   Then I see a `+` wallet card at the end of the wallet row

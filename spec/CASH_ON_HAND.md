@@ -9,6 +9,10 @@ Cash / Efectivo opens on the active wallet, falling back to the first saved wall
 
 Wallet actions are Rename, Edit denominations, and Delete wallet. Creation/rename/delete use in-app dialogs. Deletion requires confirmation. Cash money movement is handled through Pay rather than separate inline Add/Spend forms.
 
+Reordering uses one pointer-based interaction across Cash, Pay and Transactions, with a six-pixel movement threshold so an ordinary click still selects. The floating card retains the exact grab point and lifts above a dashed placeholder. Other cards animate aside as the slot moves; no full app render or storage write occurs during dragging. Near either strip edge, scrolling continues while the pointer is held. A valid drop settles into its slot, saves once, and retains scroll position and the selected wallet. Escape, pointer cancellation, blur/resize or an outside drop restore the original order. Hidden wallets retain their saved positions when visible wallets reorder.
+
+Touch card swipes remain native scrolling; a visible grip starts reordering. Mouse users can grab the body of the card. Keyboard users can focus the card or grip and use Alt + Left/Right, with focus retained and a localized position announcement. Reduced motion disables sibling/drop animations. The interaction also works offline.
+
 ## Inventory
 
 Inventory uses labelled Denomination / Quantity / Subtotal columns. Quantity is explicit (for example, “1 bill”, “2 bills”, “3 coins”), without ambiguous glyphs or multiplication markers. Read-only rows are grouped into “In your wallet” followed by “Not in your wallet”. Each group follows the configured denomination order; a caption explains the order. Zero rows show a readable zero quantity and zero subtotal rather than low-opacity text.

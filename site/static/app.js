@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-const APP_VERSION = '0.1.5';
+const APP_VERSION = '0.1.6';
 const ZERO_DECIMAL_CURRENCIES = new Set([
   'CLP', 'SEK', 'HUF', 'NOK', 'ARS', 'JPY', 'KRW', 'XOF',
   'VND', 'UYU', 'ISK', 'BIF', 'DJF', 'GNF', 'KPW', 'LAK',
@@ -609,6 +609,8 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
         'wallet.field_currency': 'Currency',
         'wallet.create_action': 'Create wallet',
         'wallet.max_reached': 'Maximum number of wallets reached ({max}).',
+        'wallet.reorder_handle': 'Reorder {name}. Drag or use Alt + Left/Right.',
+        'wallet.reordered': '{name} moved to position {position} of {total}.',
         'wallet.finish_or_cancel_before_create': 'Finish or cancel the current allocation/edit before creating a wallet.',
         'wallet.edit_denoms_question': 'Edit denominations?',
         'wallet.edit_denoms_instead': 'Edit denominations instead of entering a transaction?',
@@ -1081,6 +1083,8 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
         'wallet.field_currency': 'Divisa',
         'wallet.create_action': 'Crear monedero',
         'wallet.max_reached': 'Se alcanzó el número máximo de monederos ({max}).',
+        'wallet.reorder_handle': 'Reordenar {name}. Arrastra o usa Alt + izquierda/derecha.',
+        'wallet.reordered': '{name} en la posición {position} de {total}.',
         'wallet.finish_or_cancel_before_create': 'Finaliza o cancela la asignación/edición actual antes de crear un monedero.',
         'wallet.edit_denoms_question': '¿Editar denominaciones?',
         'wallet.edit_denoms_instead': '¿Editar denominaciones en lugar de introducir un movimiento?',
@@ -1837,6 +1841,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
         'KontanaBudgetInsights',
         'KontanaLedgerTx',
         'KontanaPayUI',
+        'KontanaWalletReorder',
       ];
       const waitForGlobal = (name, timeoutMs = 5000) => new Promise((resolve) => {
         const startedAt = Date.now();
@@ -4507,7 +4512,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
                     data-wallet-selector="${selectorId}"
                     data-wallet-id="${wallet.id}"
                     data-wallet-draggable="true"
-                    draggable="true"
+                    draggable="false"
                     role="button"
                     tabindex="0"
                     aria-pressed="${active ? 'true' : 'false'}"
@@ -4517,6 +4522,9 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
                     <p class="wallet-card-total">${formatMoney(getWalletDisplayTotal(wallet), wallet.currency)}</p>
                   </div>
                 </div>
+                <button type="button" class="wallet-card-drag-handle" data-wallet-drag-handle="1" aria-label="${escapeBudgetHtml(t('wallet.reorder_handle', { name: wallet.name }))}" title="${escapeBudgetHtml(t('wallet.reorder_handle', { name: wallet.name }))}">
+                  <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor" aria-hidden="true"><circle cx="7" cy="5" r="1.2"/><circle cx="13" cy="5" r="1.2"/><circle cx="7" cy="10" r="1.2"/><circle cx="13" cy="10" r="1.2"/><circle cx="7" cy="15" r="1.2"/><circle cx="13" cy="15" r="1.2"/></svg>
+                </button>
                 ${showActions && active ? `
                   <button type="button" class="wallet-card-action" data-wallet-action="1" aria-label="${t('wallet.actions_title')}">
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
@@ -4560,88 +4568,28 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
       return normalized;
     }
 
-    function moveWalletInOrder(dragId, targetId) {
-      if (!dragId || !targetId || dragId === targetId) return;
-      const order = normalizeWalletOrderIds();
-      const from = order.indexOf(dragId);
-      const to = order.indexOf(targetId);
-      if (from === -1 || to === -1) return;
-      order.splice(from, 1);
-      order.splice(to, 0, dragId);
-      app.state.wallet_order = order;
-      saveState();
-    }
-
     function bindWalletReorder(selectorId) {
-      const cards = Array.from(document.querySelectorAll(`[data-wallet-selector="${selectorId}"][data-wallet-id]`));
-      if (cards.length < 2) return;
-      let pointerDragId = null;
-      let pointerTargetId = null;
-      let pointerMoved = false;
-      let startX = 0;
-      let startY = 0;
-
-      cards.forEach((card) => {
-        card.addEventListener('dragstart', (e) => {
-          app.walletDragActive = true;
-          card.classList.add('dragging');
-          const dragId = card.dataset.walletId;
-          e.dataTransfer.effectAllowed = 'move';
-          e.dataTransfer.setData('text/plain', dragId);
-        });
-        card.addEventListener('dragover', (e) => {
-          e.preventDefault();
-        });
-        card.addEventListener('drop', (e) => {
-          e.preventDefault();
-          const dragId = e.dataTransfer.getData('text/plain');
-          const targetId = card.dataset.walletId;
-          moveWalletInOrder(dragId, targetId);
+      const card = document.querySelector(`[data-wallet-selector="${selectorId}"][data-wallet-id]`);
+      const rail = card?.closest('.wallet-cards');
+      if (!rail) return;
+      window.KontanaWalletReorder?.bind(rail, {
+        onDragState: (active) => { app.walletDragActive = active; },
+        moved: (name, position, total) => t('wallet.reordered', { name, position, total }),
+        onCommit: (visibleOrder, { walletId, scrollLeft, keyboard }) => {
+          const moving = new Set(visibleOrder);
+          if (moving.size !== visibleOrder.length || visibleOrder.some((id) => !app.state.wallets[id])) return;
+          const order = normalizeWalletOrderIds();
+          let index = 0;
+          const next = order.map((id) => moving.has(id) ? visibleOrder[index++] : id);
+          if (next.every((id, i) => id === order[i])) return;
+          app.state.wallet_order = next;
           render();
-        });
-        card.addEventListener('dragend', () => {
-          app.walletDragActive = false;
-          card.classList.remove('dragging');
-        });
-
-        card.addEventListener('pointerdown', (e) => {
-          pointerDragId = card.dataset.walletId;
-          pointerTargetId = null;
-          pointerMoved = false;
-          startX = e.clientX;
-          startY = e.clientY;
-          card.setPointerCapture(e.pointerId);
-          card.classList.add('dragging');
-        });
-        card.addEventListener('pointermove', (e) => {
-          if (!pointerDragId) return;
-          const dx = e.clientX - startX;
-          const dy = e.clientY - startY;
-          if (!pointerMoved && Math.hypot(dx, dy) < 6) return;
-          pointerMoved = true;
-          app.walletDragActive = true;
-          const target = document.elementFromPoint(e.clientX, e.clientY);
-          const targetCard = target?.closest?.(`[data-wallet-selector="${selectorId}"][data-wallet-id]`);
-          if (!targetCard) return;
-          const targetId = targetCard.dataset.walletId;
-          if (targetId && targetId !== pointerDragId) {
-            pointerTargetId = targetId;
-          }
-        });
-        const endPointerDrag = () => {
-          if (!pointerDragId) return;
-          card.classList.remove('dragging');
-          if (pointerMoved && pointerTargetId) {
-            moveWalletInOrder(pointerDragId, pointerTargetId);
-            render();
-          }
-          pointerDragId = null;
-          pointerTargetId = null;
-          pointerMoved = false;
-          setTimeout(() => { app.walletDragActive = false; }, 0);
-        };
-        card.addEventListener('pointerup', endPointerDrag);
-        card.addEventListener('pointercancel', endPointerDrag);
+          const moved = document.querySelector(`[data-wallet-selector="${selectorId}"][data-wallet-id="${walletId}"]`);
+          const updatedRail = moved?.closest('.wallet-cards');
+          if (updatedRail) updatedRail.scrollLeft = scrollLeft;
+          moved?.focus({ preventScroll: true });
+          if (keyboard) moved?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        },
       });
     }
 

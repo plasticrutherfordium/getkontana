@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
-const APP_VERSION = '0.1.5';
-const CACHE_NAME = 'kontana-v25';
+const APP_VERSION = '0.1.6';
+const CACHE_NAME = 'kontana-v26';
 const CORE_ASSETS = [
   '/app/',
   '/app',
@@ -50,6 +50,7 @@ const CORE_ASSETS = [
   '/app/budget/insights.js',
   '/app/ledger/tx.js',
   '/app/ui/pay.js',
+  '/app/ui/wallet-reorder.js',
   '/lib/strategies.js',
   '/lib/pdf-lib.min.js',
   '/kt-terminal.css',

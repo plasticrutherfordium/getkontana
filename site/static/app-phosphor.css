@@ -195,6 +195,7 @@ body {
   margin:0
 }
 .wallet-cards {
+  position:relative;
   display:flex;
   gap:12px;
   overflow-x:auto;
@@ -240,6 +241,103 @@ body {
 }
 .wallet-card:hover {
   border-color:var(--kt-accent-border)
+}
+.wallet-card[data-wallet-id] {
+  cursor:grab;
+  user-select:none;
+  -webkit-user-drag:none
+}
+.wallet-card-drag-handle {
+  position:absolute;
+  right:48px;
+  top:8px;
+  display:grid;
+  place-items:center;
+  width:32px;
+  height:32px;
+  min-height:32px;
+  padding:0;
+  border:0;
+  border-radius:4px;
+  color:var(--kt-text-muted);
+  background:transparent;
+  cursor:grab;
+  touch-action:none;
+  opacity:0;
+  transition:opacity 120ms ease,background 120ms ease
+}
+.wallet-card-wrap:hover .wallet-card-drag-handle,
+.wallet-card-wrap:focus-within .wallet-card-drag-handle {
+  opacity:1
+}
+.wallet-card-drag-handle:hover {
+  background:var(--kt-surface-2);
+  color:var(--kt-accent)
+}
+.wallet-drag-placeholder::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  border:1px dashed var(--kt-accent);
+  border-radius:6px;
+  background:var(--kt-surface-2);
+  opacity:.6;
+  pointer-events:none
+}
+.wallet-drag-source {
+  position:absolute;
+  left:0;
+  top:0;
+  opacity:0;
+  pointer-events:none
+}
+.wallet-drag-placeholder>.wallet-card-override,
+.wallet-drag-placeholder>button {
+  opacity:0
+}
+.wallet-drag-preview {
+  position:fixed;
+  top:0;
+  left:0;
+  z-index:1500;
+  margin:0;
+  pointer-events:none;
+  will-change:transform;
+  filter:drop-shadow(0 14px 22px #0005)
+}
+.wallet-drag-preview .wallet-card {
+  border-color:var(--kt-accent);
+  box-shadow:0 0 0 1px var(--kt-accent-border)
+}
+.wallet-reordering,
+.wallet-reordering * {
+  cursor:grabbing;
+  user-select:none
+}
+.wallet-reordering .wallet-card[data-wallet-id],
+.wallet-reordering .wallet-card-drag-handle {
+  cursor:grabbing
+}
+.wallet-rail-dragging {
+  scroll-behavior:auto;
+  overflow-anchor:none
+}
+.wallet-reorder-status {
+  position:absolute;
+  width:1px;
+  height:1px;
+  padding:0;
+  margin:-1px;
+  overflow:hidden;
+  clip-path:inset(50%);
+  white-space:nowrap
+}
+@media(hover:none),(pointer:coarse) {
+  .wallet-card-drag-handle { opacity:1; width:40px; height:40px; top:6px }
+}
+@media(prefers-reduced-motion:reduce) {
+  .wallet-card-drag-handle { transition:none }
+  .wallet-drag-preview { will-change:auto }
 }
 .wallet-card.active:hover {
   border-color:var(--kt-accent)

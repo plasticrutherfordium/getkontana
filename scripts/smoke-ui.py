@@ -429,7 +429,7 @@ try:
     visit('/es/app/')
     wait('return !!navigator.serviceWorker.controller')
     cached = command('POST', '/execute/async', {'script': "const done=arguments[0];caches.keys().then(keys=>caches.open(keys.filter(k=>k.startsWith('kontana-v')).at(-1))).then(c=>c.keys()).then(keys=>done(keys.map(k=>new URL(k.url).pathname)))", 'args': []})
-    for asset in ['/app/', '/es/app/', '/fonts/fonts.css', '/app-phosphor.css', '/app/accessibility.js', '/open-source/', '/es/open-source/', '/licenses/MPL-2.0.txt', '/licenses/THIRD_PARTY_NOTICES.txt']:
+    for asset in ['/app/', '/es/app/', '/fonts/fonts.css', '/app-phosphor.css', '/app/accessibility.js', '/app/ui/wallet-reorder.js', '/open-source/', '/es/open-source/', '/licenses/MPL-2.0.txt', '/licenses/THIRD_PARTY_NOTICES.txt']:
         assert asset in cached, 'Missing offline asset: ' + asset
     errors = [entry for entry in command('POST', '/log', {'type': 'browser'}) if entry['level'] == 'SEVERE']
     assert not errors, errors

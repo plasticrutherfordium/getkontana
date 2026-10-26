@@ -37,6 +37,7 @@ test('PDF export uses pdf-lib and binary download path', () => {
   assert.equal(/app\/budget\/insights\.js/.test(footerPartial), true);
   assert.equal(/app\/ledger\/tx\.js/.test(footerPartial), true);
   assert.equal(/app\/ui\/pay\.js/.test(footerPartial), true);
+  assert.equal(/app\/ui\/wallet-reorder\.js/.test(footerPartial), true);
 });
 
 test('Service worker caches app money helper script', () => {
@@ -47,6 +48,7 @@ test('Service worker caches app money helper script', () => {
   assert.equal(/\/app\/budget\/insights\.js/.test(swJs), true);
   assert.equal(/\/app\/ledger\/tx\.js/.test(swJs), true);
   assert.equal(/\/app\/ui\/pay\.js/.test(swJs), true);
+  assert.equal(/\/app\/ui\/wallet-reorder\.js/.test(swJs), true);
   assert.equal(/\/lib\/strategies\.js/.test(swJs), true);
   assert.equal(/SKIP_WAITING/.test(swJs), true);
   const installMatch = swJs.match(/self\.addEventListener\('install'[\s\S]*?\n\}\);/);

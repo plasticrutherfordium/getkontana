@@ -37,9 +37,12 @@ An optional integrated browser check uses Python 3, Chromium and ChromeDriver wi
 # In separate terminals, keep the Hugo server and ChromeDriver running.
 chromedriver --port=9515 --allowed-ips=127.0.0.1
 python3 scripts/smoke-ui.py --base-url http://localhost:1314
+python3 scripts/smoke-wallet-drag.py --base-url http://localhost:1314
 ```
 
 The check creates a fresh temporary browser profile and fixture data, exercises payments/backup/offline use, then closes its browser. Screenshots go to `/tmp/kontana-ui-smoke/`; override with `--artifacts`.
+
+The wallet interaction check creates an isolated 20-wallet fixture and checks mouse/touch/keyboard sorting, cancellation, scrolling, persistence and offline behavior. Its screenshots go to `/tmp/kontana-wallet-drag-qa/`.
 
 ## Application behavior and design
 
