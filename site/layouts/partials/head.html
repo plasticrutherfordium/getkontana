@@ -33,13 +33,14 @@
   window.__ktSetTheme(theme);
 }());
 </script>
-<link rel="stylesheet" href="/fonts/fonts.css">
-<link rel="stylesheet" href="/kt-terminal.css">
+{{ $version := .Site.Params.appVersion }}
+<link rel="stylesheet" href="/fonts/fonts.css?v={{ $version }}">
+<link rel="stylesheet" href="/kt-terminal.css?v={{ $version }}">
 {{ if eq .Layout "app" }}
-<link rel="stylesheet" href="/app.css">
-<link rel="stylesheet" href="/app-phosphor.css">
+<link rel="stylesheet" href="/app.css?v={{ $version }}">
+<link rel="stylesheet" href="/app-phosphor.css?v={{ $version }}">
 <link rel="manifest" href="/manifest.webmanifest">
 {{ else }}
-<link rel="stylesheet" href="/landing.css">
-<script src="/site.js" defer></script>
+<link rel="stylesheet" href="/landing.css?v={{ $version }}">
+<script src="/site.js?v={{ $version }}" defer></script>
 {{ end }}

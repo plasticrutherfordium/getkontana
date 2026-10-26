@@ -1,16 +1,17 @@
 {{/* SPDX-License-Identifier: MPL-2.0 */}}
 {{ if eq .Layout "app" }}
-  <script src="{{ "lib/pdf-lib.min.js" | relURL }}"></script>
-  <script type="module" src="{{ "lib/strategies.js" | relURL }}"></script>
-  <script src="{{ "app/state.js" | relURL }}"></script>
-  <script src="{{ "app/migrate.js" | relURL }}"></script>
-  <script src="{{ "app/money.js" | relURL }}"></script>
-  <script src="{{ "app/import_export.js" | relURL }}"></script>
-  <script src="{{ "app/budget_onboarding.js" | relURL }}"></script>
-  <script src="{{ "app/budget/checkins.js" | relURL }}"></script>
-  <script src="{{ "app/budget/insights.js" | relURL }}"></script>
-  <script src="{{ "app/ledger/tx.js" | relURL }}"></script>
-  <script src="{{ "app/ui/pay.js" | relURL }}"></script>
-  <script src="{{ "app.js" | relURL }}"></script>
-  <script src="{{ "app/accessibility.js" | relURL }}"></script>
+  {{ $version := .Site.Params.appVersion }}
+  <script src="{{ "lib/pdf-lib.min.js" | relURL }}?v={{ $version }}"></script>
+  <script type="module" src="{{ "lib/strategies.js" | relURL }}?v={{ $version }}"></script>
+  <script src="{{ "app/state.js" | relURL }}?v={{ $version }}"></script>
+  <script src="{{ "app/migrate.js" | relURL }}?v={{ $version }}"></script>
+  <script src="{{ "app/money.js" | relURL }}?v={{ $version }}"></script>
+  <script src="{{ "app/import_export.js" | relURL }}?v={{ $version }}"></script>
+  <script src="{{ "app/budget_onboarding.js" | relURL }}?v={{ $version }}"></script>
+  <script src="{{ "app/budget/checkins.js" | relURL }}?v={{ $version }}"></script>
+  <script src="{{ "app/budget/insights.js" | relURL }}?v={{ $version }}"></script>
+  <script src="{{ "app/ledger/tx.js" | relURL }}?v={{ $version }}"></script>
+  <script src="{{ "app/ui/pay.js" | relURL }}?v={{ $version }}"></script>
+  <script src="{{ "app.js" | relURL }}?v={{ $version }}"></script>
+  <script src="{{ "app/accessibility.js" | relURL }}?v={{ $version }}"></script>
 {{ end }}

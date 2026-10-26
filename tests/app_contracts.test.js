@@ -16,7 +16,7 @@ test('Retention purge logic is not present', () => {
 });
 
 test('App registers service worker and manifest wiring is present', () => {
-  assert.equal(/serviceWorker\.register\('\/sw\.js'\)/.test(appJs), true);
+  assert.equal(/serviceWorker\.register\('\/sw\.js', \{ updateViaCache: 'none' \}\)/.test(appJs), true);
   assert.equal(/controllerchange/.test(appJs), true);
   assert.equal(/updatefound/.test(appJs), true);
   assert.equal(/registration\.waiting/.test(appJs), true);
@@ -108,7 +108,7 @@ test('Pay UI context does not reference missing switchPaymentMode symbol', () =>
 });
 
 test('Strategies helper loading bootstraps via module import', () => {
-  assert.equal(/import\('\/lib\/strategies\.js'\)/.test(appJs), true);
+  assert.equal(/import\(`\/lib\/strategies\.js\?v=\$\{APP_VERSION\}`\)/.test(appJs), true);
   assert.equal(/await ensureStrategiesLoaded\(\);/.test(appJs), true);
   assert.equal(/type=\"module\"[\s\S]*lib\/strategies\.js/.test(footerPartial), true);
 });

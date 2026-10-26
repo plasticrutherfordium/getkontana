@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
-const CACHE_NAME = 'kontana-v22';
+const APP_VERSION = '0.1.3';
+const CACHE_NAME = 'kontana-v23';
 const CORE_ASSETS = [
   '/app/',
   '/app',
@@ -53,12 +54,12 @@ const CORE_ASSETS = [
   '/lib/pdf-lib.min.js',
   '/kt-terminal.css',
   '/manifest.webmanifest',
-];
+].map((path) => /\.(js|css)$/.test(path) ? `${path}?v=${APP_VERSION}` : path);
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(CORE_ASSETS))
+      .then((cache) => cache.addAll(CORE_ASSETS.map((path) => new Request(path, { cache: 'reload' }))))
   );
 });
 

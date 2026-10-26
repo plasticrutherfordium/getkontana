@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: MPL-2.0 -->
 # Kontana — application specification
 
-Status: implemented, version 0.1.2 (26 October 2026). This is the product behavior reference. [DESIGN_SPEC.md](DESIGN_SPEC.md) defines presentation. The numbered Budget documents describe the original workflow decisions; this document takes precedence where an earlier proposal conflicts with the shipped interface.
+Status: implemented, version 0.1.3 (26 October 2026). This is the product behavior reference. [DESIGN_SPEC.md](DESIGN_SPEC.md) defines presentation. The numbered Budget documents describe the original workflow decisions; this document takes precedence where an earlier proposal conflicts with the shipped interface.
 
 ## Product promise
 
@@ -112,6 +112,8 @@ The existing biometric control depends on browser/platform authenticator support
 State remains under `kontana_state_v1`, schema version 2, with `kontana_state_v1_backup` for recovery. No redesign migration or new account is required. Denomination math, migration, import/export, check-in calculations, and ledger helpers retain their existing module boundaries.
 
 The service worker precaches both app-language routes, shared/site/app CSS, original brand assets, all local fonts, PDF library, and app helper scripts. It uses network-first retrieval with cached fallback. After a successful initial load/cache install, the app works offline on the same origin/device. Production installation requires HTTPS (localhost is supported during development). A newly installed worker waits; an update notice offers explicit reload or dismissal. Refreshing does not clear local financial state.
+
+Scripts and styles use release-specific `?v=` URLs in HTML, dynamic imports, and the offline precache. Worker installation bypasses the browser HTTP cache so a new cache cannot be seeded with stale release files. Static JS/CSS responses request revalidation (`Cache-Control: no-cache`), and worker update checks bypass HTTP cache. Returning to a visible tab or reconnecting also checks for an update. Settings reports the version of the running JavaScript, rather than trusting the HTML metadata. No update clears localStorage or automatically reloads an active draft.
 
 The app makes no cash-data upload requests. Fonts and PDF dependencies are served locally. Export only creates a user-requested file. Browser cache and local application state are distinct; service-worker cache replacement never purges history.
 

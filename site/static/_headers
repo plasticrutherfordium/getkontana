@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: MPL-2.0
+# Release-specific URLs prevent old browser caches surviving a deployment.
+# Revalidate stable entry points as well, including the service-worker script.
+/*.js
+  Cache-Control: no-cache
+
+/*.css
+  Cache-Control: no-cache

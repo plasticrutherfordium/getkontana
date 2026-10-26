@@ -125,6 +125,8 @@ try:
     viewport(1440, 1100)
     visit('/app/')
     wait("return !!document.querySelector('#open-create-wallet')")
+    assert js("return APP_VERSION === document.querySelector('meta[name=kontana-app-version]').content"), 'HTML and running app versions differ'
+    assert js("const v=APP_VERSION;return [...document.scripts].filter(s=>s.src).every(s=>new URL(s.src).searchParams.get('v')===v) && [...document.querySelectorAll('link[rel=stylesheet]')].every(s=>new URL(s.href).searchParams.get('v')===v)"), 'Runtime assets must use release-specific URLs'
     click('#open-create-wallet')
     fill('[data-modal-field=name]', 'Everyday wallet')
     click('[data-modal-action=create]')
