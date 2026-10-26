@@ -43,11 +43,9 @@ class Handler(BaseHTTPRequestHandler):
         fresh = self.headers.get('If-None-Match') == etag
         self.send_response(304 if fresh else 200)
         self.send_header('ETag', etag)
-        # Match production's previously observed policy. The new build can
-        # override it with _headers, just as Cloudflare Pages does.
+        # Keep the custom domain's observed four-hour browser TTL even after
+        # the release. Versioned URLs must work despite CDN header overrides.
         policy = 'public, max-age=0, must-revalidate' if file.suffix == '.html' else 'public, max-age=14400, must-revalidate'
-        if (root / '_headers').exists() and file.suffix in ('.js', '.css'):
-            policy = 'no-cache'
         self.send_header('Cache-Control', policy)
         self.send_header('Content-Type', mimetypes.guess_type(file)[0] or 'application/octet-stream')
         self.send_header('Content-Length', str(len(data)))
