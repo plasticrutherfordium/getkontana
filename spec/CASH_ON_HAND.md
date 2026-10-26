@@ -5,7 +5,7 @@ Current implementation: [APP_SPEC.md](APP_SPEC.md#cash-in-precise-mode). Present
 
 ## Wallet context
 
-Cash / Efectivo opens on the active wallet, falling back to the first saved wallet. Cards display the original currency flag, unchanged ISO code, name, and full balance. The selected card has an accent border/surface and an ellipsis menu. Pointer and keyboard selection change context across Cash, Pay, and Transactions. Drag reordering persists. The final plus/label card opens wallet creation; maximum four wallets, name maximum 18 characters. Empty app state has one welcome message and a prominent creation button.
+Cash / Efectivo opens on the active wallet, falling back to the first saved wallet. Cards display the original currency flag, unchanged ISO code, name, and full balance. The selected card has an accent border/surface and an ellipsis menu. Pointer and keyboard selection change context across Cash, Pay, and Transactions. Drag reordering persists. The final plus/label card opens wallet creation; maximum 20 wallets, name maximum 18 characters. Empty app state has one welcome message and a prominent creation button.
 
 Wallet actions are Rename, Edit denominations, and Delete wallet. Creation/rename/delete use in-app dialogs. Deletion requires confirmation. Cash money movement is handled through Pay rather than separate inline Add/Spend forms.
 

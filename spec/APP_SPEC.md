@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: MPL-2.0 -->
 # Kontana — application specification
 
-Status: implemented, version 0.1.4 (26 October 2026). This is the product behavior reference. [DESIGN_SPEC.md](DESIGN_SPEC.md) defines presentation. The numbered Budget documents describe the original workflow decisions; this document takes precedence where an earlier proposal conflicts with the shipped interface.
+Status: implemented, version 0.1.5 (26 October 2026). This is the product behavior reference. [DESIGN_SPEC.md](DESIGN_SPEC.md) defines presentation. The numbered Budget documents describe the original workflow decisions; this document takes precedence where an earlier proposal conflicts with the shipped interface.
 
 ## Product promise
 
@@ -31,11 +31,11 @@ App sections share the selected wallet. Navigation normally preserves wallet con
 
 ## Wallets and currency
 
-- Up to four wallets, each with a trimmed name of 1–18 characters and a fixed currency.
+- Up to 20 wallets, each with a trimmed name of 1–18 characters and a fixed currency.
 - The supported catalogue remains `EUR USD GBP CLP SEK CHF HUF DKK NOK PLN CAD ARS PEN BRL MXN CZK RON CNY JPY INR SGD KRW EGP ZAR NGN XOF AUD NZD`. Currency ISO codes, existing denomination mappings, logo, and isotype are unchanged.
 - New wallets start at zero. Record an incoming payment to add cash.
 - Wallet cards show flag, ISO code, name, and actual balance. Selection works with pointer or keyboard. Reordering by drag persists in `wallet_order` and applies across all sections.
-- The final “New wallet” card opens creation. Attempting a fifth wallet explains the limit in a dialog.
+- The final “New wallet” card opens creation. Attempting a 21st wallet explains the limit in a dialog.
 - The active wallet's ellipsis opens rename, edit denominations, and delete actions. Destructive operations require confirmation. Wallet deletion removes that wallet and its associated ledger entries.
 - Currency totals are never added across wallets with different currencies. Amounts are integer minor units; presentation follows the selected language and existing currency scaling rules.
 

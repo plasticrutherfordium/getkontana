@@ -112,7 +112,7 @@ Constraint note:
 `Wallet = { id, name, currency, enabled, denominations, transactions, createdAt, updatedAt }`
 
 Constraints:
-- Maximum 4 wallets globally.
+- Maximum 20 wallets globally.
 - `currency` is from fixed catalogue.
 - `name` is user-defined.
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-const APP_VERSION = '0.1.4';
+const APP_VERSION = '0.1.5';
 const ZERO_DECIMAL_CURRENCIES = new Set([
   'CLP', 'SEK', 'HUF', 'NOK', 'ARS', 'JPY', 'KRW', 'XOF',
   'VND', 'UYU', 'ISK', 'BIF', 'DJF', 'GNF', 'KPW', 'LAK',
@@ -344,7 +344,7 @@ function computeChangeBreakdown(denoms, changeMinor) {
 
 const STORAGE_KEY = 'kontana_state_v1';
 const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
-    const MAX_WALLETS = 4;
+    const MAX_WALLETS = 20;
 
     const SUPPORTED_CURRENCIES = [
       'EUR', 'USD', 'GBP', 'CLP',
@@ -608,7 +608,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
         'wallet.field_name': 'Name',
         'wallet.field_currency': 'Currency',
         'wallet.create_action': 'Create wallet',
-        'wallet.max_reached': 'Maximum number of wallets reached (4).',
+        'wallet.max_reached': 'Maximum number of wallets reached ({max}).',
         'wallet.finish_or_cancel_before_create': 'Finish or cancel the current allocation/edit before creating a wallet.',
         'wallet.edit_denoms_question': 'Edit denominations?',
         'wallet.edit_denoms_instead': 'Edit denominations instead of entering a transaction?',
@@ -902,7 +902,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
         'alerts.popup_blocked': 'Popup blocked. Allow popups to export PDF report.',
         'alerts.pdf_lib_unavailable': 'PDF export library is unavailable. Check your connection and try again.',
         'alerts.pdf_generation_failed': 'Unable to generate PDF export. Please try again.',
-        'alerts.max_wallets': 'You can have up to 4 wallets. Delete one to create another.',
+        'alerts.max_wallets': 'You can have up to {max} wallets. Delete one to create another.',
         'alerts.finish_edit_before_nav': 'Finish or cancel Edit denominations before navigating.',
         'alerts.finish_edit_before_create_wallet': 'Finish or cancel the current allocation/edit before creating a wallet.',
         'alerts.finish_edit_disabled': 'Finish edit is disabled until allocated total matches expected total exactly.',
@@ -1080,7 +1080,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
         'wallet.field_name': 'Nombre',
         'wallet.field_currency': 'Divisa',
         'wallet.create_action': 'Crear monedero',
-        'wallet.max_reached': 'Se alcanzó el número máximo de monederos (4).',
+        'wallet.max_reached': 'Se alcanzó el número máximo de monederos ({max}).',
         'wallet.finish_or_cancel_before_create': 'Finaliza o cancela la asignación/edición actual antes de crear un monedero.',
         'wallet.edit_denoms_question': '¿Editar denominaciones?',
         'wallet.edit_denoms_instead': '¿Editar denominaciones en lugar de introducir un movimiento?',
@@ -1369,7 +1369,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
         'alerts.popup_blocked': 'Ventana emergente bloqueada. Permite popups para exportar el informe PDF.',
         'alerts.pdf_lib_unavailable': 'La libreria de exportacion PDF no esta disponible. Revisa tu conexion e intentalo de nuevo.',
         'alerts.pdf_generation_failed': 'No se pudo generar el PDF. Intentalo de nuevo.',
-        'alerts.max_wallets': 'Puedes tener hasta 4 monederos. Elimina uno para crear otro.',
+        'alerts.max_wallets': 'Puedes tener hasta {max} monederos. Elimina uno para crear otro.',
         'alerts.finish_edit_before_nav': 'Finaliza o cancela Editar denominaciones antes de navegar.',
         'alerts.finish_edit_before_create_wallet': 'Finaliza o cancela la asignación/edición actual antes de crear un monedero.',
         'alerts.finish_edit_disabled': 'Finalizar edición está desactivado hasta que el total asignado coincida exactamente con el total esperado.',
@@ -3477,7 +3477,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
 
     function createWallet(state, name, currency) {
       if (Object.keys(state.wallets).length >= MAX_WALLETS) {
-        throw new Error(t('alerts.max_wallets'));
+        throw new Error(t('alerts.max_wallets', { max: MAX_WALLETS }));
       }
       if (!name || name.trim().length === 0) {
         throw new Error(t('wallet.name_required'));
@@ -4716,7 +4716,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
         return;
       }
       if (Object.keys(app.state.wallets).length >= MAX_WALLETS) {
-        await modalAlert(t('wallet.max_reached'));
+        await modalAlert(t('wallet.max_reached', { max: MAX_WALLETS }));
         return;
       }
       let errorMsg = '';

@@ -64,7 +64,7 @@ At 768px and below, hide the sidebar and use a floating bottom bar inset 16px fr
 
 ### Cash
 
-Wallet cards are approximately 240×132px on desktop and 200×124px on mobile, with currency/flag, wallet name, then a mono balance. The active card has an accent border and raised surface; its ellipsis action occupies a separate accessible target. New wallet uses a dashed outline and plus/label. Cards never shrink into illegibility.
+Wallet cards are approximately 240×132px on desktop and 200×124px on mobile, with currency/flag, wallet name, then a mono balance. The active card has an accent border and raised surface; its ellipsis action occupies a separate accessible target. New wallet uses a dashed outline and plus/label. The strip supports up to 20 wallets through contained horizontal scrolling; cards never shrink into illegibility or force the whole page to scroll sideways.
 
 Below the cards, use a two-column workspace: inventory plus a 288px status/activity column. Stack below 1020px. Inventory has a small heading/ISO code, note/coin segmented control, Hide empty action, aligned denomination rows, and the visible-group total. Counts are read-only text until editing. Values, counts, and subtotals keep stable alignment. Use explicit Denomination / Quantity / Subtotal headers and quantities such as “2 bills”. Separate holdings from “Not in your wallet”, with the configured order inside each group. Empty rows retain readable contrast; presence is communicated with text and grouping. The tabs count physical items and the footer names the selected group. The wallet-check panel presents real reconciliation state; latest activity is real saved data.
 

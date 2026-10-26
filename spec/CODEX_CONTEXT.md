@@ -12,7 +12,7 @@ Date: 2026-02-05
   - Export section contains only export actions (no “No import in MVP.” copy).
 - Cash:
   - Create wallet CTA moved to a `+` wallet card at the end of the wallet row.
-  - Clicking `+` opens inline create wallet form; if already 4 wallets, shows modal.
+  - Clicking `+` opens inline create wallet form; if already 20 wallets, shows modal.
   - Denomination rows show “Have” vs “Missing” badges; zero-count rows are always de-emphasized.
 - Payments:
   - Suggestion warning/danger cards in dark mode use improved amber/red treatments.

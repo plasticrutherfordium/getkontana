@@ -11,7 +11,7 @@
 ## Ground truth (current app)
 - Hugo + static JS PWA; main logic: `site/static/app.js` (~5,196 lines).
 - Local-first; state in localStorage `kontana_state_v1`.
-- Max 4 wallets.
+- Max 20 wallets.
 - Tabs: Cash / Pay / Transactions / Settings.
 - Strategy engine duplicated: in app + `site/static/lib/strategies.js`.
 - Cash tab: edit denominations forces reconciliation; records `denominations_edited` tx.

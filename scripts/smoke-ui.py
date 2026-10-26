@@ -131,6 +131,38 @@ try:
     fill('[data-modal-field=name]', 'Everyday wallet')
     click('[data-modal-action=create]')
     wait("return document.querySelectorAll('#tab-cash [data-wallet-id]').length === 1")
+    wallet_limit_fixture = js("return localStorage.getItem('kontana_state_v1')")
+    for number in range(2, 21):
+        click('#tab-cash [data-wallet-add="1"]')
+        fill('[data-modal-field=name]', f'Wallet {number:02}')
+        click('[data-modal-action=create]')
+        wait(f"return document.querySelectorAll('#tab-cash [data-wallet-id]').length === {number}")
+    visit('/app/')
+    wait("return document.querySelectorAll('#tab-cash [data-wallet-id]').length === 20")
+    assert js("return Object.keys(JSON.parse(localStorage.getItem('kontana_state_v1')).wallets).length") == 20
+    for width in [1440, 390, 320]:
+        viewport(width, 1100)
+        fits()
+    viewport(1440, 1100)
+    click('#tab-cash [data-wallet-add="1"]')
+    wait("return !!document.querySelector('[data-modal-action=ok]')")
+    assert js("return document.querySelector('.modal-card').innerText.includes('(20)')")
+    click('[data-modal-action=ok]')
+    click('#open-settings')
+    click('[data-settings-tab=general]')
+    click('[data-language=es]')
+    click('#settings-close')
+    click('.tab-btn[data-tab=pay]')
+    assert js("return document.querySelectorAll('#tab-pay [data-wallet-id]').length") == 20
+    click('#tab-pay [data-wallet-add="1"]')
+    wait("return !!document.querySelector('[data-modal-action=ok]')")
+    assert js("return document.querySelector('.modal-card').innerText.includes('monederos (20)')")
+    click('[data-modal-action=ok]')
+    assert js("return Object.keys(JSON.parse(localStorage.getItem('kontana_state_v1')).wallets).length") == 20
+    js("localStorage.setItem('kontana_state_v1',arguments[0]);localStorage.setItem('kt-language','en');location.reload()", wallet_limit_fixture)
+    wait("return document.querySelectorAll('#tab-cash [data-wallet-id]').length === 1")
+    print('PASS: created and reloaded 20 wallets; 21st blocked in Cash/Pay with English/Spanish limit messages; selector fits desktop/mobile')
+
     # A deterministic old-history fixture in this fresh test profile only.
     js("""const s=JSON.parse(localStorage.getItem('kontana_state_v1'));const w=Object.values(s.wallets)[0];
       const counts={5000:4,2000:5,1000:2,200:2,50:1};w.denominations.forEach(d=>d.count=counts[d.value_minor]||0);

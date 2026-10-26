@@ -98,3 +98,9 @@ The Chromium smoke check selects every one of the 18 method/order/coin combinati
 That distinct-result check exposed a stale UI: strategy changes saved correctly but closing Settings did not redraw the existing payment. Button/backdrop/Escape now share a close handler that refreshes the app, preserving the draft. All 92 unit tests pass. The cached-upgrade smoke check also asserts the corrected cover uses one EUR 20 note online and after offline reload, so a stale strategies module cannot pass merely because the shell version is current.
 
 Version 0.1.4 uses worker cache `kontana-v24` and matching versioned asset URLs. Currency mappings, monetary storage/schema, existing wallet/history data, logo/isotype, and licensing are preserved. Strategy descriptions in English/Spanish and the app/settings/payment specs were updated. Minimise and Preserve now share the same quality objectives; Minimise's distinction is a proved fast path rather than permission to return a worse payment.
+
+## Wallet capacity — version 0.1.5
+
+The global wallet creation limit is now 20. Both the creation guard and the shared Cash/Pay creation dialog use `MAX_WALLETS`; English/Spanish limit messages interpolate the same value. Updated the app, Cash, design, data model and acceptance specifications, plus earlier overview/context references. No storage/schema migration or wallet data rewrite is required. Release metadata is 0.1.5 and the service-worker cache is `kontana-v25`.
+
+The browser smoke check creates wallets 2–20 through the UI, reloads and verifies all 20 remain, checks the selector fits at 320/390/1440px, and verifies a 21st wallet is blocked in Cash/Pay with English/Spanish messages naming the 20-wallet limit. It then restores its isolated fixture and runs the existing payment, calculation, backup, history, Budget, localization and offline checks. Production build and all 92 unit tests passed.

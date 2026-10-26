@@ -5,11 +5,11 @@ Current release behavior/presentation is defined in [APP_SPEC.md](APP_SPEC.md) a
 
 Feature: Wallet model and selector
 
-Scenario: Maximum four wallets across the app
-  Given I already have 4 wallets total
+Scenario: Maximum 20 wallets across the app
+  Given I already have 20 wallets total
   When I try to create another wallet
   Then creation is blocked
-  And I see an in-app modal explaining the 4-wallet limit
+  And I see an in-app modal explaining the 20-wallet limit
 
 Scenario: Wallet cards show only visible wallets
   Given wallet A is enabled
@@ -33,14 +33,14 @@ Scenario: Wallet cards are reorderable
 Scenario: Cash wallet selector includes add-wallet card
   Given I am on Cash
   Then I see a `+` wallet card at the end of the wallet row
-  When I click the `+` wallet card and I have fewer than 4 wallets
+  When I click the `+` wallet card and I have fewer than 20 wallets
   Then a create-wallet modal opens
 
 Scenario: Add-wallet card at max wallets shows limit modal
-  Given I already have 4 wallets total
+  Given I already have 20 wallets total
   And I am on Cash
   When I click the `+` wallet card
-  Then I see an in-app modal explaining the 4-wallet limit
+  Then I see an in-app modal explaining the 20-wallet limit
 
 Feature: Cash denomination presentation
 
