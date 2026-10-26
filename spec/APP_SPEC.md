@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: MPL-2.0 -->
 # Kontana — application specification
 
-Status: implemented, version 0.1.3 (26 October 2026). This is the product behavior reference. [DESIGN_SPEC.md](DESIGN_SPEC.md) defines presentation. The numbered Budget documents describe the original workflow decisions; this document takes precedence where an earlier proposal conflicts with the shipped interface.
+Status: implemented, version 0.1.4 (26 October 2026). This is the product behavior reference. [DESIGN_SPEC.md](DESIGN_SPEC.md) defines presentation. The numbered Budget documents describe the original workflow decisions; this document takes precedence where an earlier proposal conflicts with the shipped interface.
 
 ## Product promise
 
@@ -58,7 +58,7 @@ Entry contains amount, optional note (maximum 30 characters), and category. Amou
 ### Outgoing
 
 1. Enter amount, optional note, and category.
-2. If assistance is enabled, compute tender from actual available denominations using the global strategy and coin preferences.
+2. If assistance is enabled, compute tender from actual available denominations using the global strategy and coin preferences. All methods find a permitted exact payment when one exists; otherwise the cover search reconsiders the complete wallet. Minimise never keeps a failed partial payment and adds unnecessary coins. [ALGORITHMS.md](ALGORITHMS.md) defines the amount, item-count, coin and final-distribution priorities.
 3. An exact suggestion offers “Use and finalize”. Manual editing is always available.
 4. Tender above the purchase amount offers “Use suggested” and opens a change confirmation. Suggested or manually entered change must equal the expected change before anything is committed.
 5. Deduct tender, add received change, and append one outgoing record whose net delta is the purchase amount negated.
@@ -99,7 +99,7 @@ Three summary values use the full wallet ledger: money in (sum of positive delta
 | Payment assistance | Suggestions on/off; Minimise (`greedy`), Preserve (`lex`), Balance (`equalisation`); single-cover overpayment; change suggestions; coin rules; denomination ordering; notes/coins grouping; cents display |
 | Data & backup | Full-history explanation; Export JSON; Export PDF; Import JSON; confirmed Delete all data |
 
-Disabling suggestions also disables dependent coin/change suggestions. The three strategy implementations and their cash math remain unchanged. Red indicates destructive actions or errors; cancelling is neutral.
+Disabling suggestions also disables dependent coin/change suggestions. The strategy setting IDs remain compatible; their corrected exact/cover selection and final tie-breaks follow [ALGORITHMS.md](ALGORITHMS.md). Red indicates destructive actions or errors; cancelling is neutral.
 
 JSON export contains the complete application state, including settings, wallets, transactions, check-ins, and budgets. It is the restorable backup. PDF is a human-readable wallet/transaction report, not a restore file. Import validates JSON, recognizes legacy state, previews counts, and offers Merge or Replace. Merge reports wallet-ID collisions; Replace requires an additional confirmation. Existing raw state is backed up before migration/import. Unsupported schemas or failed storage writes show recovery/export controls rather than overwriting usable data.
 

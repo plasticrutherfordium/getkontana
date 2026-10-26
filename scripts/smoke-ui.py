@@ -234,6 +234,64 @@ try:
     assert balance() == 30000
     print('PASS: complete 1990 history, running ledger, JSON/PDF export, confirmed backup restore')
 
+    calculation_fixture = js("return localStorage.getItem('kontana_state_v1')")
+    js("""const s=JSON.parse(arguments[0]);const w=Object.values(s.wallets)[0];
+      const counts={10000:1,2000:2,200:1,100:1};w.denominations.forEach(d=>d.count=counts[d.value_minor]||0);
+      w.balance_minor=14300;s.settings.default_strategy='greedy';s.settings.coins_rule='off';s.settings.single_cover=true;
+      s.settings.payment_strategies=true;s.settings.change_suggestions=true;s.settings.denomination_order='largest_first';
+      s.transactions=[{id:'calculation-opening',wallet_id:w.id,currency:'EUR',type:'incoming',amount_minor:14300,delta_minor:14300,created_at:'1990-01-01T00:00:00Z'}];
+      localStorage.setItem('kontana_state_v1',JSON.stringify(s));location.reload()""", calculation_fixture)
+    wait("return !!document.querySelector('.inventory-card')")
+    click('.tab-btn[data-tab=pay]')
+    for strategy in ['greedy', 'lex', 'equalisation']:
+        for order in ['largest_first', 'smallest_first']:
+            for rule in ['off', 'avoid', 'prefer']:
+                click('#open-settings')
+                click('[data-settings-tab=assistance]')
+                click(f'[data-strategy={strategy}]')
+                click(f'[data-denom-order={order}]')
+                click('[data-coins-toggle=off]' if rule == 'off' else '[data-coins-toggle=on]')
+                if rule != 'off':
+                    click(f'[data-coins-mode={rule}]')
+                click('#settings-close')
+                fill('#payment-amount', '12.50')
+                assert js("return [...document.querySelectorAll('#tab-pay .payment-breakdown-inline .breakdown li')].map(e=>e.innerText)") == ['€20 × 1\n€20'], (strategy, order, rule)
+                assert js("return document.querySelector('#tab-pay .allocation-summary').innerText.includes('€20')")
+                assert js("return document.querySelector('#tab-pay').innerText.includes('€7.50')")
+                assert balance() == 14300
+    screenshot('app-corrected-1250-cover')
+    click('#payment-use-suggested')
+    wait("return !!document.querySelector('[data-modal-action=confirm_suggested]')")
+    assert js("return document.querySelector('.modal-card').innerText.includes('€7.50')")
+    assert balance() == 14300
+    click('[data-modal-action=confirm_suggested]')
+    wait("return !!document.querySelector('#new-transaction')")
+    assert balance() == 13050
+    assert js("const s=JSON.parse(localStorage.getItem('kontana_state_v1'));const t=s.transactions.at(-1);return t.amount_minor===1250 && t.delta_minor===-1250 && t.breakdown.length===1 && t.breakdown[0].value_minor===2000 && t.breakdown[0].count===1 && t.change_expected_minor===750 && t.change_received_minor===750 && t.change_breakdown.reduce((n,d)=>n+d.value_minor*d.count,0)===750")
+    click('#revert-last-transaction')
+    click('[data-modal-action=confirm]')
+    wait('return !document.querySelector("#app-modal-root [role=dialog]")')
+    assert balance() == 14300
+    js("""const s=JSON.parse(arguments[0]);const w=Object.values(s.wallets)[0];
+      const counts={5000:1,2000:3,500:2};w.denominations.forEach(d=>d.count=counts[d.value_minor]||0);
+      w.balance_minor=12000;s.settings.default_strategy='lex';s.settings.coins_rule='off';s.settings.denomination_order='largest_first';
+      s.transactions=[{id:'balance-opening',wallet_id:w.id,currency:'EUR',type:'incoming',amount_minor:12000,delta_minor:12000,created_at:'1990-01-01T00:00:00Z'}];
+      localStorage.setItem('kontana_state_v1',JSON.stringify(s));location.reload()""", calculation_fixture)
+    wait("return !!document.querySelector('.inventory-card')")
+    click('.tab-btn[data-tab=pay]')
+    fill('#payment-amount', '60.00')
+    for strategy, expected in [('lex', ['€50 × 1\n€50', '€5 × 2\n€10']), ('equalisation', ['€20 × 3\n€60'])]:
+        click('#open-settings')
+        click('[data-settings-tab=assistance]')
+        click(f'[data-strategy={strategy}]')
+        click('#settings-close')
+        assert js("return [...document.querySelectorAll('#tab-pay .payment-breakdown-inline .breakdown li')].map(e=>e.innerText)") == expected, strategy
+        assert balance() == 12000
+    js("localStorage.setItem('kontana_state_v1',arguments[0]);location.reload()", calculation_fixture)
+    wait("return !!document.querySelector('.inventory-card')")
+    print('PASS: distinct Preserve/Balance tie-breaks update immediately through actual strategy controls')
+    print('PASS: EUR 143 → EUR 20 tender / EUR 7.50 change for all 18 strategy/order/coin combinations; commit EUR 130.50 and reversal verified')
+
     input_fixture = js("return localStorage.getItem('kontana_state_v1')")
     # Currency-specific input limits, using a temporary fixture in this profile.
     js("const s=JSON.parse(arguments[0]);const w=Object.values(s.wallets)[0];w.currency='JPY';localStorage.setItem('kontana_state_v1',JSON.stringify(s));location.reload()", input_fixture)

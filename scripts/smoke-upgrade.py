@@ -120,15 +120,15 @@ try:
     js("""const s=JSON.parse(localStorage.getItem('kontana_state_v1'));const w=Object.values(s.wallets)[0];
         w.denominations.forEach(d=>d.count=d.value_minor===10000?1:d.value_minor===2000?2:d.value_minor===100?3:0);
         w.balance_minor=14300;s.settings.language='en';s.settings.appearance='light';s.settings.show_cents=false;
-        s.transactions=[{id:'existing-cash',wallet_id:w.id,currency:w.currency,type:'incoming',amount_minor:14300,delta_minor:14300,created_at:'1990-01-01T00:00:00Z',note:'Keep this history'}];
+        s.transactions=[{id:'existing-cash',wallet_id:w.id,currency:w.currency,type:'incoming',amount_minor:14300,delta_minor:14300,created_at:'1990-01-01T00:00:00Z',category:'uncategorized',note:'Keep this history'}];
         localStorage.setItem('kt-language','en');window.__ktSetTheme('light');
         localStorage.setItem('kontana_state_v1',JSON.stringify(s));""")
     visit()
     wait('return !!navigator.serviceWorker.controller')
-    stored = js("return localStorage.getItem('kontana_state_v1')")
     old_version = js('return APP_VERSION')
     click('.tab-btn[data-tab=pay]')
     print('Old release:', old_version, 'typed 12.34 as', type_amount(), flush=True)
+    stored = js("return localStorage.getItem('kontana_state_v1')")
 
     release['root'] = args.new_build.resolve()
     requests.clear()
@@ -141,10 +141,15 @@ try:
     runtime_version = js('return APP_VERSION')
     print('After update: HTML', js("return document.querySelector('meta[name=kontana-app-version]').content"), 'runtime', runtime_version, flush=True)
     assert runtime_version == args.expect_version, f'Cached runtime {runtime_version} survived the release'
-    assert js("return localStorage.getItem('kontana_state_v1')") == stored, 'Local wallets/history changed during upgrade'
+    current = js("return localStorage.getItem('kontana_state_v1')")
+    if current != stored:
+        before, after = json.loads(stored), json.loads(current)
+        print('Changed state sections:', {key: {'before': before.get(key), 'after': after.get(key)} for key in before.keys() | after.keys() if before.get(key) != after.get(key)}, flush=True)
+    assert current == stored, 'Local wallets/history changed during upgrade'
     assert js("return [...document.querySelectorAll('.inventory-group-heading')].some(e=>e.innerText==='In your wallet')")
     click('.tab-btn[data-tab=pay]')
     assert type_amount() == '€12.34', 'Decimal typing remains broken after upgrade'
+    assert js("const rows=[...document.querySelectorAll('#tab-pay .payment-breakdown-inline .breakdown li')];return rows.length===1 && rows[0].innerText.startsWith('€20 × 1')"), 'Cached strategy still adds unnecessary coins to the cover'
     assert js("const a=document.querySelector('.payment-entry-grid').getBoundingClientRect();const b=document.querySelector('.payment-advanced-divider').getBoundingClientRect();return b.top>=a.bottom && Math.abs(a.left-b.left)<2"), 'Old side-by-side layout survived'
     assert any('/app.js?v=' in path for path in requests), 'Runtime was not fetched using a release-specific URL'
     command('POST', '/goog/cdp/execute', {'cmd': 'Network.enable', 'params': {}})
@@ -155,6 +160,7 @@ try:
     assert js("return localStorage.getItem('kontana_state_v1')") == stored
     click('.tab-btn[data-tab=pay]')
     assert type_amount() == '€12.34'
+    assert js("return document.querySelectorAll('#tab-pay .payment-breakdown-inline .breakdown li').length===1"), 'Offline reload lost the corrected strategy'
     print('PASS: cached installation upgraded, decimal typing/layout/inventory fixed, wallets/history unchanged, offline reload works', flush=True)
 finally:
     command('DELETE', '')

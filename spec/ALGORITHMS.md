@@ -1,127 +1,68 @@
 <!-- SPDX-License-Identifier: MPL-2.0 -->
-# Algorithms
+# Cash calculation rules
 
-## Context & Shared Rules
-- Wallet = currency + name + denominations (counts) + transactions.
-- Denomination counts are bounded for outgoing payments: never use more units than are available.
-- Strategies are used for both Outgoing and Incoming flows, with different semantics:
-  - Outgoing: choose a set of denominations to **remove** from wallet.
-  - Incoming: choose a set of denominations to **add** to wallet (allocation must match amount exactly).
-- Avoid coins toggle (when present):
-  - When ON, attempt a notes-only exact plan first.
-  - If exact notes-only is impossible, allow coins.
-  - If exact is still impossible, fail gracefully with clear UI feedback.
+Implemented in `site/static/lib/strategies.js`; Node tests import the same module through `src/lib/strategies.js`. These rules supersede the earlier heuristic-only description. Product behavior: [APP_SPEC.md](APP_SPEC.md). Regression evidence: [RELEASE_VERIFICATION.md](RELEASE_VERIFICATION.md).
 
-## Outgoing Status Classification
-Given wallet denominations and target amount:
-1. `exact`: an exact breakdown exists using available counts.
-2. `insufficient`: exact breakdown does not exist using available counts.
+## Inputs and guarantees
 
-## Change Prompt (Outgoing)
-When the user overpays manually (allocated > entered amount):
-- Change suggestion must be computed with a greedy “make change” algorithm **ignoring wallet counts** (assume infinite availability).
-- If user accepts suggested change, that change is added to the wallet automatically.
-- If user enters change manually, validate that `receivedChangeTotal == amountPaid - purchaseAmount` exactly.
-- If payment strategies are OFF or change suggestions are OFF, skip suggested change and go directly to manual change entry.
+All calculations use positive integer minor-unit denomination values and positive integer purchase amounts, within JavaScript's safe integer range. Counts are nonnegative integers and denomination values are unique. Invalid inputs return no plan. Suggestions never mutate supplied denominations, wallet balances, or history.
 
-## Strategy Definitions
+Outgoing payments use only recorded available counts. Incoming allocation and merchant change can use repeated denominations regardless of the wallet's current stock. A valid outgoing plan totals exactly `paidMinor`, with `overpay = paidMinor - target`; a valid incoming plan totals exactly its target.
 
-### 1) Greedy Strategy (fast heuristic)
-**Goal:** build an exact payment breakdown by taking as many units as possible of each denomination in descending value order, without exceeding the target. This implicitly minimizes the number of items when greedy is optimal for the currency.
+## Outgoing selection
 
-**Outgoing (exact attempt):**
-- Iterate denominations in chosen ordering.
-- For each denom `d` with available count `c`:
-  - `take = min(c, floor(remaining / d))`
-  - subtract `take * d` from remaining.
-- If remaining reaches `0` → exact.
+1. Apply the selected coin rule.
+2. Find an exact payment if any permitted combination exists.
+3. If no exact payment exists and payment with change is disabled, return no plan.
+4. Otherwise find the smallest permitted tender that covers the price, subject to the explicit Prefer notes rule below.
+5. Minimize item count within that amount, then apply the strategy's final tie-breaks.
 
-**Outgoing (overpay extension, pay-with-change ON):**
-- Start from the greedy-exact attempt. If `remaining > 0`, try to reach at least target by adding the **smallest possible extra amount** using remaining available denominations (still bounded by wallet counts).
-- Choose the plan with:
-  1. smallest overpay
-  2. fewer total items
-  3. ordering-toggle lex tie-break (deterministic)
-- If cannot reach at least target → insufficient.
+API statuses are `exact`, `sufficient_not_exact`, or `insufficient`. The last means no plan under the selected constraints; it does not by itself mean the complete wallet balance is below the price. The app distinguishes an insufficient balance from a failure to pay exactly under the settings.
 
-**Incoming:**
-- Greedy exact attempt only (exact must be reached; if it fails, no suggestion is shown).
+A failed partial exact attempt is discarded before searching for a cover. For a wallet containing EUR 100 × 1, EUR 20 × 2, EUR 2 × 1 and EUR 1 × 1, buying EUR 12.50 must suggest **EUR 20**, with **EUR 7.50 change**. It must not keep EUR 2 + EUR 1 and add EUR 20. The final balance after confirming actual change is EUR 130.50.
 
-**Examples where Greedy fails but exact exists:**
-- Denoms: `4 (x1), 3 (x2)` Target `6` (largest-first).
-  - Greedy takes `4`, remaining `2` → fails exact.
-  - Exact exists: `3 + 3`.
-- Denoms: `8 (x1), 6 (x1), 4 (x1)` Target `10` (largest-first).
-  - Greedy takes `8`, remaining `2` → fails exact.
-  - Exact exists: `6 + 4`.
+## Strategy choices
 
-### 2) Lex Strategy
-**Goal:** choose a deterministic, largest-to-smallest preference among exact solutions.
+### Minimise (`greedy`)
 
-**Outgoing (exact attempt):**
-1. Find any exact solution.
-2. Minimise total items used.
-3. Tie-break by lexicographically **maximizing** the denomination counts vector in the current ordering (largest-first by default).  
-   - This means prefer using more of higher denominations first, then the next, and so on.
+The retained setting ID is `greedy`. It may use a quick greedy exact result only when a separate minimum-item lower bound proves that result optimal. If that proof fails, or the greedy attempt gets stuck, a complete bounded search reconsiders the wallet. It never reports failure or accepts avoidable overpayment merely because the greedy prefix failed.
 
-**Implementation expectation:**
-- Use bounded coin change (DP/backtracking) to guarantee optimality by the objectives above.
-- Must return:
-  - exact plan if any exists
-  - otherwise (if pay-with-change ON) the smallest-overpay plan
-  - otherwise insufficient
-- Deterministic for same wallet state + amount + ordering toggle.
+For example, denominations 4 × 1 and 3 × 2 can pay 6 exactly as 3 + 3, even though a first attempt picks 4. This must work with payment with change both enabled and disabled. Inverting the ordering must not make a feasible exact payment disappear.
 
-### 3) Equalisation Strategy
-**Goal:** balance remaining denominations evenly and avoid extreme depletion of any single denomination.
+### Preserve (`lex`)
 
-**Outgoing (exact attempt):**
-1. Find any exact solution.
-2. Minimise total items used.
-3. Choose the plan that leaves the remaining counts as even as possible:
-   - `cost = sum((remainingCount_i - meanRemainingCount)^2)`
-4. Final tie-break: lexicographically maximize the counts vector in the current ordering (same as Lex).
+Use complete search. After amount and item-count objectives, lexicographically prefer more denominations in the selected ordering (larger first by default; smaller first when inverted).
 
-**Worked example (Equalisation tie-break):**
-- Denoms (value × count): `10×2, 5×4, 2×4, 1×4`
-- Target `8`, both exact with 4 items:
-  - Plan A: `2+2+2+2` → remaining counts = `10×2, 5×4, 2×0, 1×4`
-  - Plan B: `5+1+1+1` → remaining counts = `10×2, 5×3, 2×4, 1×1`
-- Both have exact total and same item count, but Plan B leaves counts more balanced (lower variance), so Equalisation selects Plan B.
+Minimise and Preserve now share the same payment-quality objectives and deterministic tie-break. They can produce identical results; the distinction is the proved fast path, not permission for Minimise to make worse payments. Existing saved IDs remain compatible.
 
-## Coins Rules Behaviour (applies to all strategies)
-When `Avoid coins = OFF`: current behaviour (no coin preference).
+### Balance (`equalisation`)
 
-When `Avoid coins = ON` with mode `Avoid coins entirely`:
-- Payments are restricted to notes only (coins never used in the payment set).
-- If no valid notes-only plan exists → `insufficient` (even if coins would make it possible).
-- Incoming allocation uses notes only; if no exact allocation exists, no suggestion is shown.
+After the same amount/item-count objectives, minimize variance in the final counts: remaining counts for outgoing, increased counts for incoming. Finally apply the selected-order lexicographic tie-break. Compare squared counts after item counts tie, when their mean is identical, avoiding fractional rounding in the variance comparison.
 
-When `Avoid coins = ON` with mode `Prefer notes`:
-1. **Exact with notes only:** attempt an exact plan using notes only with the selected base strategy.
-   - If exact is found → use it (coins not used).
-2. **Exact with coins allowed:** if notes-only exact fails, allow coins and run the base strategy normally.
-   - If multiple exact plans exist, prefer **fewer coins** as the first tie-breaker.
-3. **Overpay (only when pay-with-change = ON):**
-   - If no exact plan exists, allow overpay and choose the plan with:
-     1. fewest coins
-     2. smallest overpay
-     3. fewest total items
-     4. ordering-toggle lexicographic tie-break (deterministic)
+For a wallet with EUR 50 × 1, EUR 20 × 3 and EUR 5 × 2, paying EUR 60 has two three-note exact options: EUR 50 + EUR 5 + EUR 5, or three EUR 20 notes. Preserve chooses the first in descending order; Balance chooses three EUR 20 notes, leaving the counts more even. Coin preferences take priority over the balance tie-break when coins are involved.
 
-## Allocation Completion Rules
-Incoming:
-- `allocatedTotal == enteredAmount` before finalize.
-Outgoing:
-- `allocatedTotal >= enteredAmount`, `changeExpected = allocatedTotal - enteredAmount`.
-- If `changeExpected > 0`, change confirmation required and must reconcile exactly.
+For incoming Balance, first establish the optimal coin/item budgets, then search the final distribution while processing each denomination once. Keeping only a locally balanced prefix in an unbounded search is insufficient to guarantee the correct final result or tie-break.
 
-## Wallet Reconciliation Rules
-- `expectedBalance = sum(deltaMinor across all wallet transactions)`
-- `denominationsTotal = sum(valueMinor * count)`
-- Invariant: `denominationsTotal == expectedBalance`
+## Coin rules
 
-## History Preservation
-- Do not expire transactions or check-ins based on timestamps or record counts.
-- Compute running balances from the complete wallet ledger.
-- Budget period filtering is for summaries only and never mutates stored history.
+- **Off:** notes and coins compete without a coin-count preference.
+- **Avoid coins entirely:** restrict the search to notes. If those cannot satisfy the exact/cover setting, return no plan.
+- **Prefer notes:** use an exact notes-only payment if possible; otherwise an exact payment allowing coins, preferring fewer coins before item count. If no exact payment exists and change is enabled, minimize coins first, then overpayment, then item count, then Balance (when selected), then the ordering tie-break. This explicit preference may choose a larger note over a smaller coin-based cover.
+
+Coin classification always follows the reordered denomination rows. Reversing the order must never apply a coin flag to a note or vice versa. Incoming uses the same notes-only/fewer-coins priorities and requires an exact total.
+
+## Search bounds and scale
+
+Bound outgoing search by the target for exact payment. For cover, an optimal tender is below `target + largest available denomination`: any larger tender has a removable item and cannot improve the objectives. Cap each denomination count by the search amount rather than expanding the full wallet stock.
+
+Incoming exact search uses the greatest common divisor of usable denomination values to scale its amount states. Balance's second search is bounded by the already established optimal item/coin budgets. This avoids allocating states for every tiny minor unit when only large cash increments can be used.
+
+## Change, commitment and reversal
+
+Merchant change uses the exact incoming allocator with Minimise, ignoring wallet stock. It also recovers from a greedy dead end. A suggested breakdown is an option to review; confirmation or manual entry must reconcile to `tender - purchase`.
+
+Preview and cancellation do not change cash. Confirmation deducts tender, adds the actual confirmed change, and records one outgoing transaction with net delta equal to the negative purchase amount. Reversing the latest transaction restores both tender and received-change effects.
+
+## History preservation
+
+Do not expire transactions or check-ins based on age or record count. Compute balances from the complete ledger. Budget period filtering affects summaries only and never deletes saved history.

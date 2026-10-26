@@ -21,11 +21,9 @@ function lexPrefers(aCounts, bCounts) {
 }
 
 function varianceCost(counts) {
-  const mean = counts.reduce((sum, c) => sum + c, 0) / (counts.length || 1);
-  return counts.reduce((sum, c) => {
-    const diff = c - mean;
-    return sum + diff * diff;
-  }, 0);
+  // Compared only after item counts tie, so the mean is identical. Comparing
+  // squared counts gives the same variance ordering without fractional rounding.
+  return counts.reduce((sum, count) => sum + count * count, 0);
 }
 
 function remainingCounts(originalCounts, planCounts, direction) {
@@ -48,19 +46,21 @@ function betterPlanSameSum(a, b, strategy, originalCounts, direction, coinMask =
   return lexPrefers(a.counts, b.counts);
 }
 
-function buildBestPlansBySum(denomsOrdered, strategy, originalCounts, direction, coinMask = null) {
+function buildBestPlansBySum(denomsOrdered, strategy, originalCounts, direction, coinMask, maxSum, budget = null) {
   const n = denomsOrdered.length;
   let map = new Map([[0, { counts: Array(n).fill(0), items: 0, coins: 0 }]]);
 
   denomsOrdered.forEach((denom, idx) => {
     const next = new Map(map);
     for (const [sum, plan] of map.entries()) {
-      for (let k = 1; k <= denom.count; k += 1) {
+      const limit = Math.min(denom.count, Math.floor((maxSum - sum) / denom.value_minor), budget?.items ?? Infinity);
+      for (let k = 1; k <= limit; k += 1) {
         const newSum = sum + k * denom.value_minor;
         const newCounts = plan.counts.slice();
         newCounts[idx] += k;
         const coinAdd = coinMask ? (coinMask[idx] ? k : 0) : 0;
         const newPlan = { counts: newCounts, items: plan.items + k, coins: plan.coins + coinAdd };
+        if (budget && (newPlan.items > budget.items || (coinMask && newPlan.coins > budget.coins))) continue;
         const existing = next.get(newSum);
         if (!existing || betterPlanSameSum(newPlan, existing, strategy, originalCounts, direction, coinMask)) {
           next.set(newSum, newPlan);
@@ -72,7 +72,7 @@ function buildBestPlansBySum(denomsOrdered, strategy, originalCounts, direction,
   return map;
 }
 
-function selectBestOverpayPlan(map, target, strategy, orderCounts, originalCounts, direction, allowOverpay, coinMask = null, coinFirstOverpay = false) {
+function selectBestOverpayPlan(map, target, strategy, originalCounts, direction, allowOverpay, coinMask = null, coinFirstOverpay = false) {
   let best = null;
   for (const [sum, plan] of map.entries()) {
     if (sum < target) continue;
@@ -140,80 +140,75 @@ export function greedyExact(denoms, target, order = ORDER_LARGEST_FIRST) {
   };
 }
 
-function greedyOverpay(denoms, target, order = ORDER_LARGEST_FIRST) {
-  const base = greedyExact(denoms, target, order);
-  if (base.ok) {
-    return { ok: true, counts: base.counts, sum: target, ordered: base.ordered };
+function minimumItemsToCover(denoms, target) {
+  let remaining = target;
+  let items = 0;
+  for (const row of [...denoms].sort((a, b) => b.value_minor - a.value_minor)) {
+    const count = Math.min(row.count, Math.ceil(remaining / row.value_minor));
+    items += count;
+    remaining -= count * row.value_minor;
+    if (remaining <= 0) return items;
   }
-  const ordered = base.ordered;
-  const remaining = base.remaining;
-  const available = ordered.map((d, idx) => ({ ...d, count: d.count - base.counts[idx] }));
-  const originalCounts = available.map((d) => d.count);
-  const map = buildBestPlansBySum(available, 'lex', originalCounts, 'outgoing');
-  const bestExtra = selectBestOverpayPlan(map, remaining, 'lex', order, originalCounts, 'outgoing', true);
-  if (!bestExtra) return { ok: false };
-  const totalCounts = base.counts.map((c, idx) => c + bestExtra.plan.counts[idx]);
-  const sum = target - remaining + bestExtra.sum;
-  return { ok: true, counts: totalCounts, sum, ordered };
+  return Infinity;
 }
 
-function optimalPlan(denoms, target, strategy, order = ORDER_LARGEST_FIRST, allowOverpay = true, direction = 'outgoing', originalCountsOverride = null, coinMask = null, coinFirstOverpay = false) {
+function validProblem(denoms, target, strategy, order, coinsRule) {
+  if (!Number.isSafeInteger(target) || target <= 0 || !Array.isArray(denoms)) return false;
+  if (!['greedy', 'lex', 'equalisation'].includes(strategy)
+      || ![ORDER_LARGEST_FIRST, ORDER_SMALLEST_FIRST].includes(order)
+      || !['off', 'avoid', 'prefer'].includes(coinsRule)) return false;
+  const seen = new Set();
+  let total = 0;
+  return denoms.every((row) => {
+    if (!row || !Number.isSafeInteger(row.value_minor) || row.value_minor <= 0
+        || !Number.isSafeInteger(row.count) || row.count < 0 || seen.has(row.value_minor)) return false;
+    seen.add(row.value_minor);
+    total += row.value_minor * row.count;
+    return Number.isSafeInteger(total);
+  });
+}
+
+function optimalPlan(denoms, target, strategy, order = ORDER_LARGEST_FIRST, allowOverpay = true, direction = 'outgoing', originalCountsOverride = null, preferNotes = false, coinFirstOverpay = false, budget = null) {
   const ordered = orderDenoms(denoms, order);
   const originalCounts = originalCountsOverride || ordered.map((d) => d.count);
-  const map = buildBestPlansBySum(ordered, strategy, originalCounts, direction, coinMask);
-  const best = selectBestOverpayPlan(map, target, strategy, order, originalCounts, direction, allowOverpay, coinMask, coinFirstOverpay);
-  if (!best) return null;
-  return {
-    sum: best.sum,
-    counts: best.plan.counts,
-    ordered,
-  };
+  // The mask must follow the sorted denominations, not the caller's order.
+  const coinMask = preferNotes ? ordered.map((d) => d.type === 'coin') : null;
+  const maxValue = ordered.reduce((max, d) => d.count > 0 ? Math.max(max, d.value_minor) : max, 0);
+  // An optimal cover cannot contain a removable item. No sum at or above
+  // target + largest available denomination can beat a smaller valid cover.
+  const maxSum = allowOverpay ? target + Math.min(Math.max(0, maxValue - 1), Number.MAX_SAFE_INTEGER - target) : target;
+  const map = buildBestPlansBySum(ordered, strategy, originalCounts, direction, coinMask, maxSum, budget);
+  const best = selectBestOverpayPlan(map, target, strategy, originalCounts, direction, allowOverpay, coinMask, coinFirstOverpay);
+  return best ? { sum: best.sum, counts: best.plan.counts, ordered } : null;
 }
 
-function computeOutgoingPlanBase(denoms, target, strategy, order = ORDER_LARGEST_FIRST, allowOverpay = true, coinMask = null, coinFirstOverpay = false) {
-  const effectiveOrder = order;
+function computeOutgoingPlanBase(denoms, target, strategy, order = ORDER_LARGEST_FIRST, allowOverpay = true, preferNotes = false, coinFirstOverpay = false) {
+  const failed = { status: 'insufficient', breakdown: null, paidMinor: null, overpay: null };
   const total = denoms.reduce((sum, d) => sum + d.value_minor * d.count, 0);
-  if (total < target) {
-    return { status: 'insufficient', breakdown: null, paidMinor: null, overpay: null };
-  }
+  if (total < target) return failed;
 
-  if (strategy === 'greedy') {
-    const exact = greedyExact(denoms, target, effectiveOrder);
-    if (exact.ok) {
-      return {
-        status: 'exact',
-        breakdown: countsToBreakdown(exact.ordered, exact.counts),
-        paidMinor: target,
-        overpay: 0,
-      };
+  if (strategy === 'greedy' && !preferNotes) {
+    const exact = greedyExact(denoms, target, order);
+    const eligible = denoms.filter((d) => d.value_minor <= target);
+    // Keep the quick greedy result only when a separate lower bound proves it
+    // uses the fewest items. Its successful count vector already wins lex ties.
+    if (exact.ok && exact.counts.reduce((sum, n) => sum + n, 0) === minimumItemsToCover(eligible, target)) {
+      return { status: 'exact', breakdown: countsToBreakdown(exact.ordered, exact.counts), paidMinor: target, overpay: 0 };
     }
-    if (!allowOverpay) return { status: 'insufficient', breakdown: null, paidMinor: null, overpay: null };
-    const over = greedyOverpay(denoms, target, effectiveOrder);
-    if (!over.ok) return { status: 'insufficient', breakdown: null, paidMinor: null, overpay: null };
-    return {
-      status: 'sufficient_not_exact',
-      breakdown: countsToBreakdown(over.ordered, over.counts),
-      paidMinor: over.sum,
-      overpay: Math.max(0, over.sum - target),
-    };
   }
 
-  if (strategy === 'lex' || strategy === 'equalisation') {
-    const plan = optimalPlan(denoms, target, strategy, effectiveOrder, allowOverpay, 'outgoing', null, coinMask, coinFirstOverpay);
-    if (!plan) return { status: 'insufficient', breakdown: null, paidMinor: null, overpay: null };
-    const overpay = Math.max(0, plan.sum - target);
-    return {
-      status: overpay === 0 ? 'exact' : 'sufficient_not_exact',
-      breakdown: countsToBreakdown(plan.ordered, plan.counts),
-      paidMinor: plan.sum,
-      overpay,
-    };
-  }
-
-  return { status: 'insufficient', breakdown: null, paidMinor: null, overpay: null };
+  // Reconsider the entire wallet. Never keep a failed partial payment and add
+  // a covering note: that produced EUR 23 instead of EUR 20 for EUR 12.50.
+  const method = strategy === 'greedy' ? 'lex' : strategy;
+  const exact = optimalPlan(denoms, target, method, order, false, 'outgoing', null, preferNotes);
+  const plan = exact || (allowOverpay ? optimalPlan(denoms, target, method, order, true, 'outgoing', null, preferNotes, coinFirstOverpay) : null);
+  if (!plan) return failed;
+  const overpay = plan.sum - target;
+  return { status: overpay === 0 ? 'exact' : 'sufficient_not_exact', breakdown: countsToBreakdown(plan.ordered, plan.counts), paidMinor: plan.sum, overpay };
 }
 
 export function computeOutgoingPlan(denoms, target, strategy, order = ORDER_LARGEST_FIRST, allowOverpay = true, coinsRule = 'off') {
+  if (!validProblem(denoms, target, strategy, order, coinsRule)) return { status: 'insufficient', breakdown: null, paidMinor: null, overpay: null };
   if (coinsRule === 'off') return computeOutgoingPlanBase(denoms, target, strategy, order, allowOverpay);
 
   const notesOnly = denoms.filter((d) => d.type !== 'coin');
@@ -225,16 +220,15 @@ export function computeOutgoingPlan(denoms, target, strategy, order = ORDER_LARG
   const exactNotes = computeOutgoingPlanBase(notesOnly, target, strategy, order, false);
   if (exactNotes.status === 'exact') return exactNotes;
 
-  const coinMask = denoms.map((d) => d.type === 'coin');
-  const exactAny = computeOutgoingPlanBase(denoms, target, strategy, order, false, coinMask);
+  const exactAny = computeOutgoingPlanBase(denoms, target, strategy, order, false, true);
   if (exactAny.status === 'exact') return exactAny;
 
   if (!allowOverpay) return { status: 'insufficient', breakdown: null, paidMinor: null, overpay: null };
-  return computeOutgoingPlanBase(denoms, target, 'lex', order, true, coinMask, true);
+  return computeOutgoingPlanBase(denoms, target, strategy, order, true, true, true);
 }
 
 export function computeIncomingPlan(denoms, target, strategy, order = ORDER_LARGEST_FIRST, coinsRule = 'off') {
-  if (target <= 0) return { ok: false, breakdown: [] };
+  if (!validProblem(denoms, target, strategy, order, coinsRule)) return { ok: false, breakdown: [] };
   const ordered = orderDenoms(denoms, order);
   const n = ordered.length;
   const originalCounts = ordered.map((d) => d.count);
@@ -245,28 +239,36 @@ export function computeIncomingPlan(denoms, target, strategy, order = ORDER_LARG
     if (notesPlan.ok || coinsRule === 'avoid') return notesPlan;
   }
 
-  if (strategy === 'greedy') {
-    const unlimited = ordered.map((d) => ({
-      ...d,
-      count: Math.floor(target / d.value_minor),
-    }));
+  const single = ordered.find((d) => d.value_minor === target);
+  if (single) return { ok: true, breakdown: [{ value_minor: single.value_minor, count: 1 }] };
+
+  const preferNotes = coinsRule === 'prefer';
+  const coinMask = preferNotes ? ordered.map((d) => d.type === 'coin') : null;
+  if (strategy === 'greedy' && !preferNotes) {
+    const unlimited = ordered.map((d) => ({ ...d, count: Math.floor(target / d.value_minor) }));
     const exact = greedyExact(unlimited, target, order);
-    return exact.ok
-      ? { ok: true, breakdown: countsToBreakdown(exact.ordered, exact.counts) }
-      : { ok: false, breakdown: [] };
+    if (exact.ok && exact.counts.reduce((sum, n) => sum + n, 0) === minimumItemsToCover(unlimited.filter((d) => d.value_minor <= target), target)) {
+      return { ok: true, breakdown: countsToBreakdown(exact.ordered, exact.counts) };
+    }
   }
 
-  const dp = Array(target + 1).fill(null);
-  dp[0] = { items: 0, counts: Array(n).fill(0) };
-  const coinMask = coinsRule === 'prefer' ? ordered.map((d) => d.type === 'coin') : null;
+  // Work in the smallest reachable step, rather than allocating an entry for
+  // every minor unit when all denominations are large or share a cash increment.
+  const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
+  const unit = ordered.filter((d) => d.value_minor <= target).reduce((step, d) => gcd(step, d.value_minor), 0);
+  if (!unit || target % unit !== 0) return { ok: false, breakdown: [] };
+  const steps = target / unit;
+  const dp = Array(steps + 1).fill(null);
+  dp[0] = { items: 0, coins: 0, counts: Array(n).fill(0) };
 
-  for (let sum = 0; sum <= target; sum += 1) {
+  for (let sum = 0; sum <= steps; sum += 1) {
     const plan = dp[sum];
     if (!plan) continue;
     for (let i = 0; i < n; i += 1) {
-      const value = ordered[i].value_minor;
+      if (ordered[i].value_minor > target) continue;
+      const value = ordered[i].value_minor / unit;
       const nextSum = sum + value;
-      if (nextSum > target) continue;
+      if (nextSum > steps) continue;
       const counts = plan.counts.slice();
       counts[i] += 1;
       const coinAdd = coinMask ? (coinMask[i] ? 1 : 0) : 0;
@@ -276,31 +278,23 @@ export function computeIncomingPlan(denoms, target, strategy, order = ORDER_LARG
         dp[nextSum] = candidate;
         continue;
       }
-      if (coinMask && candidate.coins !== existing.coins) {
-        if (candidate.coins < existing.coins) dp[nextSum] = candidate;
-        continue;
-      }
-      if (candidate.items !== existing.items) {
-        if (candidate.items < existing.items) dp[nextSum] = candidate;
-        continue;
-      }
-      if (strategy === 'equalisation') {
-        const costA = varianceCost(remainingCounts(originalCounts, candidate.counts, 'incoming'));
-        const costB = varianceCost(remainingCounts(originalCounts, existing.counts, 'incoming'));
-        if (costA !== costB) {
-          if (costA < costB) dp[nextSum] = candidate;
-          continue;
-        }
-      }
-      if (lexPrefers(candidate.counts, existing.counts)) {
+      if (betterPlanSameSum(candidate, existing, 'lex', originalCounts, 'incoming', coinMask)) {
         dp[nextSum] = candidate;
       }
     }
   }
 
-  const best = dp[target];
+  const best = dp[steps];
   if (!best) return { ok: false, breakdown: [] };
-  return { ok: true, breakdown: countsToBreakdown(ordered, best.counts) };
+  if (strategy !== 'equalisation') return { ok: true, breakdown: countsToBreakdown(ordered, best.counts) };
+
+  // Balance is a final-state property: a locally balanced unbounded DP prefix
+  // can become worse when another item of the same denomination is added.
+  // First find the optimal coin/item budgets, then process each denomination
+  // once to select the globally best final distribution within those budgets.
+  const limited = ordered.map((d) => ({ ...d, count: Math.min(best.items, Math.floor(target / d.value_minor)) }));
+  const balanced = optimalPlan(limited, target, 'equalisation', order, false, 'incoming', originalCounts, preferNotes, false, best);
+  return balanced ? { ok: true, breakdown: countsToBreakdown(balanced.ordered, balanced.counts) } : { ok: false, breakdown: [] };
 }
 
 const STRATEGIES_API = {

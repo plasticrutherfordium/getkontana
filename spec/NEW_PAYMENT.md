@@ -21,4 +21,4 @@ Incoming allocation must sum exactly to the amount before recording. Suggested/m
 
 The completion view replaces entry controls with actual saved date, wallet, signed amount, category, optional note, and expected/received change where applicable. Actions are New transaction and Revert transaction. Revert is allowed only for that wallet's latest transaction and restores cash effects.
 
-The algorithms, integer minor-unit math, cash constraints, and existing change-confirmation rules remain unchanged by the redesign. Zero-count inventory and saved history are never automatically removed.
+Version 0.1.4 corrects the strategy calculations according to [ALGORITHMS.md](ALGORITHMS.md), including complete cover selection, exact-payment recovery, ordered coin masks, and final incoming Balance tie-breaks. Integer minor-unit storage, cash constraints, and change-confirmation rules are preserved. Zero-count inventory and saved history are never automatically removed.

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-const APP_VERSION = '0.1.3';
+const APP_VERSION = '0.1.4';
 const ZERO_DECIMAL_CURRENCIES = new Set([
   'CLP', 'SEK', 'HUF', 'NOK', 'ARS', 'JPY', 'KRW', 'XOF',
   'VND', 'UYU', 'ISK', 'BIF', 'DJF', 'GNF', 'KPW', 'LAK',
@@ -338,9 +338,8 @@ function computeIncomingPlan(denoms, target, strategy, order = ORDER_LARGEST_FIR
 
 function computeChangeBreakdown(denoms, changeMinor) {
   if (!changeMinor || changeMinor <= 0) return [];
-  const unlimited = denoms.map((d) => ({ ...d, count: Math.floor(changeMinor / d.value_minor) + 1 }));
-  const exact = greedyExact(unlimited, changeMinor, ORDER_LARGEST_FIRST);
-  return exact.ok ? countsToBreakdown(exact.ordered, exact.counts) : [];
+  const plan = computeIncomingPlan(denoms, changeMinor, 'greedy', ORDER_LARGEST_FIRST);
+  return plan.ok ? plan.breakdown : [];
 }
 
 const STORAGE_KEY = 'kontana_state_v1';
@@ -757,11 +756,11 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
         'settings.strategies.title': 'Strategies',
         'settings.strategies.body': 'How suggestions are calculated.',
         'settings.strategy.minimise.title': 'Minimise',
-        'settings.strategy.minimise.body': 'Uses larger denominations first to reduce item count.',
+        'settings.strategy.minimise.body': 'Finds an exact payment with the fewest items. If change is needed, finds the smallest amount that covers the price.',
         'settings.strategy.preserve.title': 'Preserve',
-        'settings.strategy.preserve.body': 'Prefers higher denominations first when multiple exact options exist.',
+        'settings.strategy.preserve.body': 'Among equally short payments, prefers denominations in your selected order.',
         'settings.strategy.balance.title': 'Balance',
-        'settings.strategy.balance.body': 'Prefers surplus denominations to keep wallet mix balanced.',
+        'settings.strategy.balance.body': 'After finding the fewest items, prefers a mix that leaves your denomination counts more even.',
         'settings.single_cover.title': 'Single cover',
         'settings.single_cover.body': "When a strategy can't match the exact amount, suggest the lowest single or mix of denominations that can cover it. You'll get cash back.",
         'settings.change_suggestions.title': 'Change suggestions',
@@ -771,7 +770,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
         'settings.coins_mode.avoid.title': 'Avoid coins entirely',
         'settings.coins_mode.avoid.body': 'Notes only. If notes cannot pay the amount, the payment is insufficient.',
         'settings.coins_mode.prefer.title': 'Prefer notes',
-        'settings.coins_mode.prefer.body': 'Coins used only if needed to pay exactly (or to make change).',
+        'settings.coins_mode.prefer.body': 'Prefers exact payment with notes. Otherwise uses coins to pay exactly; when change is needed, favours fewer coins.',
         'settings.invert_denom_order.title': 'Invert denomination order',
         'settings.invert_denom_order.body': 'By default, denominations are listed from largest to smallest. Turn this on to invert the order (smallest to largest).',
         'settings.denom_order.normal': 'Normal',
@@ -1224,11 +1223,11 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
         'settings.strategies.title': 'Estrategias',
         'settings.strategies.body': 'Cómo se calculan las sugerencias.',
         'settings.strategy.minimise.title': 'Minimizar',
-        'settings.strategy.minimise.body': 'Usa primero las denominaciones grandes para reducir el número de piezas.',
+        'settings.strategy.minimise.body': 'Busca un pago exacto con el menor número de piezas. Si hace falta cambio, busca el menor importe que cubra el precio.',
         'settings.strategy.preserve.title': 'Conservar',
-        'settings.strategy.preserve.body': 'Prefiere denominaciones altas cuando existen varias opciones exactas.',
+        'settings.strategy.preserve.body': 'Entre pagos con el mismo número de piezas, prefiere las denominaciones según el orden elegido.',
         'settings.strategy.balance.title': 'Equilibrar',
-        'settings.strategy.balance.body': 'Prefiere denominaciones con excedente para equilibrar el monedero.',
+        'settings.strategy.balance.body': 'Tras minimizar el número de piezas, prefiere una mezcla que deje más equilibrados los recuentos por denominación.',
         'settings.single_cover.title': 'Cobertura única',
         'settings.single_cover.body': 'Cuando una estrategia no puede igualar el importe exacto, sugiere la denominación única o mezcla más baja que lo cubra. Recibirás cambio.',
         'settings.change_suggestions.title': 'Sugerencias de cambio',
@@ -1238,7 +1237,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
         'settings.coins_mode.avoid.title': 'Evitar monedas por completo',
         'settings.coins_mode.avoid.body': 'Solo billetes. Si los billetes no pueden pagar el importe, el pago es insuficiente.',
         'settings.coins_mode.prefer.title': 'Preferir billetes',
-        'settings.coins_mode.prefer.body': 'Las monedas se usan solo si es necesario para pagar exacto (o para dar cambio).',
+        'settings.coins_mode.prefer.body': 'Prefiere pagar exacto con billetes. Si no es posible, usa monedas para pagar exacto; si hace falta cambio, prioriza usar menos monedas.',
         'settings.invert_denom_order.title': 'Invertir el orden de denominaciones',
         'settings.invert_denom_order.body': 'Por defecto, las denominaciones se listan de mayor a menor. Actívalo para invertir el orden (de menor a mayor).',
         'settings.denom_order.normal': 'Normal',
@@ -1800,6 +1799,14 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
       app.settingsOpen = true;
       app.settingsFocusTarget = focusTarget || null;
       renderSettings();
+    }
+
+    function closeSettingsOverlay() {
+      app.settingsOpen = false;
+      app.settingsFocusTarget = null;
+      // Apply changed calculation preferences to an already-entered payment.
+      // Closing Settings must not leave the previous strategy's suggestion.
+      render();
     }
 
     function getBudgetHelper() {
@@ -6124,11 +6131,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
         });
       });
 
-      const closeSettings = () => {
-        app.settingsOpen = false;
-        app.settingsFocusTarget = null;
-        renderSettings();
-      };
+      const closeSettings = closeSettingsOverlay;
       const closeBtn = document.getElementById('settings-close');
       if (closeBtn) {
         closeBtn.addEventListener('click', closeSettings);
@@ -6231,7 +6234,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
     document.addEventListener('keydown', (event) => {
       if (event.key !== 'Escape') return;
       if (app.modal) { closeModal('cancel'); return; }
-      if (app.settingsOpen) { app.settingsOpen = false; renderSettings(); }
+      if (app.settingsOpen) closeSettingsOverlay();
     });
 
     let previousTab = app.activeTab;
