@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-const APP_VERSION = '0.1.8';
+const APP_VERSION = '0.1.9';
 const ZERO_DECIMAL_CURRENCIES = new Set([
   'CLP', 'SEK', 'HUF', 'NOK', 'ARS', 'JPY', 'KRW', 'XOF',
   'VND', 'UYU', 'ISK', 'BIF', 'DJF', 'GNF', 'KPW', 'LAK',

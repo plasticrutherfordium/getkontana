@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: MPL-2.0 -->
 # Kontana — application specification
 
-Status: implemented, version 0.1.8 (27 October 2026). This is the product behavior reference. [DESIGN_SPEC.md](DESIGN_SPEC.md) defines presentation. The numbered Budget documents describe the original workflow decisions; this document takes precedence where an earlier proposal conflicts with the shipped interface.
+Status: implemented, version 0.1.9 (27 October 2026). This is the product behavior reference. [DESIGN_SPEC.md](DESIGN_SPEC.md) defines presentation. The numbered Budget documents describe the original workflow decisions; this document takes precedence where an earlier proposal conflicts with the shipped interface.
 
 ## Product promise
 

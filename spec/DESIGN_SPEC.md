@@ -44,16 +44,16 @@ Use a base spacing unit of 4px, with most layout gaps on an 8px rhythm. Buttons 
 
 The website is a progressive, single-page story with separate translated supporting pages. Desktop maximum width is 1440px including 88px side padding. At mobile widths use 20px padding; at 320–360px reduce to 16px when needed.
 
-1. Header: original logo, How it works / Privacy / FAQ anchors, theme toggle, EN/ES selector, and Open free app. Mobile keeps logo, theme, language, and a compact app action while hiding the anchor links.
-2. Hero: “Free core. Forever.” and a linked “OPEN SOURCE / MPL-2.0” badge above “Your cash. Your rules.”; primary Start tracking for free; secondary See how it works; no-account/free-core assurance. Spanish uses “App principal gratis. Para siempre.”, “CÓDIGO ABIERTO / MPL-2.0” and “Tu efectivo. Tus reglas.”
-3. Product preview: a clearly labeled illustrative Everyday wallet, `EUR 324.50`, with note/coin arithmetic that actually totals 324.50. Display local/offline indicators and a Record a payment link to the real app. The caption identifies it as example data; it is never presented as the visitor's wallet.
+1. Header: original logo, How it works / Privacy / FAQ anchors, theme toggle, EN/ES selector, and Open app / Abrir app. Mobile keeps logo, theme, language, and a compact app action while hiding the anchor links.
+2. Hero: “Free core. Forever.” and a linked “OPEN SOURCE / MPL-2.0” badge above “Your cash. Your rules.”; primary Start tracking / Empieza a registrar; secondary See how it works; no-account/free-core assurance. Spanish uses “App principal gratis. Para siempre.”, “CÓDIGO ABIERTO / MPL-2.0” and “Tu efectivo. Tus reglas.”
+3. Product preview: a clearly labeled, read-only illustrative Everyday wallet, `EUR 324.50`, with note/coin arithmetic that actually totals 324.50. Keep the local badge in the header and Works offline / Funciona sin internet as an inline status row inside the card below the denomination rows. No action button or floating status badge. A normal-flow figure caption beneath the grid identifies it as example data; it is never presented as the visitor's wallet.
 4. Trust strip: no bank connections, no account, no tracking, on-device storage.
 5. Three open steps: Count it / Spend it / Stay in control, using simple stroke icons and thin rules rather than a grid of boxed feature cards.
 6. Privacy band: Offline / On purpose, with three concrete commitments about local data, no bank access, and user-controlled exports.
 7. FAQ: native disclosure controls covering accounts, offline use, reconciliation, free-core pricing, exploratory Premium/MCP/camera extras, source/licence and history with no expiry.
-8. Final “Free core. Open future.” action, optional-future-extras wording and a compact footer with source/licensing links.
+8. A quiet “Free core. Open future.” closing note, optional-future-extras wording and a compact footer with source/licensing links. Do not repeat the app action at the bottom.
 
-The hero is two columns on desktop, stacked on mobile. The preview uses a faint 32px grid, tiny corner registration marks, and one framed app panel. Other page sections remain quiet. Desktop FAQ/privacy are two columns; mobile uses one. No waitlist, active pricing table, checkout or unavailable-feature upgrade action appears. Future paid extras are explicitly exploratory; the core remains free.
+The hero is two columns on desktop, stacked on mobile. The preview uses a faint 32px grid and one framed app panel, without decorative corner plus signs. Other page sections remain quiet. Desktop FAQ/privacy are two columns; mobile uses one. The homepage has exactly two app-opening links: header and hero. Supporting pages retain only the shared header action. Action labels describe the action without repeating “free” or “gratis”; the permanent free-core promise remains in the surrounding copy and FAQ. No waitlist, active pricing table, checkout or unavailable-feature upgrade action appears. Future paid extras are explicitly exploratory; the core remains free.
 
 All visible marketing/supporting copy is available in English and Spanish. Language menus link to the corresponding translated route, including privacy and terms. Localized text may wrap naturally; do not shrink whole layouts to force English line lengths.
 
