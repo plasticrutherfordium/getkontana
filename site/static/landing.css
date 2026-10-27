@@ -334,8 +334,8 @@
   color:var(--kt-text-muted)
 }
 .privacy-section {
-  background:#dde9d9;
-  color:#152b1c;
+  background:var(--kt-surface-soft);
+  color:var(--kt-text);
   padding-block:80px
 }
 .privacy-grid {
@@ -344,7 +344,7 @@
   gap:100px
 }
 .privacy-section .eyebrow {
-  color:#326b3c
+  color:var(--kt-accent)
 }
 .privacy-section h2 {
   font-size:64px;
@@ -355,7 +355,7 @@
   font-size:16px;
   max-width:410px;
   margin-top:24px;
-  color:#435d45
+  color:var(--kt-text-muted)
 }
 .privacy-points {
   display:grid;
@@ -366,14 +366,14 @@
   display:flex;
   gap:18px;
   padding-bottom:26px;
-  border-bottom:1px solid #b7cbb2
+  border-bottom:1px solid var(--kt-border)
 }
 .privacy-points article:last-child {
   border:0;
   padding:0
 }
 .privacy-points .icon {
-  color:#326b3c;
+  color:var(--kt-accent);
   margin-top:2px
 }
 .privacy-points h3 {
@@ -383,7 +383,7 @@
 }
 .privacy-points p {
   font-size:14px;
-  color:#435d45
+  color:var(--kt-text-muted)
 }
 .faq-section {
   display:grid;

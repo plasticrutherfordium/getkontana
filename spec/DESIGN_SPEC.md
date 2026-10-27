@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: MPL-2.0 -->
 # Kontana — design specification
 
-Status: implemented Phosphor design, 26 October 2026. The version 0.1.2 layout corrections below take precedence over the original canvas composition. The editable visual reference is [new-kontana-design.pen](../design/new-kontana-design.pen). This document supersedes `design-terminal.md` and the old screen-layout instructions. Product behavior belongs to [APP_SPEC.md](APP_SPEC.md).
+Status: implemented Phosphor design, updated 27 October 2026. The shipped layout and theme corrections below take precedence over the original canvas composition. The editable visual reference is [new-kontana-design.pen](../design/new-kontana-design.pen). This document supersedes `design-terminal.md` and the old screen-layout instructions. Product behavior belongs to [APP_SPEC.md](APP_SPEC.md).
 
 ## Direction and brand
 
@@ -17,6 +17,7 @@ Source of truth: `site/static/kt-terminal.css`. Use semantic tokens rather than 
 | --- | --- | --- |
 | Page `--kt-bg` | `#0A100D` | `#F3F5EC` |
 | Surface `--kt-surface` | `#111A15` | `#FCFDF8` |
+| Quiet section `--kt-surface-soft` | `#111A15` | `#EDF1E7` |
 | Raised/selected `--kt-surface-2` | `#18251C` | `#E6EDD9` |
 | Primary text `--kt-text` | `#EFF5EC` | `#15231A` |
 | Secondary text `--kt-text-muted` | `#A4B1A6` | `#51634F` |
@@ -27,7 +28,7 @@ Source of truth: `site/static/kt-terminal.css`. Use semantic tokens rather than 
 | Warning `--kt-warning` | `#EDBD78` | `#805215` |
 | Danger `--kt-danger` | `#F29F96` | `#A13B31` |
 
-The marketing privacy band uses pale sage `#DDE9D9` with dark ink in both themes. Both themes are fully designed, not simple inversions. Filled primary actions use the accent with page-background text. Secondary actions use a surface and quiet border. Destructive actions use danger text/border with a subdued danger surface. Status includes text or a symbol as well as color.
+The marketing privacy band uses `--kt-surface-soft`: a quiet forest surface in dark mode and a faint sage tint in light mode. Keep the transition from the surrounding page subtle in both themes. Headings, secondary copy, checkmarks, section labels and dividers follow their semantic theme tokens; never keep a pale band or dark ink fixed across themes. Both themes are fully designed, not simple inversions. Filled primary actions use the accent with page-background text. Secondary actions use a surface and quiet border. Destructive actions use danger text/border with a subdued danger surface. Status includes text or a symbol as well as color.
 
 ## Typography and spacing
 

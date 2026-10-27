@@ -4,6 +4,7 @@
   color-scheme: dark;
   --kt-bg:#0a100d;
   --kt-surface:#111a15;
+  --kt-surface-soft:#111a15;
   --kt-surface-2:#18251c;
   --kt-text:#eff5ec;
   --kt-text-muted:#a4b1a6;
@@ -31,6 +32,7 @@
   color-scheme:light;
   --kt-bg:#f3f5ec;
   --kt-surface:#fcfdf8;
+  --kt-surface-soft:#edf1e7;
   --kt-surface-2:#e6edd9;
   --kt-text:#15231a;
   --kt-text-muted:#51634f;
