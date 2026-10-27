@@ -245,34 +245,8 @@ body {
 .wallet-card[data-wallet-id] {
   cursor:grab;
   user-select:none;
-  -webkit-user-drag:none
-}
-.wallet-card-drag-handle {
-  position:absolute;
-  right:48px;
-  top:8px;
-  display:grid;
-  place-items:center;
-  width:32px;
-  height:32px;
-  min-height:32px;
-  padding:0;
-  border:0;
-  border-radius:4px;
-  color:var(--kt-text-muted);
-  background:transparent;
-  cursor:grab;
-  touch-action:none;
-  opacity:0;
-  transition:opacity 120ms ease,background 120ms ease
-}
-.wallet-card-wrap:hover .wallet-card-drag-handle,
-.wallet-card-wrap:focus-within .wallet-card-drag-handle {
-  opacity:1
-}
-.wallet-card-drag-handle:hover {
-  background:var(--kt-surface-2);
-  color:var(--kt-accent)
+  -webkit-user-drag:none;
+  -webkit-touch-callout:none
 }
 .wallet-drag-placeholder::after {
   content:'';
@@ -314,8 +288,7 @@ body {
   cursor:grabbing;
   user-select:none
 }
-.wallet-reordering .wallet-card[data-wallet-id],
-.wallet-reordering .wallet-card-drag-handle {
+.wallet-reordering .wallet-card[data-wallet-id] {
   cursor:grabbing
 }
 .wallet-rail-dragging {
@@ -332,11 +305,7 @@ body {
   clip-path:inset(50%);
   white-space:nowrap
 }
-@media(hover:none),(pointer:coarse) {
-  .wallet-card-drag-handle { opacity:1; width:40px; height:40px; top:6px }
-}
 @media(prefers-reduced-motion:reduce) {
-  .wallet-card-drag-handle { transition:none }
   .wallet-drag-preview { will-change:auto }
 }
 .wallet-card.active:hover {

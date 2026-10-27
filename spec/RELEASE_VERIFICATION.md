@@ -115,3 +115,9 @@ Reviewed the supplied `screenrecording-2026-10-26_21-42-55.mp4`. The old wallet 
 Version metadata is 0.1.6; the worker cache is `kontana-v26` and precaches the new versioned helper. Product/design/acceptance specs document the revised interaction. No wallet data/schema migration is required.
 
 The production build, all 92 unit tests, the dedicated drag smoke check and the full app smoke check passed. Drag checks also verify zero state writes during preview, exactly one write per successful drop, outside-drop cancellation, and unchanged financial records.
+
+## Direct wallet dragging without grips — version 0.1.7
+
+Removed the six-dot drag controls from wallet cards. Mouse users drag the card body directly; on touch, a stationary 240ms hold lifts the card for reordering. Moving before the hold completes leaves native horizontal strip swiping and vertical page scrolling available. Short taps clear the hold timer and select normally. The same original-grab-point preview, animated insertion slot, edge scrolling, keyboard shortcut, cancellation and single-write drop behavior remain shared across Cash, Pay and Transactions. English/Spanish accessible card descriptions explain the gesture and keyboard shortcut without adding visual controls.
+
+The dedicated WebDriver drag check verifies no grip is rendered, short taps do not lift a preview, horizontal/vertical swipes do not reorder, and a touch hold on the card body reorders while preserving its grab point and selected wallet. The existing mouse, keyboard, twenty-wallet, financial-state and offline checks also pass. The production build, all 92 unit tests and the full app smoke check pass. The cached-upgrade check confirms 0.1.6 updates to 0.1.7 with wallets/history unchanged and the new version working offline. Version metadata is 0.1.7 and the worker cache is `kontana-v27`; no data/schema migration is required.

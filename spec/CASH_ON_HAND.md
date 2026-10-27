@@ -11,7 +11,7 @@ Wallet actions are Rename, Edit denominations, and Delete wallet. Creation/renam
 
 Reordering uses one pointer-based interaction across Cash, Pay and Transactions, with a six-pixel movement threshold so an ordinary click still selects. The floating card retains the exact grab point and lifts above a dashed placeholder. Other cards animate aside as the slot moves; no full app render or storage write occurs during dragging. Near either strip edge, scrolling continues while the pointer is held. A valid drop settles into its slot, saves once, and retains scroll position and the selected wallet. Escape, pointer cancellation, blur/resize or an outside drop restore the original order. Hidden wallets retain their saved positions when visible wallets reorder.
 
-Touch card swipes remain native scrolling; a visible grip starts reordering. Mouse users can grab the body of the card. Keyboard users can focus the card or grip and use Alt + Left/Right, with focus retained and a localized position announcement. Reduced motion disables sibling/drop animations. The interaction also works offline.
+The card body is the drag target, with no extra grip icon. Mouse dragging starts after six pixels of movement. On touch, holding the card still for 240ms lifts it, then dragging reorders it; moving before the hold completes leaves native horizontal rail swiping and vertical page scrolling available. A short tap selects normally. Keyboard users can focus the card and use Alt + Left/Right, with focus retained and a localized position announcement. Reduced motion disables sibling/drop animations. The interaction also works offline.
 
 ## Inventory
 

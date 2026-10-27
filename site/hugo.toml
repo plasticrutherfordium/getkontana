@@ -7,7 +7,7 @@ defaultContentLanguageInSubdir = false
 [pagination]
   pagerSize = 5
 [params]
-  appVersion = "0.1.6"
+  appVersion = "0.1.7"
   sourceRepository = "https://github.com/plasticrutherfordium/getkontana"
   license = "MPL-2.0"
   description = "Free core. Forever. Open source under MPL-2.0. Optional paid extras."

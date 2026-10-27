@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-const APP_VERSION = '0.1.6';
+const APP_VERSION = '0.1.7';
 const ZERO_DECIMAL_CURRENCIES = new Set([
   'CLP', 'SEK', 'HUF', 'NOK', 'ARS', 'JPY', 'KRW', 'XOF',
   'VND', 'UYU', 'ISK', 'BIF', 'DJF', 'GNF', 'KPW', 'LAK',
@@ -609,7 +609,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
         'wallet.field_currency': 'Currency',
         'wallet.create_action': 'Create wallet',
         'wallet.max_reached': 'Maximum number of wallets reached ({max}).',
-        'wallet.reorder_handle': 'Reorder {name}. Drag or use Alt + Left/Right.',
+        'wallet.reorder_hint': 'Drag to reorder; on touch, hold briefly first. Or use Alt + Left/Right.',
         'wallet.reordered': '{name} moved to position {position} of {total}.',
         'wallet.finish_or_cancel_before_create': 'Finish or cancel the current allocation/edit before creating a wallet.',
         'wallet.edit_denoms_question': 'Edit denominations?',
@@ -1083,7 +1083,7 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
         'wallet.field_currency': 'Divisa',
         'wallet.create_action': 'Crear monedero',
         'wallet.max_reached': 'Se alcanzó el número máximo de monederos ({max}).',
-        'wallet.reorder_handle': 'Reordenar {name}. Arrastra o usa Alt + izquierda/derecha.',
+        'wallet.reorder_hint': 'Arrastra para reordenar; en pantalla táctil, mantén pulsado primero. O usa Alt + izquierda/derecha.',
         'wallet.reordered': '{name} en la posición {position} de {total}.',
         'wallet.finish_or_cancel_before_create': 'Finaliza o cancela la asignación/edición actual antes de crear un monedero.',
         'wallet.edit_denoms_question': '¿Editar denominaciones?',
@@ -4515,6 +4515,8 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
                     draggable="false"
                     role="button"
                     tabindex="0"
+                    aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight"
+                    aria-description="${escapeBudgetHtml(t('wallet.reorder_hint'))}"
                     aria-pressed="${active ? 'true' : 'false'}"
                   >
                     <p class="wallet-card-head">${CURRENCY_FLAGS[wallet.currency] || '🏳️'} <span>${wallet.currency}</span></p>
@@ -4522,9 +4524,6 @@ const BACKUP_STORAGE_KEY = 'kontana_state_v1_backup';
                     <p class="wallet-card-total">${formatMoney(getWalletDisplayTotal(wallet), wallet.currency)}</p>
                   </div>
                 </div>
-                <button type="button" class="wallet-card-drag-handle" data-wallet-drag-handle="1" aria-label="${escapeBudgetHtml(t('wallet.reorder_handle', { name: wallet.name }))}" title="${escapeBudgetHtml(t('wallet.reorder_handle', { name: wallet.name }))}">
-                  <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor" aria-hidden="true"><circle cx="7" cy="5" r="1.2"/><circle cx="13" cy="5" r="1.2"/><circle cx="7" cy="10" r="1.2"/><circle cx="13" cy="10" r="1.2"/><circle cx="7" cy="15" r="1.2"/><circle cx="13" cy="15" r="1.2"/></svg>
-                </button>
                 ${showActions && active ? `
                   <button type="button" class="wallet-card-action" data-wallet-action="1" aria-label="${t('wallet.actions_title')}">
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>

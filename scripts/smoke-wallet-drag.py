@@ -150,6 +150,7 @@ try:
       s.transactions=[{id:'old-opening',wallet_id:'drag-0',currency:'EUR',type:'incoming',amount_minor:2000,delta_minor:2000,category:'income',created_at:'1990-01-01T00:00:00Z'}];
       localStorage.setItem('kontana_state_v1',JSON.stringify(s));location.reload()""")
     wait("return document.querySelectorAll('#tab-cash [data-wallet-id]').length===20")
+    assert not js("return !!document.querySelector('[data-wallet-drag-handle]')"), 'Cards must not add a separate drag grip'
     baseline = financial()
     moved = drag_one()
     assert financial() == baseline
@@ -216,6 +217,12 @@ try:
     command('POST', '/goog/cdp/execute', {'cmd': 'Emulation.setEmulatedMedia', 'params': {'features': []}})
     command('POST', '/window/rect', {'width': 390, 'height': 844})
     js("window.__walletPointerTrace=[];for(const type of ['pointerdown','pointerup','pointercancel','gotpointercapture','lostpointercapture'])document.addEventListener(type,e=>window.__walletPointerTrace.push({type,id:e.pointerId,kind:e.pointerType,target:e.target.className}),true)")
+    selected = js("return document.querySelector('#tab-cash [aria-pressed=true][data-wallet-id]').dataset.walletId")
+    js("document.querySelector(arguments[0]).scrollIntoView({behavior:'instant',block:'nearest',inline:'center'})", card(selected))
+    start = point(card(selected), .55, .65)
+    pointer([move(start), {'type': 'pointerDown', 'button': 0}, {'type': 'pause', 'duration': 50}, {'type': 'pointerUp', 'button': 0}, {'type': 'pause', 'duration': 300}], 'touch')
+    assert not js("return !!document.querySelector('.wallet-drag-preview')"), 'A short tap must cancel the hold timer'
+    assert js("return document.querySelector('#tab-cash [aria-pressed=true][data-wallet-id]').dataset.walletId") == selected
     js("document.querySelector('#tab-cash .wallet-cards').scrollLeft=0;window.scrollTo(0,0)")
     before = order()
     start = point(card(before[0]), .6, .4)
@@ -223,15 +230,29 @@ try:
     assert js("return document.querySelector('#tab-cash .wallet-cards').scrollLeft") > 20, 'Native touch swiping must remain available'
     assert order() == before
     assert not js("return !!document.querySelector('.wallet-drag-preview')")
-    js("document.querySelector('#tab-cash .wallet-cards').scrollLeft=0")
-    handle = '#tab-cash .wallet-card-wrap:first-child [data-wallet-drag-handle]'
-    start = point(handle)
-    pointer([move(start), {'type': 'pointerDown', 'button': 0}, move({'x': 363, 'y': start['y']}, 250), {'type': 'pause', 'duration': 200}, {'type': 'pointerUp', 'button': 0}], 'touch')
+    # Start each native gesture from a fresh page so a previous swipe's
+    # compositor momentum cannot move the next gesture's measured target.
+    visit()
+    wait("return document.querySelectorAll('#tab-cash [data-wallet-id]').length===20")
+    start = point(card(before[0]), .6, .75)
+    pointer([move(start), {'type': 'pointerDown', 'button': 0}, move({'x': start['x'], 'y': 50}, 300), {'type': 'pointerUp', 'button': 0}], 'touch')
+    assert js('return window.scrollY') > 20, 'A vertical swipe on a card must still scroll the page'
+    assert order() == before
+    assert not js("return !!document.querySelector('.wallet-drag-preview')")
+    visit()
+    wait("return document.querySelectorAll('#tab-cash [data-wallet-id]').length===20")
+    selected = js("return document.querySelector('#tab-cash [aria-pressed=true][data-wallet-id]').dataset.walletId")
+    start = point(card(before[0]), .62, .65)
+    js("document.addEventListener('pointerup',e=>{if(e.pointerType!=='touch')return;const r=document.querySelector('.wallet-drag-preview')?.getBoundingClientRect();window.__touchDragAnchor=r?{x:(e.clientX-r.left)/r.width,y:(e.clientY-r.top)/r.height}:null},{once:true,capture:true})")
+    pointer([move(start), {'type': 'pointerDown', 'button': 0}, {'type': 'pause', 'duration': 320}, move({'x': 363, 'y': start['y']}, 250), {'type': 'pause', 'duration': 200}, {'type': 'pointerUp', 'button': 0}], 'touch')
     settle()
     screenshot('touch-wallet-drop')
     assert order().index(before[0]) > 0
+    assert js("return document.querySelector('#tab-cash [aria-pressed=true][data-wallet-id]').dataset.walletId") == selected, 'Touch dragging must not select another wallet'
+    anchor = js('return window.__touchDragAnchor')
+    assert anchor and abs(anchor['x'] - .62) < .02 and abs(anchor['y'] - .65) < .02, anchor
     assert financial() == baseline
-    print('PASS: reduced motion, native mobile rail swiping, touch handle reordering', flush=True)
+    print('PASS: reduced motion, short touch taps, native horizontal/vertical swiping, hold-and-drag from the card body with original grab point', flush=True)
 
     command('POST', '/window/rect', {'width': 1440, 'height': 1100})
     wait('return !!navigator.serviceWorker.controller')

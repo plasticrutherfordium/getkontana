@@ -42,6 +42,17 @@ Scenario: Cancelling wallet dragging preserves the order
   When I press Escape or release outside the wallet strip
   Then the original order is restored without changing cash or history
 
+Scenario: Wallet touch dragging uses the card body without a grip
+  Given I am using a touchscreen with at least two wallet cards
+  Then no separate drag grip is shown
+  When I hold the card body for 240ms and drag it
+  Then the card follows my original grab point and previews the new order
+  And dropping saves that order
+  When I swipe immediately instead of holding
+  Then the strip or page scrolls normally without reordering
+  When I briefly tap a card
+  Then that wallet is selected without lifting a drag preview
+
 Scenario: Reordering a long wallet strip
   Given I have 20 wallets
   When I hold a dragged wallet near the strip edge

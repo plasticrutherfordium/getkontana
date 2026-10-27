@@ -52,8 +52,13 @@
     if (!rail || bound.has(rail)) return;
     bound.add(rail);
     rail.addEventListener('dragstart', (event) => event.preventDefault());
-    rail.querySelectorAll('[data-wallet-drag-handle]').forEach((handle) => {
-      handle.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); });
+    // A quick swipe remains native scrolling. Once a held card lifts, stop
+    // native panning before its first touchmove so the pointer stays captured.
+    rail.addEventListener('touchmove', (event) => {
+      if (active?.rail === rail && active.dragging) event.preventDefault();
+    }, { passive: false });
+    rail.addEventListener('contextmenu', (event) => {
+      if (active?.rail === rail && active.touch) event.preventDefault();
     });
 
     rail.addEventListener('keydown', (event) => {
@@ -75,12 +80,8 @@
 
     rail.addEventListener('pointerdown', (event) => {
       if (active || !event.isPrimary || event.button !== 0 || wrappers(rail).length < 2) return;
-      const handle = event.target.closest('[data-wallet-drag-handle]');
-      if (event.target.closest('button,a,input,select,textarea') && !handle) return;
-      // Leave the body of touch cards to native horizontal/vertical scrolling.
-      // The visible touch handle owns dragging and has touch-action: none.
-      if (event.pointerType === 'touch' && !handle) return;
-      const card = handle ? handle.closest('.wallet-card-wrap')?.querySelector(cardSelector) : event.target.closest(cardSelector);
+      if (event.target.closest('button,a,input,select,textarea')) return;
+      const card = event.target.closest(cardSelector);
       const wrap = card?.closest('.wallet-card-wrap');
       if (!wrap || wrap.parentElement !== rail) return;
       const start = { x: event.clientX, y: event.clientY };
@@ -96,7 +97,9 @@
       let finished = false;
       let frame;
       let previousTime;
-      active = { cancel: () => finish(false), dragging: false };
+      let holdTimer;
+      const touch = event.pointerType === 'touch';
+      active = { rail, touch, cancel: () => finish(false), dragging: false };
 
       const isInside = () => {
         const bounds = rail.getBoundingClientRect();
@@ -105,6 +108,7 @@
       };
 
       function begin() {
+        clearTimeout(holdTimer);
         dragging = true;
         active.dragging = true;
         options.onDragState(true);
@@ -165,8 +169,13 @@
         if (moveEvent.pointerId !== event.pointerId || finished) return;
         if (moveEvent.pointerType === 'mouse' && moveEvent.buttons === 0) { finish(false); return; }
         point = { x: moveEvent.clientX, y: moveEvent.clientY };
-        if (!dragging && Math.hypot(point.x - start.x, point.y - start.y) < 6) return;
-        if (!dragging) begin();
+        if (!dragging) {
+          if (Math.hypot(point.x - start.x, point.y - start.y) < 6) return;
+          // Moving before the hold completes gives the gesture back to the
+          // browser, including horizontal rail swipes and vertical page scroll.
+          if (touch) { finish(false); return; }
+          begin();
+        }
         moveEvent.preventDefault();
       }
 
@@ -183,6 +192,7 @@
       function finish(commit) {
         if (finished) return;
         finished = true;
+        clearTimeout(holdTimer);
         cancelAnimationFrame(frame);
         document.removeEventListener('pointermove', move);
         document.removeEventListener('pointerup', up);
@@ -226,6 +236,7 @@
       document.addEventListener('keydown', key);
       global.addEventListener('blur', cancel);
       global.addEventListener('resize', cancel);
+      if (touch) holdTimer = setTimeout(begin, 240);
     });
   }
 
