@@ -60,7 +60,9 @@ def click(selector):
 
 def visit():
     command('POST', '/url', {'url': args.base_url.rstrip('/') + '/app/'})
-    wait("return !!document.querySelector('#open-settings')")
+    # The settings button is static HTML; wallet UI appears only after helper
+    # loading and worker registration finish, which can take longer online.
+    wait("return !!document.querySelector('#tab-cash [data-wallet-id], #open-create-wallet')")
 
 
 def order():
